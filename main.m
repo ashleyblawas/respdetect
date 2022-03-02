@@ -390,7 +390,7 @@ for k = 1:length(taglist)
             sway = Aw(:, 2);
             heave = Aw(:, 3);
 
-            %% Filter all three accel vectors, 5th order butterworth, used 10 and 0.2
+            % Filter all three accel vectors, 5th order butterworth, used 10 and 0.2
             %as upper in saved movement files
             surge_filt = filter_acc(surge, fs, 10);
             sway_filt = filter_acc(sway, fs, 10);
@@ -431,7 +431,32 @@ for k = 1:length(taglist)
 
             %Get smoothed Shannon entropy
             jerk_smooth = movavg(jerk_se','triangular', 2*fs);
-            %%
+            
+            % Build filter for prh
+            fny = fs/2;
+            pass = [1, 7];
+            [b,a]=butter(5,pass/fny,'bandpass');
+
+            % Calculate filtered prh signals
+            pitch_filt = filter(b, a, pitch);
+            roll_filt = filter(b, a, roll);
+            head_filt = filter(b, a, head);
+
+            %Get prh diff
+            pitch_diff = diff(pitch_filt);
+            roll_diff = diff(roll_filt);
+            head_diff = diff(head_filt);
+
+            %Get Shannon entropy
+            pitch_se = log(abs(pitch_diff))*sum(abs(pitch_diff));
+            roll_se = log(abs(roll_diff))*sum(abs(roll_diff));
+            head_se = log(abs(head_diff))*sum(abs(head_diff));
+
+            %Get smoothed Shannon entropy
+            pitch_smooth = movavg(pitch_se,'linear', 3*fs);
+            head_smooth = movavg(head_se,'linear', 3*fs);
+            roll_smooth = movavg(roll_se,'linear', 3*fs);
+
             save(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
                 'surge_filt', 'sway_filt', 'heave_filt',...
                 'surge_diff', 'sway_diff', 'heave_diff',...
@@ -439,11 +464,16 @@ for k = 1:length(taglist)
                 'surge_smooth', 'sway_smooth', 'heave_smooth',...
                 'surge_sgf', 'sway_sgf', 'heave_sgf',...
                 'surge_jerk', 'sway_jerk', 'heave_jerk',...
-                'jerk', 'jerk_se', 'jerk_smooth');
+                'jerk', 'jerk_se', 'jerk_smooth',...
+                'pitch_filt', 'head_filt', 'roll_filt',...
+                'pitch_diff', 'head_diff', 'roll_diff',...
+                'pitch_se', 'head_se', 'roll_se',...
+                'pitch_smooth', 'head_smooth', 'roll_smooth');
            %beep on; beep
 
             display('Movement information calculation complete!');
        
+            clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
         %end
      end
 end
@@ -539,46 +569,22 @@ loadprh(metadata.tag);
 % Load in movement data
 load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 
-% Build filter for prh
-fny = fs/2;
-pass = [1, 7];
-[b,a]=butter(5,pass/fny,'bandpass');
-
-% Calculate filtered prh signals
-pitch_filt = filter(b, a, pitch);
-roll_filt = filter(b, a, roll);
-head_filt = filter(b, a, head);
-
-%Get prh diff
-pitch_diff = diff(pitch_filt);
-roll_diff = diff(roll_filt);
-head_diff = diff(head_filt);
-
-%Get Shannon entropy
-pitch_se = log(abs(pitch_diff))*sum(abs(pitch_diff));
-roll_se = log(abs(roll_diff))*sum(abs(roll_diff));
-head_se = log(abs(head_diff))*sum(abs(head_diff));
-
-%Get smoothed Shannon entropy
-pitch_smooth = movavg(pitch_se,'linear', 3*fs);
-head_smooth = movavg(head_se,'linear', 3*fs);
-roll_smooth = movavg(roll_se,'linear', 3*fs);
-
 % Want pitch to be positive for peak detect, so adding min
 pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
 
 R = loadauditbreaths(metadata.tag);
-R_new = auditbreaths(0, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
+R_new = auditbreaths(95*60, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
 saveauditbreaths(metadata.tag, R_new)
 
 %% Import breaths from audit
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 [breath_times, bp, breath_idx]=import_breaths(metadata.breathaud_filename, time_sec); 
 
 %% Run acoustic audit
 settagpath('PRH',strcat(data_path, '\prh\50 Hz'))
 R = loadaudit(metadata.tag); % Load an audit if one exists
 %R = d3audit(re                                                                                                                                                             cdir, prefix, 0, R); %Run audit (for d3s)
-R = tagaudit2(metadata.tag,7850, R, jerk_smooth ); % Run audit (for d2s), tagaudit2 in resp_detect
+R = tagaudit2(metadata.tag,0, R, jerk_smooth ); % Run audit (for d2s), tagaudit2 in resp_detect
 saveaudit(metadata.tag, R); % Save audit
 
 %% Import acoustic audit
