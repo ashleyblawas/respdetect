@@ -573,7 +573,7 @@ load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
 
 R = loadauditbreaths(metadata.tag);
-R_new = auditbreaths(95*60, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
+R_new = auditbreaths(2155*10^3, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
 saveauditbreaths(metadata.tag, R_new)
 
 %% Import breaths from audit
@@ -614,8 +614,29 @@ end
 %% Calculate and plot fR
 [fR] = get_contfR(breath_times, breath_idx, p, time_min);
 
-% Get surf fRs and plot
-[si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(T, breath_times, dive_durs);
+%% Get surf fRs and plot
+clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+
+tag = taglist{5};
+
+%Load in metadata
+metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+clear tag
+
+% Load in movement data
+load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
+
+% Load in dives
+load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"))
+
+% Load in dive table
+load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"))
+
+% Import breaths from audit
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
+[breath_times, bp, breath_idx]=import_breaths(metadata.breathaud_filename, time_sec);
+
+[si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(Tab, breath_times, dive_dur);
 
 %% Plot change in fR during surface interval between various dive types... i.e. short-med, short-short, long-short, etc.
 %fRbwdivetypes(T, surf_int_breaths, surf_int_fR, dive_durs);
