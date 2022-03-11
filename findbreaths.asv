@@ -29,12 +29,7 @@ function []=findbreaths(breathaud_filename, tag, fs, time_sec, time_min, j_clean
         plot(time_min(start_plot:end_plot), j_clean(start_plot:end_plot), 'k'); grid; hold on;
         scatter(time_min(auto_breath_locs+start_plot), j_clean(auto_breath_locs+start_plot), 'r*')
         
-        txt = input("Do you want to manually edit these peaks (y/n)?\n", "s");
-        if strcmp(txt, "n")==1
-            %Do nothing and move on
-        else
-            
-            
+        txt = input("Do you want to manually edit these peaks (y/n)?,"s")
         
         
         fprintf('Surface interval %i of %i\n', i,height(T)-1)

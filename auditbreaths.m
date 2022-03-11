@@ -41,7 +41,6 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
     AXb = axes('position',[0.11,0.25,0.78,0.14]) ; % axes for bottom plot
     AXbb = axes('position',[0.11,0.08,0.78,0.14]) ; % axes for bottom bottom plot
     
-    mean_jerk_se = mean(pitch_smooth);
     for i = 1:length(jerk_smooth)
         if p(i)>1
             jerk_smooth(i) = NaN;
@@ -193,10 +192,12 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
                     fprintf('Click inside the flow plot to select a threshold\n') ;
                 else
                     display('Attempting threshold')
+                    % Adding 1 to time because lose one data point for
+                    % diff, this is consistent with findbreaths
                     time_sec = tt((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1);
-                    pitch_sec = pitch_smooth((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1);
+                    pitch_sec = pitch_smooth((floor(tcue)*ffs):(floor(tcue)*ffs+NS*ffs));
                     gy
-                    [pks, locs] = findpeaks(pitch_smooth((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1), ffs, 'MinPeakDistance', 2, 'MinPeakHeight', gy);
+                    [pks, locs] = findpeaks(pitch_smooth((floor(tcue)*ffs):(floor(tcue)*ffs+NS*ffs)), ffs, 'MinPeakDistance', 2, 'MinPeakHeight', gy);
                     for i = 1:length(locs)
                         RES.cue = [RES.cue;[locs(i)+floor(tcue) 0]] ;
                         RES.stype{size(RES.cue,1)} = 'b' ;

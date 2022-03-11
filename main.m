@@ -545,8 +545,8 @@ end
 %% Find breath automatically 
 k=1;
 tag = taglist{k};   
-%T = [
-findbreaths(data_path, tag, 125, jerk_smooth);
+
+findbreaths(breathaud_filename, tag, metadata.fs, time_sec, time_min, pitch_smooth, Tab, 'bp')
 % saveauditbreaths(tag, R); % Save audit
 %[breath_times, bp , breath_idx]=import_breaths(breathaud_filename, time_sec); % Import the breaths
 
@@ -572,8 +572,33 @@ load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 % Want pitch to be positive for peak detect, so adding min
 pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
 
+%% Make a new section to do auto detection
+% Just want to run a peak detector across jerk_smooth and pitch_smooth and
+% then want it to present me with each surfacing and I can either okay it
+% or edit it
+for i = 1:length(jerk_smooth)
+    if p(i)>1
+        jerk_smooth(i) = NaN;
+        pitch_smooth(i) = NaN;
+    end
+end
+
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
+
+% Adapt find breaths to go through each surfacing and choose peaks (or
+% maybe like each 2 minute period)
+figure
+plot(pitch_smooth)
+[gx gy] = ginput(1); 
+[pks, locs] = findpeaks(pitch_smooth, metadata.fs, 'MinPeakDistance', 2, 'MinPeakHeight', gy);
+
+figure
+plot(time_min(1:end-1), pitch_smooth); hold on
+plot(locs/60,pks,'o')
+
+%% Just running breath movement audit
 R = loadauditbreaths(metadata.tag);
-R_new = auditbreaths(2155*10^3, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
+R_new = auditbreaths(0, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
 saveauditbreaths(metadata.tag, R_new)
 
 %% Import breaths from audit
