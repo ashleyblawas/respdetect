@@ -3,6 +3,6 @@ function [filtered_acc] = filter_acc(acc, fs, upper)
     fny = fs/2;
     pass = [0.2, upper];
     [b,a]=butter(5,pass/fny,'bandpass');
-    filtered_acc=filter(b,a,acc);  %filtered signal
+    filtered_acc=filtfilt(b,a,acc);  %filtered signal
 end
 

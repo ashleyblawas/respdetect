@@ -336,14 +336,14 @@ deep_color(idx == 1, :) = [];
 
 f = figure;
 subplot(1, 2, 1)
-scatter(deep_dive_dur./60, deep_dive_surf_dur./60, [], 'k',  'MarkerEdgeAlpha',.5); box on;
+scatter(deep_dive_dur./60, deep_dive_surf_dur./60, [], deep_color,  'MarkerEdgeAlpha',.5); box on;
 xlabel('Dive duration (min)'); ylabel('Post-dive surface interval (min)');
 %set(gca, 'YScale', 'log')
 ax = gca; 
 ax.FontSize = 12;
 
 subplot(1, 2, 2)
-scatter(deep_dive_dur(2:end)./60, deep_dive_surf_dur(1:end-1)./60, [], 'k', 'MarkerEdgeAlpha',.5); box on;
+scatter(deep_dive_dur(2:end)./60, deep_dive_surf_dur(1:end-1)./60, [], 'k, 'MarkerEdgeAlpha',.5); box on;
 xlabel('Dive duration (min)'); ylabel('Pre-dive surface interval (min)');
 %set(gca, 'YScale', 'log')
 ax = gca; 
@@ -413,9 +413,9 @@ for k = 1:length(taglist)
             heave_se = log(abs(heave_diff))*sum(abs(heave_diff));
 
             %Get smoothed Shannon entropy
-            surge_smooth = movmean(surge_se, fs);
-            sway_smooth = movmean(sway_se, fs);
-            heave_smooth = movmean(heave_se, fs);
+            surge_smooth = movavg(surge_se,'triangular', fs);
+            sway_smooth = movavg(sway_se,'triangular', fs);
+            heave_smooth = movavg(heave_se,'triangular', fs);
 
             %Calculate jerk for each direction
             %Fitler acceleration using Savitsky-Golay filter, using 3,11
@@ -436,7 +436,7 @@ for k = 1:length(taglist)
             end
 
             %Get smoothed Shannon entropy
-            jerk_smooth = movmean(jerk_se', 2*fs);
+            jerk_smooth = movavg(jerk_se','triangular', 2*fs);
             
             % Build filter for prh
             fny = fs/2;
@@ -444,9 +444,9 @@ for k = 1:length(taglist)
             [b,a]=butter(5,pass/fny,'bandpass');
 
             % Calculate filtered prh signals
-            pitch_filt = filtfilt(b, a, pitch);
-            roll_filt = filtfilt(b, a, roll);
-            head_filt = filtfilt(b, a, head);
+            pitch_filt = filter(b, a, pitch);
+            roll_filt = filter(b, a, roll);
+            head_filt = filter(b, a, head);
 
             %Get prh diff
             pitch_diff = diff(pitch_filt);
@@ -459,9 +459,9 @@ for k = 1:length(taglist)
             head_se = log(abs(head_diff))*sum(abs(head_diff));
 
             %Get smoothed Shannon entropy
-            pitch_smooth = movmean(pitch_se, 3*fs);
-            head_smooth = movmean(head_se, 3*fs);
-            roll_smooth = movmean(roll_se, 3*fs);
+            pitch_smooth = movavg(pitch_se,'linear', 3*fs);
+            head_smooth = movavg(head_se,'linear', 3*fs);
+            roll_smooth = movavg(roll_se,'linear', 3*fs);
 
             save(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
                 'surge_filt', 'sway_filt', 'heave_filt',...
