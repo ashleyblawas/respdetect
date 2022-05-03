@@ -46,7 +46,7 @@ for k=1:size(R.cue,1),
    if ~isstr(R.stype{I(k)}),
       fprintf(f,' %5.2f\t%4.2f\tUNKNOWN\n',R.cue(I(k),:)) ;
    else
-      fprintf(f,' %5.2f\t%4.2f\t%s\n',R.cue(I(k),:),R.stype{I(k)}) ;
+      fprintf(f,' %5.2f\t%4.2f\t%s\t%1.4f\t\n',R.cue(I(k),:),R.stype{I(k)}, R.comment{I(k)}) ;
    end
    kk = find(R.commentcue==I(k)) ;
    if ~isempty(kk),

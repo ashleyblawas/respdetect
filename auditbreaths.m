@@ -1,4 +1,4 @@
-function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitch_smooth, RES)
+function RES = auditbreaths(tcue, pitch, roll, heading, p, fs,  jerk_smooth, RES, marker)
     
     %     OPERATION
     %     Type or click on the display for the following functions:
@@ -38,16 +38,10 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
     AXtt = axes('position',[0.11,0.68,0.78,0.28]) ; % axes for top plot
     AXt = axes('position',[0.11,0.50,0.78,0.14]) ; % axes for top plot
     AXm = axes('position',[0.11,0.45,0.78,0.05]) ; % axes for middle plot
-    AXb = axes('position',[0.11,0.25,0.78,0.14]) ; % axes for bottom plot
-    AXbb = axes('position',[0.11,0.08,0.78,0.14]) ; % axes for bottom bottom plot
+    AXb = axes('position',[0.11,0.08,0.78,0.28]) ; % axes for bottom plot
+    %AXbb = axes('position',[0.11,0.08,0.78,0.14]) ; % axes for bottom bottom plot
     
-    for i = 1:length(jerk_smooth)
-        if p(i)>1
-            jerk_smooth(i) = NaN;
-            pitch_smooth(i) = NaN;
-        end
-    end
-    
+   
     bc = get(gcf,'Color') ;
     set(AXm,'XLim',[0 1],'YLim',[0 1]) ;
     set(AXm,'Box','off','XTick',[],'YTick',[],'XColor',bc,'YColor',bc,'Color',bc) ;
@@ -98,29 +92,16 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
                 
         % plot jerk
         axes(AXb), plot(tt(tcue*fs+kk),jerk_smooth(tcue*fs+kk), 'k-') ; hold on;
-        set(gca,'xtick',[]);
+        %set(gca,'xtick',[]); 
+        grid on
         yl = get(gca,'YLim') ;
         xlim([tcue tcue+NS]) ;
-        ylabel('Jerk Smooth');
-        
-        % plot pitch.
-        axes(AXbb), plot(tt(tcue*fs+kk),pitch_smooth(tcue*fs+kk)) ; hold on
-        yl = get(gca,'YLim') ;
-        %yl(2) = min([yl(2) MAXYONOXYGENDISPLAY]) ;
-        axis([tcue tcue+NS yl]) ;
-        axis xy, grid ;
-        xlabel('Time, s')
-        ylabel('Pitch Smooth')
-        hold on
-        hhh = plot([0 0],[0 0],'k*-') ;    % plot cursor
-        hold off
-        
-        
+        ylabel('Jerk SE Smooth');      
         
         % control buttons
         done = 0 ;
         while done == 0,
-            axes(AXbb) ; pause(0) ;
+            axes(AXb) ; pause(0) ;
             [gx gy button] = ginput(1) ;
             if button>='A',
                 button = lower(setstr(button)) ;
@@ -144,16 +125,16 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
                 %save labchartaudit_RECOVER RES
                 plotRES(AXm,RES,[tcue tcue+NS]) ;
                 
-            elseif button=='x', %Delete a comment
-                kres = min(find(gx>=RES.cue(:,1)-1 & gx<sum(RES.cue')'+1)) ;
-                if ~isempty(kres),
-                    kkeep = setxor(1:size(RES.cue,1),kres) ;
-                    RES.cue = RES.cue(kkeep,:) ;
-                    RES.stype = {RES.stype{kkeep}} ;
-                    plotRES(AXm,RES,[tcue tcue+NS]) ;
-                else
-                    fprintf(' No saved cue at cursor\n') ;
-                end
+%             elseif button=='x', %Delete a comment
+%                 kres = min(find(gx>=RES.cue(:,1)-1 & gx<sum(RES.cue')'+1)) ;
+%                 if ~isempty(kres),
+%                     kkeep = setxor(1:size(RES.cue,1),kres) ;
+%                     RES.cue = RES.cue(kkeep,:) ;
+%                     RES.stype = {RES.stype{kkeep}} ;
+%                     plotRES(AXm,RES,[tcue tcue+NS]) ;
+%                 else
+%                     fprintf(' No saved cue at cursor\n') ;
+%                 end
                 
             elseif button=='f', %Go forward
                 tcue = tcue+floor(NS);
@@ -187,7 +168,7 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
                 tcue = floor(tt(next_surf));
                 done = 1 ;
                 
-            elseif button=='t', %Set a threshold for the ptich signal and find peaks 
+            elseif button=='t', %Set a threshold for the pitch signal and find peaks 
                 if gx<tcue | gx>tcue+NS
                     fprintf('Click inside the flow plot to select a threshold\n') ;
                 else
@@ -195,46 +176,47 @@ function RES = auditbreaths(tcue, jerk_smooth, pitch, roll, heading, p, fs, pitc
                     % Adding 1 to time because lose one data point for
                     % diff, this is consistent with findbreaths
                     time_sec = tt((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1);
-                    pitch_sec = pitch_smooth((floor(tcue)*ffs):(floor(tcue)*ffs+NS*ffs));
+                    jerk_sec = jerk_smooth((floor(tcue)*ffs):(floor(tcue)*ffs+NS*ffs));
                     gy
-                    [pks, locs] = findpeaks(pitch_smooth((floor(tcue)*ffs):(floor(tcue)*ffs+NS*ffs)), ffs, 'MinPeakDistance', 2, 'MinPeakHeight', gy);
+                    [pks, locs] = findpeaks(jerk_smooth((floor(tcue)*ffs):(floor(tcue)*ffs+NS*ffs)), ffs, 'MinPeakDistance', 3, 'MinPeakHeight', gy);
                     for i = 1:length(locs)
                         RES.cue = [RES.cue;[locs(i)+floor(tcue) 0]] ;
-                        RES.stype{size(RES.cue,1)} = 'b' ;
+                        RES.stype{size(RES.cue,1)} = marker ;
+                        RES.comment{size(RES.cue,1)} = gy;
                         %save labchartaudit_RECOVER RES
                         plotRES(AXm,RES,[tcue tcue+NS]) ;
                     end
                 end
                 done = 1 ;  
                 
-                elseif button=='z', %Mark a zero-crossing in the pitch signal
-                if gx<tcue | gx>tcue+NS
-                fprintf('Click inside the flow plot to select an approximate zero crossing\n') ;
-                else
-                % find first crossing of the relative threshold
-                display('Attempting zero crossing')
-                gx
-                time_sec = tt((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1);
-                pitch_sec = pitch((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1)';
-                [locs] = time_sec(find(time_sec(1:end-1) > gx & pitch_sec(1:end-1) >=0 & pitch_sec(2:end) < 0, 1, 'first'));
-                if isempty(locs)
-                    done = 1;
-                else
-                gx
-                RES.cue = [RES.cue;[locs 0]] ;
-                RES.stype{size(RES.cue,1)} = 'b' ;
-                %save labchartaudit_RECOVER RES
-                plotRES(AXm,RES,[tcue tcue+NS]) ;
-                end
-            end
-            done = 1 ;
+%                 elseif button=='z', %Mark a zero-crossing in the pitch signal
+%                 if gx<tcue | gx>tcue+NS
+%                 fprintf('Click inside the flow plot to select an approximate zero crossing\n') ;
+%                 else
+%                 % find first crossing of the relative threshold
+%                 display('Attempting zero crossing')
+%                 gx
+%                 time_sec = tt((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1);
+%                 jerk_sec = pitch((floor(tcue)*ffs)+1:(floor(tcue)*ffs+NS*ffs)+1)';
+%                 [locs] = time_sec(find(time_sec(1:end-1) > gx & jerk_sec(1:end-1) >=0 & jerk_sec(2:end) < 0, 1, 'first'));
+%                 if isempty(locs)
+%                     done = 1;
+%                 else
+%                 gx
+%                 RES.cue = [RES.cue;[locs 0]] ;
+%                 RES.stype{size(RES.cue,1)} = 'b' ;
+%                 %save labchartaudit_RECOVER RES
+%                 plotRES(AXm,RES,[tcue tcue+NS]) ;
+%                 end
+%             end
+%             done = 1 ;
                                       
             elseif button==1,
                 if gx<tcue | gx>tcue+NS
                     fprintf('Invalid click: commands are f b s l p x q\n')
                 else
                     current = [current(2) gx] ;
-                    set(hhh,'XData',current) ;
+                    set(0,'XData',current) ;
                     fprintf('Time = %5.2f s\n', gx);
                 end
             end

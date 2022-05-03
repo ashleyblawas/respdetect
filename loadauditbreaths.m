@@ -78,7 +78,9 @@ while ~done,
          knext = size(R.cue,1)+1 ;
          R.cue(knext,:) = [c d] ;
          [ss s] = strtok(s) ;
-         R.stype{knext} = [ss s] ;  % strip leading white space from remainder
+         R.stype{knext} = [ss] ;  % strip leading white space from remainder
+         [as s] = strtok(s);
+         R.comment{knext} =[as] ;
       end
    end
 

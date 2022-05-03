@@ -433,14 +433,16 @@ for k = 1:length(taglist)
             %Get Shannon entropy of jerk
             for i = 1:length(jerk)
                 jerk_se(i) = sum(abs(jerk(i, :)).*log(abs(jerk(i, :))));
+                surge_jerk_se(i) = sum(abs(surge_jerk(i, :)).*log(abs(surge_jerk(i, :))));
             end
 
             %Get smoothed Shannon entropy
             jerk_smooth = movmean(jerk_se', 2*fs);
+            surge_jerk_smooth = movmean(surge_jerk_se', 2*fs);
             
             % Build filter for prh
             fny = fs/2;
-            pass = [1, 7];
+            pass = [1, 5]; % Change to [1 5] on 5/3/2022
             [b,a]=butter(5,pass/fny,'bandpass');
 
             % Calculate filtered prh signals
@@ -470,7 +472,7 @@ for k = 1:length(taglist)
                 'surge_smooth', 'sway_smooth', 'heave_smooth',...
                 'surge_sgf', 'sway_sgf', 'heave_sgf',...
                 'surge_jerk', 'sway_jerk', 'heave_jerk',...
-                'jerk', 'jerk_se', 'jerk_smooth',...
+                'jerk', 'jerk_se', 'jerk_smooth', 'surge_jerk_smooth',...
                 'pitch_filt', 'head_filt', 'roll_filt',...
                 'pitch_diff', 'head_diff', 'roll_diff',...
                 'pitch_se', 'head_se', 'roll_se',...
@@ -486,7 +488,7 @@ end
 
 %% Load movement data, plot, and do some EDA
 
-for k = 1:length(taglist);
+for k = 1%:length(taglist);
     
     tag = taglist{k};
     
@@ -537,28 +539,31 @@ for k = 1:length(taglist);
     ylabel('Jerk SE');
 
     ax(7)=subplot(7, 1, 7);
-    plot(time_min(2:end), jerk_smooth, 'k'); 
+    plot(time_min(2:end), jerk_smooth, 'k'); hold on
+    plot(time_min(2:end), surge_jerk_smooth, 'r');
     linkaxes(ax, 'x');
     ylabel('Smoothed Jerk SE');
     %%
-    pause;
-    fprintf("Press any key to view the next tag record");
+    %pause;
+    %fprintf("Press any key to view the next tag record");
 end
 
 %% Set up directories
 [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
 
-%% Find breath automatically 
-k=1;
-tag = taglist{k};   
+%% Find breath automatically - THIS IS WHAT I WANT TO WORK and am working on now
 
-findbreaths(breathaud_filename, tag, metadata.fs, time_sec, time_min, pitch_smooth, Tab, 'bp')
+%k=1;
+%tag = taglist{k};  
+
+%findbreaths(breathaud_filename, tag, metadata.fs, time_sec, time_min, pitch_smooth, Tab, 'bp')
 % saveauditbreaths(tag, R); % Save audit
 %[breath_times, bp , breath_idx]=import_breaths(breathaud_filename, time_sec); % Import the breaths
 
 %% Breath audit %USING THIS
-
+k = 1;
 tag = taglist{k};
+
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
 clear tag
@@ -575,26 +580,67 @@ loadprh(metadata.tag);
 % Load in movement data
 load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 
-% Want pitch to be positive for peak detect, so adding min
-pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
+% Load in diving data
+load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
+load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
 
 %% Make a new section to do auto detection
 % Just want to run a peak detector across jerk_smooth and pitch_smooth and
 % then want it to present me with each surfacing and I can either okay it
 % or edit it
+
+% Want pitch to be positive for peak detect, so adding min
+pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
+
+% Remove underwater portions
 for i = 1:length(jerk_smooth)
     if p(i)>1
         jerk_smooth(i) = NaN; 
+        surge_jerk_smooth(i) = NaN; 
         pitch_smooth(i) = NaN;
     end
 end
 
+% Normalize pitch and jerk
+jerk_smooth = normalize(jerk_smooth, 'range', [0 1]);
+surge_jerk_smooth = normalize(surge_jerk_smooth, 'range', [0 1]);
+pitch_smooth = normalize(pitch_smooth, 'range', [0 1]);
+
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
+%% Running automated audit - allows you to choose threshold and then edit
+% Want editable audit detector
+% 5/3 I don't feel like this is working as consistently as I want it to,
+% the threshold detection is way better using the audit method
+% findbreaths(breathaud_filename, metadata, time_sec, time_min, jerk_smooth, Tab, 'bj')
 
-%% Just running breath movement audit
+%% First, identify minimia of pressure (aka surfacings)
+%islocalmin(A,'MinSeparation',minutes(45),'SamplePoints',t);
+p_smooth = smoothdata(p, 'gaussian', 25);
+p_diff = diff(p_smooth);
+p_diff_smooth = smoothdata(p_diff, 'sgolay');
+p_diff_smooth = normalize(p_diff_smooth, 'range', [0 20]);
+c = ischange(p_diff_smooth, 'linear', 'Threshold', 20);
+
+figure
+ax(1) = subplot(211)
+plot(time_min(2:end), p_diff_smooth, 'r', time_min(c), p_diff_smooth(c), 'ro', 'MarkerSize', 10)
+
+ax(2) = subplot(212)
+plot(time_min, p, 'k', time_min, p_smooth, 'b'); hold on
+set(gca, 'YDir', 'reverse');
+linkaxes(ax, 'x');
+
+%% Manual breath audit - JERK
+% Whichever one is second is the one getting audited
 R = loadauditbreaths(metadata.tag);
-R_new = auditbreaths(0, jerk_smooth, pitch, roll, head, p, metadata.fs, pitch_smooth, R);
+R_new = auditbreaths(metadata.tag_on, pitch, roll, head, p, metadata.fs, jerk_smooth, R, 'bj');
+saveauditbreaths(metadata.tag, R_new)
+
+%% Manual breath audit - SURGE JERK
+% Whichever one is second is the one getting audited
+R = loadauditbreaths(metadata.tag);
+R_new = auditbreaths(metadata.tag_on, pitch, roll, head, p, metadata.fs, surge_jerk_smooth, R, 'bs');
 saveauditbreaths(metadata.tag, R_new)
 
 %% Import breaths from audit
