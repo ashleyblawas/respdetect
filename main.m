@@ -601,11 +601,6 @@ for i = 1:length(jerk_smooth)
     end
 end
 
-% Normalize pitch and jerk
-jerk_smooth = normalize(jerk_smooth, 'range', [0 1]);
-surge_jerk_smooth = normalize(surge_jerk_smooth, 'range', [0 1]);
-pitch_smooth = normalize(pitch_smooth, 'range', [0 1]);
-
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
 %% Running automated audit - allows you to choose threshold and then edit
@@ -614,28 +609,53 @@ pitch_smooth = normalize(pitch_smooth, 'range', [0 1]);
 % the threshold detection is way better using the audit method
 % findbreaths(breathaud_filename, metadata, time_sec, time_min, jerk_smooth, Tab, 'bj')
 
+%% Define start and end of tag deployment using metadata tag on/off times
+start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
+
+% If the tag on time is when the tag is near the surface, we are going to
+% redefine the start idx as the first time the tag hits 1m, the reason for
+% this being that the tag on result in a big jerk spike that will mess with
+% peak detection for breaths
+if p(start_idx)<1
+    start_idx = find(p(start_idx:end_idx)>=1, 1)+start_idx;
+end
+end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
+
+
+% Normalize pitch and jerk
+jerk_smooth = rescale(jerk_smooth(start_idx:end_idx), 0 , 1);
+surge_jerk_smooth = rescale(surge_jerk_smooth(start_idx:end_idx), 0 , 1);
+pitch_smooth = rescale(pitch_smooth(start_idx:end_idx), 0 , 1);
+        
 %% First, identify minimia of pressure (aka surfacings)
-%islocalmin(A,'MinSeparation',minutes(45),'SamplePoints',t);
+% Smooth depth signal
 p_smooth = smoothdata(p, 'gaussian', 25);
-p_diff = diff(p_smooth);
-p_diff_smooth = smoothdata(p_diff, 'sgolay');
-p_diff_smooth = normalize(p_diff_smooth, 'range', [0 20]);
-c = ischange(p_diff_smooth, 'linear', 'Threshold', 20);
+p_shallow = p_smooth;
 
+% Define shallow as any depth less than 0.25 m
+p_shallow(p_smooth>0.25) = NaN;
+p_shallow_idx = find(~isnan(p_shallow));
+
+% Plot smoothed depth with areas highlighted in red that are conditions
+% where a breath could occur
 figure
-ax(1) = subplot(211)
-plot(time_min(2:end), p_diff_smooth, 'r', time_min(c), p_diff_smooth(c), 'ro', 'MarkerSize', 10)
+plot(time_min, p_smooth, 'b', 'LineWidth', 1); hold on
+plot(time_min, p_shallow, 'r-', 'LineWidth', 2);
+set(gca, 'YDir', 'reverse'); 
 
-ax(2) = subplot(212)
-plot(time_min, p, 'k', time_min, p_smooth, 'b'); hold on
-set(gca, 'YDir', 'reverse');
-linkaxes(ax, 'x');
-
-%% Manual breath audit - JERK
+%% Peak detection - JERK
 % Whichever one is second is the one getting audited
-R = loadauditbreaths(metadata.tag);
-R_new = auditbreaths(metadata.tag_on, pitch, roll, head, p, metadata.fs, jerk_smooth, R, 'bj');
-saveauditbreaths(metadata.tag, R_new)
+figure
+plot(time_min(start_idx:end_idx), jerk_smooth, 'k'); grid; hold on;
+xlabel('Time (min)'); ylabel('Jerk SE Smooth');
+
+%Peak detect jerk, defining here that the max breath rate is 30 breaths/min
+%given 2 second separation
+j_max_locs = islocalmax(jerk_smooth, 'MinProminence', 0.025, 'MinSeparation', 2*metadata.fs);
+j_max_locs = find(j_max_locs == 1);
+
+% Okay, so now we are saying breaths can only occur at these locations
+scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
 
 %% Manual breath audit - SURGE JERK
 % Whichever one is second is the one getting audited
