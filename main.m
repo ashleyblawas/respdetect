@@ -561,7 +561,7 @@ end
 %[breath_times, bp , breath_idx]=import_breaths(breathaud_filename, time_sec); % Import the breaths
 
 %% Breath audit %USING THIS
-k = 3;
+k = 1;
 tag = taglist{k};
 
 %Load in metadata
@@ -652,8 +652,7 @@ xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 
 %Peak detect jerk, defining here that the max breath rate is 30 breaths/min
 %given 2 second separation
-j_max_locs = islocalmax(jerk_smooth, 'MinProminence', 0.025, 'MinSeparation', 2*metadata.fs);
-j_max_locs = find(j_max_locs == 1);
+[j_max_height, j_max_locs] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.01, 'MinPeakDistance', 2*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
@@ -665,8 +664,7 @@ xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 30 breaths/min
 %given 2 second separation
-s_max_locs = islocalmax(surge_jerk_smooth, 'MinProminence', 0.025, 'MinSeparation', 2*metadata.fs);
-s_max_locs = find(s_max_locs == 1);
+[s_max_height, s_max_locs] =findpeaks(surge_jerk_smooth, 'MinPeakProminence', 0.01, 'MinPeakDistance', 2*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(s_max_locs+start_idx), surge_jerk_smooth(s_max_locs), 'b*')
@@ -678,8 +676,7 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 30 breaths/min
 %given 2 second separation
-p_max_locs = islocalmax(pitch_smooth, 'MinProminence', 0.2, 'MinSeparation', 2*metadata.fs);
-p_max_locs = find(p_max_locs == 1);
+[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.1, 'MinPeakDistance', 2*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
@@ -713,7 +710,6 @@ end
 % Places where only two conditions (jerk and surge jerk) are met - NEXT THING TO DO!
 [val2_js] = intersect(intersect(p_shallow_idx, j_max_locs), s_max_wins);
 [val2_jp] = intersect(intersect(p_shallow_idx, j_max_locs), p_max_wins);
-
 
 diff_vals_js = setdiff(val2_js, val3);
 diff_vals_jp = setdiff(val2_jp, val3);
