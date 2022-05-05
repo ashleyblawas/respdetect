@@ -561,7 +561,7 @@ end
 %[breath_times, bp , breath_idx]=import_breaths(breathaud_filename, time_sec); % Import the breaths
 
 %% Breath audit %USING THIS
-k = 2;
+k = 1;
 tag = taglist{k};
 
 %Load in metadata
@@ -584,7 +584,7 @@ load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
 
-%% Make a new section to do auto detection
+% Make a new section to do auto detection
 % Just want to run a peak detector across jerk_smooth and pitch_smooth and
 % then want it to present me with each surfacing and I can either okay it
 % or edit it
@@ -594,7 +594,7 @@ pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
 
 % Remove underwater portions
 for i = 1:length(jerk_smooth)
-    if p(i)>1
+    if p(i)>5 % The higher this threshold is the better for promience detections
         jerk_smooth(i) = NaN; 
         surge_jerk_smooth(i) = NaN; 
         pitch_smooth(i) = NaN;
@@ -603,7 +603,7 @@ end
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
-%% Running automated audit - allows you to choose threshold and then edit
+% Running automated audit - allows you to choose threshold and then edit
 % Want editable audit detector
 % 5/3 I don't feel like this is working as consistently as I want it to,
 % the threshold detection is way better using the audit method
@@ -614,26 +614,55 @@ start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on
 end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
 
 % If the tag on time is when the tag is near the surface, we are going to
-% redefine the start idx as the first time the tag hits 1m, the reason for
+% redefine the start idx as the first time the tag hits 1 m, the reason for
 % this being that the tag on result in a big jerk spike that will mess with
 % peak detection for breaths
 if p(start_idx)<5
-    start_idx = find(p(start_idx:end_idx)>=1, 1)+start_idx;
+    start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
 end
 
 % Normalize pitch and jerk
 p = p(start_idx:end_idx);
-jerk_smooth = rescale(jerk_smooth(start_idx:end_idx), 0, 1);
+jerk_smooth= rescale(jerk_smooth(start_idx:end_idx), 0, 1);
 surge_jerk_smooth = rescale(surge_jerk_smooth(start_idx:end_idx), 0, 1);
 pitch_smooth = rescale(pitch_smooth(start_idx:end_idx), 0, 1);
 
-jerk_smooth = filloutliers(jerk_smooth,'nearest','quartiles');
-surge_jerk_smooth = filloutliers(surge_jerk_smooth,'nearest','quartiles');
-pitch_smooth = filloutliers(pitch_smooth,'nearest','quartiles');
+% Get rid of any short duration spikes...
+jerk_smooth = medfilt1(jerk_smooth, metadata.fs);
+surge_jerk_smooth = medfilt1(surge_jerk_smooth, metadata.fs);
+pitch_smooth = medfilt1(pitch_smooth, metadata.fs);
 
+% Reduce the amplitude of really big outlier peaks
+% This behaves badly at the ends.... known problem with splines
+
+% Going to try changing NaNs back to zeros for this step and pad zeros at
+% the end
+jerk_smooth(isnan(jerk_smooth)) = 0;
+surge_jerk_smooth(isnan(surge_jerk_smooth)) = 0;
+pitch_smooth(isnan(pitch_smooth)) = 0;
+
+jerk_smooth = [jerk_smooth; zeros(metadata.fs, 1)];
+surge_jerk_smooth = [surge_jerk_smooth; zeros(metadata.fs, 1)];
+pitch_smooth = [pitch_smooth; zeros(metadata.fs, 1)];
+
+jerk_smooth = filloutliers(jerk_smooth,'spline','quartiles');
+surge_jerk_smooth = filloutliers(surge_jerk_smooth,'spline','quartiles');
+pitch_smooth = filloutliers(pitch_smooth,'spline','quartiles');
+
+% Turn diving jerk values back to NaNs
+jerk_smooth(find(jerk_smooth==0)) = NaN;
+jerk_smooth(end-metadata.fs+1:end) = [];
+surge_jerk_smooth(find(surge_jerk_smooth==0)) = NaN;
+surge_jerk_smooth(end-metadata.fs+1:end) = [];
+pitch_smooth(find(pitch_smooth==0)) = NaN;
+pitch_smooth(end-metadata.fs+1:end) = [];
+
+% Rescale between 0 and 1 so that can set a prominence that is standard
+% across tags
 jerk_smooth = rescale(jerk_smooth, 0, 1);
 surge_jerk_smooth = rescale(surge_jerk_smooth, 0, 1);
 pitch_smooth = rescale(pitch_smooth, 0, 1);
+
 
 %% First, identify minimia of pressure (aka surfacings)
 % Smooth depth signal
@@ -647,22 +676,45 @@ p_shallow_idx = find(~isnan(p_shallow));
 % Plot smoothed depth with areas highlighted in red that are conditions
 % where a breath could occur
 figure
-plot(time_min(start_idx:end_idx), p_smooth, 'b', 'LineWidth', 1); hold on
-plot(time_min(start_idx:end_idx), p_shallow, 'r-', 'LineWidth', 2);
+plot(time_min(start_idx:end_idx), p_smooth, 'k', 'LineWidth', 1); hold on
+plot(time_min(start_idx:end_idx), p_shallow, 'b-', 'LineWidth', 2);
 set(gca, 'YDir', 'reverse'); 
 xlabel('Time (min)'); ylabel('Depth (m)');
 
+% Find start and end of surface periods
+p_shallow_breaks_end = find(diff(p_shallow_idx)>1);
+p_shallow_breaks_start = find(diff(p_shallow_idx)>1)+1;
+
+p_shallow_ints = [[1; p_shallow_breaks_start], [p_shallow_breaks_end; length(p_shallow_idx)]];
+
+% Make third column which is duration of surfacing in indices
+p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
+
+% If surfacing is less than 25 indicies (which would be 1/2 second given 50
+% Hz sampling) then remove it - likely not a surfacing anyway but a period
+% where depth briefly crosses above 0.25m 
+delete_rows = find(p_shallow_ints(:, 3) < metadata.fs/2);
+p_shallow_ints(delete_rows, :) = [];
+
+% Plot start and end of surfacings
+plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 1))), 'g*')
+plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*')
+
+%If these periods are less than 1 second then we say they are a breath
+single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
+logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
+
+
 %% Peak detection - JERK
 % Whichever one is second is the one getting audited
-
 figure
 plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
 xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 
-%Peak detect jerk, defining here that the max breath rate is 30 breaths/min
+%Peak detect jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
 % Could peak detect across smaller overlapping ranges
-[j_max_height, j_max_locs] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.25, 'MinPeakDistance', 2*metadata.fs);
+[j_max_height, j_max_locs] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.05, 'MinPeakDistance', 3*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
@@ -672,9 +724,9 @@ figure
 plot(time_min(start_idx:end_idx), surge_jerk_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
-%Peak detect surge jerk, defining here that the max breath rate is 30 breaths/min
+%Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[s_max_height, s_max_locs] =findpeaks(surge_jerk_smooth, 'MinPeakProminence', 0.25, 'MinPeakDistance', 2*metadata.fs);
+[s_max_height, s_max_locs] =findpeaks(surge_jerk_smooth, 'MinPeakProminence', 0.05, 'MinPeakDistance', 3*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(s_max_locs+start_idx), surge_jerk_smooth(s_max_locs), 'b*')
@@ -684,9 +736,9 @@ figure
 plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
-%Peak detect surge jerk, defining here that the max breath rate is 30 breaths/min
+%Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.25, 'MinPeakDistance', 2*metadata.fs);
+[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.2, 'MinPeakDistance', 3*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
