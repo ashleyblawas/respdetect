@@ -561,7 +561,7 @@ end
 %[breath_times, bp , breath_idx]=import_breaths(breathaud_filename, time_sec); % Import the breaths
 
 %% Breath audit %USING THIS
-k = 1;
+k = 2;
 tag = taglist{k};
 
 %Load in metadata
@@ -617,16 +617,24 @@ end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off
 % redefine the start idx as the first time the tag hits 1m, the reason for
 % this being that the tag on result in a big jerk spike that will mess with
 % peak detection for breaths
-if p(start_idx)<1
+if p(start_idx)<5
     start_idx = find(p(start_idx:end_idx)>=1, 1)+start_idx;
 end
 
 % Normalize pitch and jerk
 p = p(start_idx:end_idx);
-jerk_smooth = rescale(jerk_smooth(start_idx:end_idx), 0 , 1);
-surge_jerk_smooth = rescale(surge_jerk_smooth(start_idx:end_idx), 0 , 1);
-pitch_smooth = rescale(pitch_smooth(start_idx:end_idx), 0 , 1);
-        
+jerk_smooth = rescale(jerk_smooth(start_idx:end_idx), 0, 1);
+surge_jerk_smooth = rescale(surge_jerk_smooth(start_idx:end_idx), 0, 1);
+pitch_smooth = rescale(pitch_smooth(start_idx:end_idx), 0, 1);
+
+jerk_smooth = filloutliers(jerk_smooth,'nearest','quartiles');
+surge_jerk_smooth = filloutliers(surge_jerk_smooth,'nearest','quartiles');
+pitch_smooth = filloutliers(pitch_smooth,'nearest','quartiles');
+
+jerk_smooth = rescale(jerk_smooth, 0, 1);
+surge_jerk_smooth = rescale(surge_jerk_smooth, 0, 1);
+pitch_smooth = rescale(pitch_smooth, 0, 1);
+
 %% First, identify minimia of pressure (aka surfacings)
 % Smooth depth signal
 p_smooth = smoothdata(p, 'gaussian', 25);
@@ -646,13 +654,15 @@ xlabel('Time (min)'); ylabel('Depth (m)');
 
 %% Peak detection - JERK
 % Whichever one is second is the one getting audited
+
 figure
-plot(time_min(start_idx:end_idx), jerk_smooth, 'k'); grid; hold on;
+plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
 xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 
 %Peak detect jerk, defining here that the max breath rate is 30 breaths/min
 %given 2 second separation
-[j_max_height, j_max_locs] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.01, 'MinPeakDistance', 2*metadata.fs);
+% Could peak detect across smaller overlapping ranges
+[j_max_height, j_max_locs] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.25, 'MinPeakDistance', 2*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
@@ -664,7 +674,7 @@ xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 30 breaths/min
 %given 2 second separation
-[s_max_height, s_max_locs] =findpeaks(surge_jerk_smooth, 'MinPeakProminence', 0.01, 'MinPeakDistance', 2*metadata.fs);
+[s_max_height, s_max_locs] =findpeaks(surge_jerk_smooth, 'MinPeakProminence', 0.25, 'MinPeakDistance', 2*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(s_max_locs+start_idx), surge_jerk_smooth(s_max_locs), 'b*')
@@ -676,7 +686,7 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 30 breaths/min
 %given 2 second separation
-[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.1, 'MinPeakDistance', 2*metadata.fs);
+[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.25, 'MinPeakDistance', 2*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
