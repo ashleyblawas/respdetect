@@ -7,8 +7,8 @@ function [si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(T, b
         surf_int_breaths{k} = breath_times(find(breath_times<T{k+1, 4} & breath_times>T{k, 5}));
         surf_int_fR{k} = diff(surf_int_breaths{k});
         if isempty(surf_int_fR{k}) ~=1
-            si_breathtimes = [si_breathtimes; (surf_int_breaths{k}(1:end-1)-surf_int_breaths{k}(1))./60];
-            si_fR = [si_fR; 60./surf_int_fR{k}];
+            si_breathtimes = [si_breathtimes; ((surf_int_breaths{k}(1:end-1)-surf_int_breaths{k}(1))./60)'];
+            si_fR = [si_fR; (60./surf_int_fR{k})'];
         else 
             si_breathtimes = [si_breathtimes; 0];
             si_fR = [si_fR; NaN];

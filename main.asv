@@ -48,15 +48,15 @@ taglist = {'gm08_143a',...
     'gm14_178b',...
     'gm14_279a',...
     'gm16_133a',...
-    'gm16_181a',...
-    'gm15_145b',...
-    'gm15_153a',...
-    'gm17_234a',...
-    'gm18_157a',...
-    'gm18_157b',...
-    'gm18_159a',...
-    'gm18_227a',...
-    'gm18_239a'
+    'gm16_181a'
+    %'gm15_145b',...
+    %'gm15_153a',...
+    %'gm17_234a',...
+    %'gm18_157a',...
+    %'gm18_157b',...
+    %'gm18_159a',...
+    %'gm18_227a',...
+    %'gm18_239a'
     };
 
 % I want to remove everything from the rest of the functions that has to do
@@ -548,20 +548,8 @@ for k = 1%:length(taglist);
     %fprintf("Press any key to view the next tag record");
 end
 
-%% Set up directories
-[recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-
-%% Find breath automatically - THIS IS WHAT I WANT TO WORK and am working on now
-
-%k=1;
-%tag = taglist{k};  
-
-%findbreaths(breathaud_filename, tag, metadata.fs, time_sec, time_min, pitch_smooth, Tab, 'bp')
-% saveauditbreaths(tag, R); % Save audit
-%[breath_times, bp , breath_idx]=import_breaths(breathaud_filename, time_sec); % Import the breaths
-
 %% Breath audit %USING THIS
-k = 6;
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -584,7 +572,7 @@ load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
 
-% Make a new section to do auto detection
+%% Make a new section to do auto detection
 % Just want to run a peak detector across jerk_smooth and pitch_smooth and
 % then want it to present me with each surfacing and I can either okay it
 % or edit it
@@ -602,12 +590,6 @@ for i = 1:length(jerk_smooth)
 end
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
-
-% Running automated audit - allows you to choose threshold and then edit
-% Want editable audit detector
-% 5/3 I don't feel like this is working as consistently as I want it to,
-% the threshold detection is way better using the audit method
-% findbreaths(breathaud_filename, metadata, time_sec, time_min, jerk_smooth, Tab, 'bj')
 
 %% Define start and end of tag deployment using metadata tag on/off times
 start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
@@ -661,13 +643,17 @@ single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
 logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
 
 % Color logging periods in pink
-for k = 1:length(logging_surf_rows)
-   p2 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(k), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(k), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(logging_surf_rows(k), 1)):p_shallow_idx(p_shallow_ints(logging_surf_rows(k), 2))), 'm-', 'LineWidth', 2);
+if length(logging_surf_rows)>0
+for r = 1:length(logging_surf_rows)
+   p2 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 2))), 'm-', 'LineWidth', 2);
+end
+else 
+    p2 = plot(NaN, NaN, 'm-', 'LineWidth', 2);
 end
 
 % Color single surfacings in cyan
-for k = 1:length(single_breath_surf_rows)
-    p3 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(k), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(k), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(k), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(k), 2))), 'c-', 'LineWidth', 2);
+for r = 1:length(single_breath_surf_rows)
+    p3 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))), 'c-', 'LineWidth', 2);
 end
 
 % Plot start and end of surfacings
@@ -712,41 +698,6 @@ surge_jerk_smooth(idx_temp==0) = NaN;
 pitch_smooth(idx_temp==0) = NaN;
 
 %% Normalize pitch and jerk 
-
-% jerk_smooth= rescale(jerk_smooth, 0, 1);
-% surge_jerk_smooth = rescale(surge_jerk_smooth, 0, 1);
-% pitch_smooth = rescale(pitch_smooth, 0, 1);
-
-% Get rid of any short duration spikes...
-% jerk_smooth = hampel(jerk_smooth, metadata.fs);
-% surge_jerk_smooth = hampel(surge_jerk_smooth, metadata.fs);
-% pitch_smooth = hampel(pitch_smooth, metadata.fs);
-
-% Reduce the amplitude of really big outlier peaks
-% This behaves badly at the ends.... known problem with splines
-
-% Going to try changing NaNs back to zeros for this step and pad zeros at
-% the end
-% jerk_smooth(isnan(jerk_smooth)) = 0;
-% surge_jerk_smooth(isnan(surge_jerk_smooth)) = 0;
-% pitch_smooth(isnan(pitch_smooth)) = 0;
-% 
-% jerk_smooth = [jerk_smooth; zeros(metadata.fs, 1)];
-% surge_jerk_smooth = [surge_jerk_smooth; zeros(metadata.fs, 1)];
-% pitch_smooth = [pitch_smooth; zeros(metadata.fs, 1)];
-% 
-% jerk_smooth = filloutliers(jerk_smooth,'spline','quartiles');
-% surge_jerk_smooth = filloutliers(surge_jerk_smooth,'spline','quartiles');
-% pitch_smooth = filloutliers(pitch_smooth,'spline','quartiles');
-% 
-% % Turn diving jerk values back to NaNs
-% jerk_smooth(find(jerk_smooth==0)) = NaN;
-% jerk_smooth(end-metadata.fs+1:end) = [];
-% surge_jerk_smooth(find(surge_jerk_smooth==0)) = NaN;
-% surge_jerk_smooth(end-metadata.fs+1:end) = [];
-% pitch_smooth(find(pitch_smooth==0)) = NaN;
-% pitch_smooth(end-metadata.fs+1:end) = [];
-
 % Rescale between 0 and 1 so that can set a prominence that is standard
 % across tags
 jerk_smooth = rescale(jerk_smooth, 0, 1);
@@ -834,11 +785,11 @@ all_breath_locs.type = [all_breath_locs.type; repmat("jsp", length(val3), 1); re
 % Plot all locations where these three conditions are met
 figure
 subplot(3, 2, [2, 4, 6])
-plot(time_min(start_idx:end_idx), p_smooth);
+p1 = plot(time_min(start_idx:end_idx), p_smooth);
 set(gca, 'ydir', 'reverse')
 hold on
-scatter(time_min(start_idx+val3), p_smooth(val3), 'r*')
-scatter(time_min(start_idx+diff_vals_ps), p_smooth(diff_vals_ps), 'b*')
+p2 = scatter(time_min(start_idx+val3), p_smooth(val3), 'k*');
+p3 = scatter(time_min(start_idx+diff_vals_ps), p_smooth(diff_vals_ps), 'b*');
 %scatter(time_min(start_idx+diff_vals_jp), p_smooth(diff_vals_jp), 'g*')
 title('Breath IDs during logging')
 
@@ -867,10 +818,58 @@ scatter(p_max_locs, p_smooth(p_max_locs), 'g*')
 ylabel('Pitch IDs'); xlabel('Index');
 
 linkaxes(ax, 'xy');
-legend(
+legend([p1 p2 p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
 
-%% Import breaths from audit
+%% Write breaths to audit file
+all_breath_locs_T = struct2table(all_breath_locs);
+writetable(all_breath_locs_T, breathaud_filename,'Delimiter','\t');
+end
+%% Import breaths from audit - audits ONLY worked for D2s NOT D3s
+
+for k = 1:length(taglist);
+tag = taglist{k};
+
+%Load in metadata
+metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+clear tag
+
+% Set up directories
+[recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+
+% Set prh path to 50 Hz prh files
+settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
+
+% Load the existing prh file
+loadprh(metadata.tag);
+
+% Load in diving data
+load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
+load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
+
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %This needs to be done with truncated p
+
+% Define start and end of tag deployment using metadata tag on/off times
+start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
+end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
+
+% If the tag on time is when the tag is near the surface, we are going to
+% redefine the start idx as the first time the tag hits 1 m, the reason for
+% this being that the tag on result in a big jerk spike that will mess with
+% peak detection for breaths
+if p(start_idx)<5
+    start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
+end
+
+% Subset tag on to tag off of pressure 
+p = p(start_idx:end_idx);
+
+% Smooth depth signal
+p_smooth = smoothdata(p, 'gaussian', 25);
+
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
+
+% Load in breaths
+all_breath_locs = readtable(breathaud_filename);
 breath_idx = sort(all_breath_locs.breath_idx);
 breath_times = time_sec(all_breath_locs.breath_idx);
 breath_times = sort(breath_times);
@@ -882,46 +881,52 @@ set(gca, 'ydir', 'reverse')
 hold on
 scatter(breath_times, p_smooth(breath_idx), 'r*')
 ylabel('Depth (m)'); xlabel('Time(min)');
+title(taglist{k}, 'Interpreter', 'none');
 
-%[breath_times, bp, breath_idx]=import_breaths(metadata.breathaud_filename, time_sec); 
+% %% Run acoustic audit
+% settagpath('PRH',strcat(data_path, '\prh\50 Hz'))
+% R = loadaudit(metadata.tag); % Load an audit if one exists
+% %R = d3audit(re                                                                                                                                                             cdir, prefix, 0, R); %Run audit (for d3s)
+% R = tagaudit2(metadata.tag,0, R, jerk_smooth ); % Run audit (for d2s), tagaudit2 in resp_detect
+% saveaudit(metadata.tag, R); % Save audit
+% 
+% %% Import acoustic audit
+% [startcom, comdur, com, acous_start_idx, acous_end_idx] = import_acous(acousaud_filename);
+% 
+% %% Plot detected breaths vs audited breaths from acoustics
+% count = 0;
+% for k = 1:length(acous_end_idx)
+%     if com(k) == 'breath'
+%         count = count + 1;
+%         matched_breath_idx(count) = find(abs(acous_end_idx(k)-breath_idx) == min(abs(acous_end_idx(k)-breath_idx)));
+%     end
+% end
+% 
+% breath_num = 1:1:sum(com == 'breath');
+% figure
+% count = 0;
+% for m  = 1:length(acous_start_idx)
+%     if com(m) == 'breath'
+%         count = count + 1;
+%         line([0 time_sec(acous_end_idx(m))-time_sec(acous_start_idx(m))], [breath_num(count) breath_num(count)]); 
+%         hold on;
+%         plot(breath_times(matched_breath_idx(count))-time_sec(acous_start_idx(m)), breath_num(count), 'r*');
+%     end
+% end
 
-%% Run acoustic audit
-settagpath('PRH',strcat(data_path, '\prh\50 Hz'))
-R = loadaudit(metadata.tag); % Load an audit if one exists
-%R = d3audit(re                                                                                                                                                             cdir, prefix, 0, R); %Run audit (for d3s)
-R = tagaudit2(metadata.tag,0, R, jerk_smooth ); % Run audit (for d2s), tagaudit2 in resp_detect
-saveaudit(metadata.tag, R); % Save audit
-
-%% Import acoustic audit
-[startcom, comdur, com, acous_start_idx, acous_end_idx] = import_acous(acousaud_filename);
-
-%% Plot detected breaths vs audited breaths from acoustics
-count = 0;
-for k = 1:length(acous_end_idx)
-    if com(k) == 'breath'
-        count = count + 1;
-        matched_breath_idx(count) = find(abs(acous_end_idx(k)-breath_idx) == min(abs(acous_end_idx(k)-breath_idx)));
-    end
-end
-
-breath_num = 1:1:sum(com == 'breath');
-figure
-count = 0;
-for m  = 1:length(acous_start_idx)
-    if com(m) == 'breath'
-        count = count + 1;
-        line([0 time_sec(acous_end_idx(m))-time_sec(acous_start_idx(m))], [breath_num(count) breath_num(count)]); 
-        hold on;
-        plot(breath_times(matched_breath_idx(count))-time_sec(acous_start_idx(m)), breath_num(count), 'r*');
-    end
-end
-
-%% Calculate and plot fR
-
+%Calculate and plot fR
 [fR] = get_contfR(breath_times, breath_idx, p, time_min);
+title(taglist{k}, 'Interpreter', 'none');
 
+clearvars -except taglist tools_path mat_tools_path data_path; clc; %close all
+
+end
 %% Get surf fRs and plot
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+
+for k = 1:length(taglist);
+tag = taglist{k};
+
 
 tag = taglist{5};
 
@@ -938,12 +943,40 @@ load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"))
 % Load in dive table
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"))
 
-% Import breaths from audit
+% Calculate time
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); 
+
+% Define start and end of tag deployment using metadata tag on/off times
+start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
+end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
+
+% If the tag on time is when the tag is near the surface, we are going to
+% redefine the start idx as the first time the tag hits 1 m, the reason for
+% this being that the tag on result in a big jerk spike that will mess with
+% peak detection for breaths
+if p(start_idx)<5
+    start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
+end
+
+% Subset tag on to tag off of pressure 
+p = p(start_idx:end_idx);
+
+% Smooth depth signal
+p_smooth = smoothdata(p, 'gaussian', 25);
+
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
+
+% Calculate time
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
-[breath_times, bp, breath_idx]=import_breaths(metadata.breathaud_filename, time_sec);
+
+% Load in breaths
+all_breath_locs = readtable(metadata.breathaud_filename);
+breath_idx = sort(all_breath_locs.breath_idx);
+breath_times = time_sec(all_breath_locs.breath_idx);
+breath_times = sort(breath_times);
 
 [si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(Tab, breath_times, dive_dur);
-
+end
 %% Plot change in fR during surface interval between various dive types... i.e. short-med, short-short, long-short, etc.
 %fRbwdivetypes(T, surf_int_breaths, surf_int_fR, dive_durs);
 
