@@ -549,7 +549,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit %USING THIS
-for k = 1:length(taglist);
+for k = 1%:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -638,7 +638,7 @@ p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
 delete_rows = find(p_shallow_ints(:, 3) < metadata.fs);
 p_shallow_ints(delete_rows, :) = [];
 
-% If these periods are less than 1 second then we say they are a breath
+% If these periods are less than 10 seconds then we say they are a breath
 single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
 logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
 
@@ -820,10 +820,15 @@ ylabel('Pitch IDs'); xlabel('Index');
 linkaxes(ax, 'xy');
 legend([p1 p2 p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
 
-%% Write breaths to audit file
-all_breath_locs_T = struct2table(all_breath_locs);
-writetable(all_breath_locs_T, breathaud_filename,'Delimiter','\t');
+%% Write breaths to audit 
+
+%save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
+
+%all_breath_locs_T = struct2table(all_breath_locs);
+%writetable(all_breath_locs_T, breathaud_filename,'Delimiter','\t');
+
 end
+
 %% Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
 for k = 1:length(taglist);
@@ -846,30 +851,12 @@ loadprh(metadata.tag);
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
 
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %This needs to be done with truncated p
-
-% Define start and end of tag deployment using metadata tag on/off times
-start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
-end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
-
-% If the tag on time is when the tag is near the surface, we are going to
-% redefine the start idx as the first time the tag hits 1 m, the reason for
-% this being that the tag on result in a big jerk spike that will mess with
-% peak detection for breaths
-if p(start_idx)<5
-    start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
-end
-
-% Subset tag on to tag off of pressure 
-p = p(start_idx:end_idx);
-
-% Smooth depth signal
-p_smooth = smoothdata(p, 'gaussian', 25);
+% Load in breathing information
+load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
 
 % Load in breaths
-all_breath_locs = readtable(breathaud_filename);
 breath_idx = sort(all_breath_locs.breath_idx);
 breath_times = time_sec(all_breath_locs.breath_idx);
 breath_times = sort(breath_times);
@@ -924,8 +911,8 @@ end
 %% Get surf fRs and plot
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
-%for k = 1:length(taglist);
-tag = taglist{1};
+for k = 1:length(taglist);
+tag = taglist{k};
 
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
@@ -940,78 +927,64 @@ load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"))
 % Load in dive table
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"))
 
-% Calculate time
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); 
-
-% Define start and end of tag deployment using metadata tag on/off times
-start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
-end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
-
-% If the tag on time is when the tag is near the surface, we are going to
-% redefine the start idx as the first time the tag hits 1 m, the reason for
-% this being that the tag on result in a big jerk spike that will mess with
-% peak detection for breaths
-if p(start_idx)<5
-    start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
-end
-
-% Subset tag on to tag off of pressure 
-p = p(start_idx:end_idx);
-
-% Smooth depth signal
-p_smooth = smoothdata(p, 'gaussian', 25);
+% Load in breathing information
+load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
 
-% Calculate time
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
-
 % Load in breaths
-all_breath_locs = readtable(metadata.breathaud_filename);
 breath_idx = sort(all_breath_locs.breath_idx);
 breath_times = time_sec(all_breath_locs.breath_idx);
 breath_times = sort(breath_times);
 
+% Plot breaths
 [si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(Tab, breath_times, dive_dur);
-%end
+
+all_breathtimes{k} = si_breathtimes;
+all_fR{k} = si_fR;
+all_dive_dur{k} = dive_dur;
+all_surf_dur{k} = surf_dur;
+
+end
 %% Plot change in fR during surface interval between various dive types... i.e. short-med, short-short, long-short, etc.
 %fRbwdivetypes(T, surf_int_breaths, surf_int_fR, dive_durs);
 
 %% To print to csv
-write2csv(tag, fs, dive_thres, surf_durs, dive_durs, si_breathtimes, si_fR);
+%write2csv(tag, fs, dive_thres, surf_durs, dive_durs, si_breathtimes, si_fR);
     
 %% To load from csv
 % You should clear all of your variables here first
-clear; clc
-[file_info, surf_durs, dive_durs, si_breathtimes, si_fR]=import_csv();
-
-%% MAKE WINDOW PLOTS
-%% CHANGE in FR PLOTS
-
-%% Make simple plots with imported data
+%clear; clc
+%[file_info, surf_durs, dive_durs, si_breathtimes, si_fR]=import_csv();
 
 %% Get dive and surface variables
 % Get surface intervals and dive durations in minutes
-[dive_dur] = get_divedur(dive_durs);
-[surf_dur] = get_surfdur(surf_durs);
+%[dive_dur] = get_divedur(dive_durs);
+%[surf_dur] = get_surfdur(surf_durs);
+
+for j = 1:length(all_dive_dur)
+
+all_dive_dur{j} = all_dive_dur{j}./60;
+all_surf_dur{j} = all_surf_dur{j}./60;
 
 % Get index of first breath in each surface interval
-[breath_idx] = get_breathidx(dive_dur, si_breathtimes);
+[all_breath_idx{j}] = get_breathidx(all_dive_dur{j}, all_breathtimes{j});
 
 % Get number of breaths during surface interval as a count
-[surf_breath_count] = get_breathcounts(dive_dur, si_breathtimes, breath_idx);
+[all_surf_breath_count{j}] = get_breathcounts(all_dive_dur{j}, all_breathtimes{j}, all_breath_idx{j});
 
 % Get surface interval durations
-[breathing_dur] = get_breathdur(dive_dur, si_breathtimes, breath_idx);
+[breathing_dur] = get_breathdur(all_dive_dur{j}, all_breathtimes{j}, all_breath_idx{j});
 
 % Assign dive type
-[dive_type] = assign_divetype(dive_dur);
+%[all_dive_type{j}] = assign_divetype(all_dive_dur{j});
 
+end
 %% Plot dive duration versus surface duration
-plot_dive2surfb(dive_dur, breathing_dur)
+%plot_dive2surfb(dive_dur, breathing_dur)
 
 %% Plot dive duration versus time spent breathing at the surface 
-plot_dive2surf(dive_dur, surf_dur)
+%plot_dive2surf(cell2mat(all_dive_dur), cell2mat(all_surf_dur), 'k')
 
 %% Plot max, mean, and min fR with # breaths and dive duration for all dives
 plot_maxmeanminfR(dive_dur, si_fR, breath_idx, surf_breath_count)
@@ -1020,7 +993,43 @@ plot_maxmeanminfR(dive_dur, si_fR, breath_idx, surf_breath_count)
 plot_bynum(dive_dur, surf_dur);
 
 %% Plot surface breaths overall
-plot_eachsurffR(dive_dur, breath_idx, si_breathtimes, si_fR);
+%plot_eachsurffR(dive_dur, breath_idx, si_breathtimes, si_fR);
+id_cols = linspecer(length(all_dive_dur));
+fig = figure
+for i = 1:length(all_dive_dur)
+    subplot(5, 8, i)
+    scatter(all_breathtimes{i}, all_fR{i}, 10, id_cols(i, :), 'filled', 'MarkerFaceAlpha',0.8,'MarkerEdgeAlpha', 1); hold on
+    box on; axis square;
+end
+han=axes(fig,'visible','off'); 
+han.XLabel.Visible='on'; han.YLabel.Visible='on';
+ylabel(han,'Breathing Rate (breaths/min)'); xlabel(han,'Time Since Surfacing (min)');
+
+% Plot all together
+fig = figure
+for i = 1:length(all_dive_dur)
+    scatter(all_breathtimes{i}, all_fR{i}, 10, id_cols(i, :), 'filled', 'MarkerFaceAlpha',0.5,'MarkerEdgeAlpha', 0.5); hold on
+    box on; axis square;
+end
+ylabel('Breathing Rate (breaths/min)'); xlabel('Time Since Surfacing (min)');
+
+%% Plot all breaths
+figure
+for k = 1:length(all_dive_dur)
+    for i = 1:length(all_dive_dur{k})-1
+        if i < length(all_dive_dur{k})-1
+            scatter(all_breathtimes{k}(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1), all_fR{k}(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1), 5, ones(1, length(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1)).*all_dive_dur{k}(i),'filled', 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha', 0.25);
+            hold on; box on; 
+        elseif i == length(all_dive_dur{k})-1
+            scatter(all_breathtimes{k}(all_breath_idx{k}(i):end), all_fR{k}(all_breath_idx{k}(i):end), 5, ones(1, length(all_fR{k}(all_breath_idx{k}(i):end))).*all_dive_dur{k}(i),'filled', 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha',0.25);
+            hold on; box on;
+        end
+          %caxis([min(cell2mat(all_dive_dur)) max(cell2mat(all_dive_dur))]);
+    end
+end
+
+%Make colorbar
+cb = colorbar;  cb.Label.String = 'Dive Duration'; 
 
 %% Plot time to recovery
 %plot_recov(dive_durs, recov_time)
@@ -1086,11 +1095,11 @@ ylabel(h, 'Baseline f_R (breaths min^{-1})')
 %% Plot pre and post window averages
 figure;
 subplot(2, 3, 1)
-for k = 1:length(dive_durs)
-    for i = 1:length(dive_dur{k})
-    if dive_dur{k}(i)./60>5
+for k = 1:length(all_dive_dur)
+    for i = 1:length(all_dive_dur{k})
+    if all_dive_dur{k}(i)>5
         color{i} = rand(1, 3);
-        scatter(dive_dur{k}(i)./60, 60./pre5_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+        scatter(all_dive_dur(i), pre5_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
     hold on;
     end
     end
@@ -1100,10 +1109,10 @@ xl1 = xlim; yl1 = ylim;
 xlabel('Dive Duration (min)'); ylabel('Pre-dive 5 min. Avg. f_R (breaths/min)');
 
 subplot(2, 3, 2)
-for k = 1:length(dive_durs)
-    for i = 1:length(dive_dur{k})
-    if dive_dur{k}(i)./60>5
-       scatter(dive_dur{k}(i)./60, 60./pre3_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+for k = 1:length(all_dive_dur)
+    for i = 1:length(all_dive_dur{k})
+    if all_dive_dur{k}(i)>5
+       scatter(all_dive_dur{k}(i), pre3_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
     hold on;
     end
     end
@@ -1113,11 +1122,11 @@ xl2 = xlim; yl2 = ylim;
 xlabel('Dive Duration (min)'); ylabel('Pre-dive 3 min. Avg. fR (breaths/min)');
 
 subplot(2, 3, 3)
-for k = 1:length(dive_durs)
-    for i = 1:length(dive_dur{k})
-    if dive_dur{k}(i)./60>5
+for k = 1:length(all_dive_dur)
+    for i = 1:length(all_dive_dur{k})
+    if all_dive_dur{k}(i)>5
         color{i} = rand(1, 3);
-        scatter(dive_dur{k}(i)./60, 60./pre1_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+        scatter(all_dive_dur{k}(i), pre1_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
     hold on;
     end
     end
