@@ -9,54 +9,54 @@
 clear; clc; close all
 
 % Load variable with tag names
-taglist = {'gm08_143a',...
-    'gm08_143b',...
-    'gm08_147a',...
-    'gm08_151a',...
-    'gm08_151b',...
-    'gm10_185b',...
-    'gm10_187a',...
-    'gm10_208a',...
-    'gm10_186a',...
-    'gm10_186b',...
-    'gm10_187b',...
-    'gm10_209a',...
-    'gm10_209c',...
-    'gm10_266a',...
-    'gm10_267a',...
-    'gm11_147a',...
-    'gm11_148a',...
-    'gm11_149b',...
-    'gm11_149c',...
-    'gm11_150a',...
-    'gm11_150b',...
-    'gm11_155a',...
-    'gm11_156a',...
-    'gm11_158b',...
-    'gm11_165a',...
-    'gm12_125a',...
-    'gm12_125b',...
-    'gm12_161a',...
-    'gm12_162a',...
-    'gm12_163a',...
-    'gm12_163b',...
-    'gm12_172a',...
-    'gm12_246a',...
-    'gm14_145a',...
-    'gm14_167a',...
-    'gm14_178a',...
-    'gm14_178b',...
-    'gm14_279a',...
-    'gm16_133a',...
-    'gm16_181a'
-    %'gm15_145b',...
-    %'gm15_153a',...
-    %'gm17_234a',...
-    %'gm18_157a',...
-    %'gm18_157b',...
-    %'gm18_159a',...
-    %'gm18_227a',...
-    %'gm18_239a'
+ taglist = {%'gm08_143a',...
+%     'gm08_143b',...
+%     'gm08_147a',...
+%     'gm08_151a',...
+%     'gm08_151b',...
+%     'gm10_185b',...
+%     'gm10_187a',...
+%     'gm10_208a',...
+%     'gm10_186a',...
+%     'gm10_186b',...
+%     'gm10_187b',...
+%     'gm10_209a',...
+%     'gm10_209c',...
+%     'gm10_266a',...
+%     'gm10_267a',...
+%     'gm11_147a',...
+%     'gm11_148a',...
+%     'gm11_149b',...
+%     'gm11_149c',...
+%     'gm11_150a',...
+%     'gm11_150b',...
+%     'gm11_155a',...
+%     'gm11_156a',...
+%     'gm11_158b',...
+%     'gm11_165a',...
+%     'gm12_125a',...
+%     'gm12_125b',...
+%     'gm12_161a',...
+%     'gm12_162a',...
+%     'gm12_163a',...
+%     'gm12_163b',...
+%     'gm12_172a',...
+%     'gm12_246a',...
+%     'gm14_145a',...
+%     'gm14_167a',...
+%     'gm14_178a',...
+%     'gm14_178b',...
+%     'gm14_279a',...
+%     'gm16_133a',...
+%     'gm16_181a'
+    'gm15_145b',...
+    'gm15_153a',...
+    'gm17_234a',...
+    'gm18_157a',...
+    'gm18_157b',...
+    'gm18_159a',...
+    'gm18_227a',...
+    'gm18_239a'
     };
 
 % I want to remove everything from the rest of the functions that has to do
@@ -84,8 +84,13 @@ addpath('C:\Users\ashle\Dropbox\Ashley\Graduate\Toolboxes\linspecer')
 
 %% For tag data processing - ONLY DO ONCE 
 % Read in data
+tag = taglist{8};
+recdir = 'D:\gm\gm18\gm18_239a';
+prefix = 'gm239a';
+deploy_name = prefix;
+
 % X=d3readswv(recdir,prefix,df); %often a df of 10 or 20 is good. Want final sampling rate of 10-20Hz
-X = d3readswv(recdir,prefix,10); %Read in sensor files
+X = d3readswv(recdir,prefix,5); %Read in sensor files
 warning('off','last')
 
 % Apply bench calibration
@@ -93,7 +98,42 @@ warning('off','last')
 
 % Perform pressure calibration
 %Pick all data points on the lower broken line. Redo if 2nd order fitting error is more than 0-20cm
-[p,CAL] = d3calpressure(X,CAL,'full');
+close all
+[p6,CAL6] = d3calpressure(X,CAL,'full');
+
+% For D3s...
+% gm15_145b
+%p = [p1(1:10*1556); p2(10*1556+1:10*10542); p3(10*10542+1:10*16285); p4(10*16285+1:10*21550); p5(10*21550+1:10*60925);...
+%    p6(10*60925+1:10*65752); p7(10*65752+1:10*69731); p8(10*69731+1:10*74473); p9(10*74473+1:10*79808); p10(10*79808+1:10*85481);...
+%    p11(10*85481+1:10*112578); p12(10*112578+1:length(p1))];
+
+% gm15_153a
+%p = [p1(1:10*411); p2(10*411+1:10*7714); p3(10*7714+1:10*14847); p4(10*14847+1:10*23056); p5(10*23056+1:10*32267);...
+%    p6(10*32267+1:10*40728); p7(10*40728+1:10*49686); p8(10*49686+1:10*57649); p9(10*57649+1:10*64766); p10(10*64766+1:length(p1))];
+% This is dealing with random spike in pressure
+%p(180500:180700) = mean([p4(180500-1), p4(180700+1)]);
+
+% gm17_234a
+%p = [p1(1:10*11721); p2(10*11721+1:10*13536); p3(10*13536+1:10*16584); p4(10*16584+1:10*19487); p5(10*19487+1:10*21520);...
+%    p6(10*21520+1:10*23987); p7(10*23987+1:10*61512); p8(10*61512+1:10*66665); p9(10*66665+1:10*70875); p10(10*70875+1:10*73342);... 
+%    p11(10*73342+1:10*80673); p12(10*80673+1:10*83213); p13(10*83213+1:10*87205); p14(10*87205+1:10*91560); p15(10*91560+1:length(p1))];
+
+% gm18_157a
+% p = [p1(1:10*185); p2(10*185+1:10*1306); p3(10*1306+1:10*7627); p4(10*7627+1:length(p1))];
+ 
+% gm18_157b
+%p = [p1(1:10*25678); p2(10*25678+1:10*27541); p2a(10*27541+1:10*33553); p3(10*33553+1:10*34103); p3a(10*34103+1:10*39523);  p4(10*39523+1:10*50008); p5(10*50008+1:length(p1))];
+
+% gm18_159a
+%p = [p1(1:10*6884); p2(10*6884+1:10*10654); p3(10*10654+1:10*16925);  p4(10*16925+1:length(p1))];
+
+% gm18_227a
+%p = [p1(1:10*7711); p2(10*7711+1:10*9405); p3(10*9405+1:10*32752);  p4(10*32752+1:10*33961); p5(10*33961+1:10*54828);...
+%p6(10*54828+1:10*76844); p7(10*76844+1:length(p1))];
+
+% gm18_239a
+%p = [p1(1:10*35253); p2(10*35253+1:10*46534); p3(10*46534+1:10*50350);  p4(10*50350+1:10*54331); p5(10*54331+1:10*59142);...
+%p6(10*59142+1:length(p1))];
 
 % Calibrate accelerometer
 %[A,CAL,fs]=d3calacc(X,CAL,'full',min_depth); %min_depth usually 10 for deep divers
@@ -108,15 +148,17 @@ d3savecal(deploy_name, 'CAL', CAL)
 
 % PRH predictor (see prhpredictorlmml2.docx for details)
 %PRH=prhpredictor(p,A,fs,[TH,METHOD,DIR]); %choose 4-10 cycles. 
-PRH = prhpredictor(p,A,fs,500,1,'both'); %Look at output for moves, large unexpected changes in either the pitch, roll, or heading between dives
+%PRH = prhpredictor(p,A,fs,500,1,'both'); %Look at output for moves, large unexpected changes in either the pitch, roll, or heading between dives
 %Changes from 0 to 180 or -180 are normal, just the way the sensors work
 
 % Define any moves
 %move1=[t1,t2,p0,r0,h0]; prh must be in RADIANS 
 %Define the number of moves (aka slips) here
-move1=[0 0 -0.0330 3.1155 -0.1961];%If there are no slips, you will only have a move1
+%move1=[0 0 -0.0330 3.1155 -0.1961];%If there are no slips, you will only have a move1
+% Importing OTAB from archived version from Jeanne
 
-OTAB=[move1]; %Create array of moves
+
+%OTAB=[move1]; %Create array of moves
 d3savecal(deploy_name,'OTAB',OTAB) %Save moves into calibration folder
 [Aw, Mw] = tag2whale(A,M,OTAB,fs); %Use moves to go from tag frame to whale frame
 
@@ -214,8 +256,8 @@ for k = 1:length(taglist);
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)
-        str = input("Do you want to make a diving table now? (y/n)\n",'s');
-        if strcmp(str, "y") == 1
+        %str = input("Do you want to make a diving table now? (y/n)\n",'s');
+        %if strcmp(str, "y") == 1
             % Set dive threshold, calculate dive and surface durations
             dive_thres = 5; % Quick et al., 2017
             [dive_thres, T]=get_dives(p, metadata.fs, dive_thres); % Give p(depth) and fs(sampling frequency)
@@ -258,7 +300,7 @@ for k = 1:length(taglist);
                 display('Dive detection complete!');
             end
             clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
-        end
+        %end
     end
 end
 
@@ -940,7 +982,8 @@ breath_times = sort(breath_times);
 % Plot breaths
 [si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(Tab, breath_times, dive_dur);
 
-all_breathtimes{k} = si_breathtimes;
+all_breath_times{k} = breath_times;
+all_si_breathtimes{k} = si_breathtimes;
 all_fR{k} = si_fR;
 all_dive_dur{k} = dive_dur;
 all_surf_dur{k} = surf_dur;
@@ -968,13 +1011,13 @@ all_dive_dur{j} = all_dive_dur{j}./60;
 all_surf_dur{j} = all_surf_dur{j}./60;
 
 % Get index of first breath in each surface interval
-[all_breath_idx{j}] = get_breathidx(all_dive_dur{j}, all_breathtimes{j});
+[all_breath_idx{j}] = get_breathidx(all_dive_dur{j}, all_si_breathtimes{j});
 
 % Get number of breaths during surface interval as a count
-[all_surf_breath_count{j}] = get_breathcounts(all_dive_dur{j}, all_breathtimes{j}, all_breath_idx{j});
+[all_surf_breath_count{j}] = get_breathcounts(all_dive_dur{j}, all_si_breathtimes{j}, all_breath_idx{j});
 
 % Get surface interval durations
-[breathing_dur] = get_breathdur(all_dive_dur{j}, all_breathtimes{j}, all_breath_idx{j});
+[breathing_dur] = get_breathdur(all_dive_dur{j}, all_si_breathtimes{j}, all_breath_idx{j});
 
 % Assign dive type
 %[all_dive_type{j}] = assign_divetype(all_dive_dur{j});
@@ -998,7 +1041,7 @@ id_cols = linspecer(length(all_dive_dur));
 fig = figure
 for i = 1:length(all_dive_dur)
     subplot(5, 8, i)
-    scatter(all_breathtimes{i}, all_fR{i}, 10, id_cols(i, :), 'filled', 'MarkerFaceAlpha',0.8,'MarkerEdgeAlpha', 1); hold on
+    scatter(all_si_breathtimes{i}, all_fR{i}, 10, id_cols(i, :), 'filled', 'MarkerFaceAlpha',0.8,'MarkerEdgeAlpha', 1); hold on
     box on; axis square;
 end
 han=axes(fig,'visible','off'); 
@@ -1008,20 +1051,20 @@ ylabel(han,'Breathing Rate (breaths/min)'); xlabel(han,'Time Since Surfacing (mi
 % Plot all together
 fig = figure
 for i = 1:length(all_dive_dur)
-    scatter(all_breathtimes{i}, all_fR{i}, 10, id_cols(i, :), 'filled', 'MarkerFaceAlpha',0.5,'MarkerEdgeAlpha', 0.5); hold on
+    scatter(all_si_breathtimes{i}, all_fR{i}, 10, id_cols(i, :), 'filled', 'MarkerFaceAlpha',0.5,'MarkerEdgeAlpha', 0.5); hold on
     box on; axis square;
 end
 ylabel('Breathing Rate (breaths/min)'); xlabel('Time Since Surfacing (min)');
 
-%%
+%% Plot all breaths
 figure
 for k = 1:length(all_dive_dur)
     for i = 1:length(all_dive_dur{k})-1
         if i < length(all_dive_dur{k})-1
-            scatter(all_breathtimes{k}(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1), all_fR{k}(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1), 5, ones(1, length(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1)).*all_dive_dur{k}(i),'filled', 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha', 0.25);
+            scatter(all_si_breathtimes{k}(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1), all_fR{k}(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1), 5, ones(1, length(all_breath_idx{k}(i):all_breath_idx{k}(i+1)-1)).*all_dive_dur{k}(i),'filled', 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha', 0.25);
             hold on; box on; 
         elseif i == length(all_dive_dur{k})-1
-            scatter(all_breathtimes{k}(all_breath_idx{k}(i):end), all_fR{k}(all_breath_idx{k}(i):end), 5, ones(1, length(all_fR{k}(all_breath_idx{k}(i):end))).*all_dive_dur{k}(i),'filled', 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha',0.25);
+            scatter(all_si_breathtimes{k}(all_breath_idx{k}(i):end), all_fR{k}(all_breath_idx{k}(i):end), 5, ones(1, length(all_fR{k}(all_breath_idx{k}(i):end))).*all_dive_dur{k}(i),'filled', 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha',0.25);
             hold on; box on;
         end
           %caxis([min(cell2mat(all_dive_dur)) max(cell2mat(all_dive_dur))]);
@@ -1031,6 +1074,63 @@ end
 %Make colorbar
 cb = colorbar;  cb.Label.String = 'Dive Duration'; 
 
+%% Plot pre and post-dive average breathing rates
+for k = 1:length(all_dive_dur)
+    tag = taglist{k};
+    
+    %Load in metadata
+    metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+    clear tag
+    
+    % Load in dive table
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"))
+    Tab = table2array(Tab(:, 2:12));
+    
+    pre5_dive_fR{k}(1) = NaN;
+    pre3_dive_fR{k}(1) = NaN;
+    pre1_dive_fR{k}(1) = NaN;
+    post5_dive_fR{k}(length(Tab(:, 1))) = NaN;
+    post3_dive_fR{k}(length(Tab(:, 1))) = NaN;
+    post1_dive_fR{k}(length(Tab(:, 1))) = NaN;
+    
+    for i = 2:length(Tab(:, 1)) %Not the first dive because we don't know if we had all of the surface interval before it
+        pre5_dive_breaths{k}{i-1} = all_breath_times{k}(find(all_breath_times{k}>Tab(i, 3)-5*60 & all_breath_times{k}<Tab(i, 3) & all_breath_times{k}>Tab(i-1, 4)));
+        pre5_dive_fR{k}(i) = mean(60./diff(pre5_dive_breaths{k}{i-1}));
+    end
+    clear i
+    
+    for i = 2:length(Tab(:, 1)) %Not the first dive because we don't know if we had all of the surface interval before it
+        pre3_dive_breaths{k}{i-1} = all_breath_times{k}(find(all_breath_times{k}>Tab(i, 3)-3*60 & all_breath_times{k}<Tab(i, 3) & all_breath_times{k}>Tab(i-1, 4)));
+        pre3_dive_fR{k}(i) = mean(60./diff(pre3_dive_breaths{k}{i-1}));
+    end
+    clear i
+    
+    for i = 2:length(Tab(:, 1)) %Not the first dive because we don't know if we had all of the surface interval before it
+        pre1_dive_breaths{k}{i-1} = all_breath_times{k}(find(all_breath_times{k}>Tab(i, 3)-1*60 & all_breath_times{k}<Tab(i, 3) & all_breath_times{k}>Tab(i-1, 4)));
+        pre1_dive_fR{k}(i) = mean(60./diff(pre1_dive_breaths{k}{i-1}));
+    end
+    clear i
+    
+    for i = 1:length(Tab(:, 1))-1
+        post5_dive_breaths{k}{i} = all_breath_times{k}(find(all_breath_times{k}<Tab(i, 4)+5*60 & all_breath_times{k}<Tab(i+1, 3) & all_breath_times{k}>Tab(i, 4)));
+        post5_dive_fR{k}(i) = mean(60./diff(post5_dive_breaths{k}{i}));
+    end
+    clear i
+    
+    for i = 1:length(Tab(:, 1))-1
+        post3_dive_breaths{k}{i} = all_breath_times{k}(find(all_breath_times{k}<Tab(i, 4)+3*60 & all_breath_times{k}<Tab(i+1, 3) & all_breath_times{k}>Tab(i, 4)));
+        post3_dive_fR{k}(i) = mean(60./diff(post3_dive_breaths{k}{i}));
+    end
+    clear i
+    
+    for i = 1:length(Tab(:, 1))-1
+        post1_dive_breaths{k}{i} = all_breath_times{k}(find(all_breath_times{k}<Tab(i, 4)+1*60 & all_breath_times{k}<Tab(i+1, 3) & all_breath_times{k}>Tab(i, 4)));
+        post1_dive_fR{k}(i) = mean(60./diff(post1_dive_breaths{k}{i}));
+    end
+    clear i
+
+    clear Tab 
+end
 %% Plot time to recovery
 %plot_recov(dive_durs, recov_time)
 for i = 1:length(dive_durs)
@@ -1094,15 +1194,18 @@ ylabel(h, 'Baseline f_R (breaths min^{-1})')
 
 %% Plot pre and post window averages
 figure;
+id_cols = linspecer(length(all_dive_dur));
+
 subplot(2, 3, 1)
 for k = 1:length(all_dive_dur)
-    for i = 1:length(all_dive_dur{k})
-    if all_dive_dur{k}(i)>5
-        color{i} = rand(1, 3);
-        scatter(all_dive_dur(i), pre5_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+    scatter(all_dive_dur{k}, pre5_dive_fR{k}, 24, id_cols(k, :), 'filled', 'MarkerFaceAlpha', 1);
     hold on;
-    end
-    end
+    temp_mat = [cell2mat(all_dive_dur); cell2mat(pre5_dive_fR)]';
+    temp_mat(any(isnan(temp_mat),2),:) = []; 
+    c = polyfit(temp_mat(:, 1),temp_mat(:, 2),1);
+    y_est = polyval(c,linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000));
+    plot(linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000) ,y_est,'k:','LineWidth',2)
+    text(20, 20 ,sprintf('m=%f',c(1)))
 end
 box on; axis square;
 xl1 = xlim; yl1 = ylim;
@@ -1110,12 +1213,14 @@ xlabel('Dive Duration (min)'); ylabel('Pre-dive 5 min. Avg. f_R (breaths/min)');
 
 subplot(2, 3, 2)
 for k = 1:length(all_dive_dur)
-    for i = 1:length(all_dive_dur{k})
-    if all_dive_dur{k}(i)>5
-       scatter(all_dive_dur{k}(i), pre3_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+    scatter(all_dive_dur{k}, pre3_dive_fR{k}, 24, id_cols(k, :), 'filled', 'MarkerFaceAlpha', 1);
     hold on;
-    end
-    end
+    temp_mat = [cell2mat(all_dive_dur); cell2mat(pre3_dive_fR)]';
+    temp_mat(any(isnan(temp_mat),2),:) = []; 
+    c = polyfit(temp_mat(:, 1),temp_mat(:, 2),1);
+    y_est = polyval(c,linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000));
+    plot(linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000) ,y_est,'k:','LineWidth',2)
+    text(20, 20 ,sprintf('m=%f',c(1)))
 end
 box on; axis square;
 xl2 = xlim; yl2 = ylim;
@@ -1123,55 +1228,59 @@ xlabel('Dive Duration (min)'); ylabel('Pre-dive 3 min. Avg. fR (breaths/min)');
 
 subplot(2, 3, 3)
 for k = 1:length(all_dive_dur)
-    for i = 1:length(all_dive_dur{k})
-    if all_dive_dur{k}(i)>5
-        color{i} = rand(1, 3);
-        scatter(all_dive_dur{k}(i), pre1_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+    scatter(all_dive_dur{k}, pre1_dive_fR{k}, 24, id_cols(k, :), 'filled', 'MarkerFaceAlpha', 1);
     hold on;
-    end
-    end
+    temp_mat = [cell2mat(all_dive_dur); cell2mat(pre1_dive_fR)]';
+    temp_mat(any(isnan(temp_mat),2),:) = []; 
+    c = polyfit(temp_mat(:, 1),temp_mat(:, 2),1);
+    y_est = polyval(c,linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000));
+    plot(linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000) ,y_est,'k:','LineWidth',2)
+    text(20, 20 ,sprintf('m=%f',c(1)))
 end
 box on; axis square;
 xl3 = xlim; yl3 = ylim;
 xlabel('Dive Duration (min)'); ylabel('Pre-dive 1 min. Avg. fR (breaths/min)');
 
-subplot(2, 3, 4)
-for k = 1:length(dive_durs)
-    for i = 1:length(dive_dur{k})
-    if dive_dur{k}(i)./60>5
-        color{i} = rand(1, 3);
-        scatter(dive_dur{k}(i)./60, 60./post1_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+subplot(2, 3, 6)
+for k = 1:length(all_dive_dur)
+    scatter(all_dive_dur{k}, post1_dive_fR{k}, 24, id_cols(k, :), 'filled', 'MarkerFaceAlpha', 1);
     hold on;
-    end
-    end
+    temp_mat = [cell2mat(all_dive_dur); cell2mat(post1_dive_fR)]';
+    temp_mat(any(isnan(temp_mat),2),:) = []; 
+    c = polyfit(temp_mat(:, 1),temp_mat(:, 2),1);
+    y_est = polyval(c,linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000));
+    plot(linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000) ,y_est,'k:','LineWidth',2)
+    text(20, 20 ,sprintf('m=%f',c(1)))
 end
 box on; axis square;
 xl4 = xlim; yl4 = ylim;
 xlabel('Dive Duration (min)'); ylabel('Post-dive 1 min. Avg. fR (breaths/min)');
 
 subplot(2, 3, 5)
-for k = 1:length(dive_durs)
-    for i = 1:length(dive_dur{k})
-    if dive_dur{k}(i)./60>5
-        color{i} = rand(1, 3);
-        scatter(dive_dur{k}(i)./60, 60./post3_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+for k = 1:length(all_dive_dur)
+    scatter(all_dive_dur{k}, post3_dive_fR{k}, 24, id_cols(k, :), 'filled', 'MarkerFaceAlpha', 1);
     hold on;
-    end
-    end
+    temp_mat = [cell2mat(all_dive_dur); cell2mat(post3_dive_fR)]';
+    temp_mat(any(isnan(temp_mat),2),:) = []; 
+    c = polyfit(temp_mat(:, 1),temp_mat(:, 2),1);
+    y_est = polyval(c,linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000));
+    plot(linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000) ,y_est,'k:','LineWidth',2)
+    text(20, 20 ,sprintf('m=%f',c(1)))
 end
 box on; axis square;
 xl5 = xlim; yl5 = ylim;
 xlabel('Dive Duration (min)'); ylabel('Post-dive 3 min. Avg. fR (breaths/min)');
 
-subplot(2, 3, 6)
-for k = 1:length(dive_durs)
-    for i = 1:length(dive_dur{k})
-    if dive_dur{k}(i)./60>5
-        color{i} = rand(1, 3);
-        scatter(dive_dur{k}(i)./60, 60./post5_dive_avgfR{k}(i), 24, 'k', 'filled', 'MarkerFaceAlpha', 0.5);
+subplot(2, 3, 4)
+for k = 1:length(all_dive_dur)
+    scatter(all_dive_dur{k}, post5_dive_fR{k}, 24, id_cols(k, :), 'filled', 'MarkerFaceAlpha', 1);
     hold on;
-    end
-    end
+    temp_mat = [cell2mat(all_dive_dur); cell2mat(post5_dive_fR)]';
+    temp_mat(any(isnan(temp_mat),2),:) = []; 
+    c = polyfit(temp_mat(:, 1),temp_mat(:, 2),1);
+    y_est = polyval(c,linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000));
+    plot(linspace(min(temp_mat(:, 1)), max(temp_mat(:, 1)), 1000) ,y_est,'k:','LineWidth',2)
+    text(20, 20 ,sprintf('m=%f',c(1)))
 end
 box on; axis square;
 xl6 = xlim; yl6 = ylim;
@@ -1182,17 +1291,17 @@ xlabel('Dive Duration (min)'); ylabel('Post-dive 5 min. Avg. fR (breaths/min)');
     yUpper = max([yl1(2), yl2(2), yl3(2), yl4(2), yl5(2), yl6(2)]);
     
     subplot(2,3,1);
-    xlim([5, xRight]); ylim([2, yUpper]);
+    xlim([0, xRight]); ylim([2, yUpper]);
     subplot(2,3,2);
-    xlim([5, xRight]); ylim([2, yUpper]);
+    xlim([0, xRight]); ylim([2, yUpper]);
     subplot(2,3,3);
-    xlim([5, xRight]); ylim([2, yUpper]);
+    xlim([0, xRight]); ylim([2, yUpper]);
     subplot(2,3,4);
-    xlim([5, xRight]); ylim([2, yUpper]);
+    xlim([0, xRight]); ylim([2, yUpper]);
     subplot(2,3,5);
-    xlim([5, xRight]); ylim([2, yUpper]);
+    xlim([0, xRight]); ylim([2, yUpper]);
     subplot(2,3,6);
-    xlim([5, xRight]); ylim([2, yUpper]);
+    xlim([0, xRight]); ylim([2, yUpper]);
     
     clear xRight yUpper xl1 xl2 xl3 xl4 xl5 xl6 yl1 yl2 yl3 yl4 yl5 yl6
 
