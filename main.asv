@@ -256,8 +256,8 @@ for k = 1:length(taglist);
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)
-        %str = input("Do you want to make a diving table now? (y/n)\n",'s');
-        %if strcmp(str, "y") == 1
+        str = input("Do you want to make a diving table now? (y/n)\n",'s');
+        if strcmp(str, "y") == 1
             % Set dive threshold, calculate dive and surface durations
             dive_thres = 5; % Quick et al., 2017
             [dive_thres, T]=get_dives(p, metadata.fs, dive_thres); % Give p(depth) and fs(sampling frequency)
@@ -300,7 +300,7 @@ for k = 1:length(taglist);
                 display('Dive detection complete!');
             end
             clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
-        %end
+        end
     end
 end
 
@@ -373,7 +373,7 @@ deep_dive_dur(idx == 1) = [];
 deep_dive_surf_dur = dive_table.surf_dur;
 deep_dive_surf_dur(idx == 1) = [];
 
-deep_color = color;
+deep_color = tag_cols;
 deep_color(idx == 1, :) = [];
 
 f = figure;
@@ -412,7 +412,7 @@ for k = 1:length(taglist)
     % Make movement filename
     movement_fname = strcat(data_path, "\movement\", metadata.tag, "movement.mat");
     
-     if isfile(movement_fname) == 1
+     if isfile(movement_fname) == 0
         fprintf("A movement table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No movement table  exists for %s.\n", metadata.tag)
@@ -591,7 +591,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit %USING THIS
-for k = 1%:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -702,8 +702,17 @@ end
 p4 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 1))), 'g*');
 p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*');
 
-% For single surfacings - determine middle and assign this a breath
-p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
+% For single surfacings - determine minima and assign this a breath
+%p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
+for r = length(single_breath_surf_rows)
+    %Column four is the index of the minima
+    p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))));
+    % Has to be within 25% of what depth was at last breath - this is to
+    % avoid the non-surfacings that break 0.5 m
+    if min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))) >0.25
+       p_shallow_ints(single_breath_surf_rows(r), :) = [];
+    end    
+end
 p_shallow_ints(logging_surf_rows, 4) = NaN;
 
 %Plot assumed breaths in single surfacings
@@ -864,7 +873,7 @@ legend([p1 p2 p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breath I
 
 %% Write breaths to audit 
 
-%save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
+save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
 
 %all_breath_locs_T = struct2table(all_breath_locs);
 %writetable(all_breath_locs_T, breathaud_filename,'Delimiter','\t');

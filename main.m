@@ -680,6 +680,13 @@ p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
 delete_rows = find(p_shallow_ints(:, 3) < metadata.fs);
 p_shallow_ints(delete_rows, :) = [];
 
+% If surfacing does not make it up to at least 0.25 m delete rows
+for r = 1:length(p_shallow_ints)
+delete_rows(r) = min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>0.25;
+end
+delete_rows = find(delete_rows ==1);
+p_shallow_ints(delete_rows, :) = [];
+
 % If these periods are less than 10 seconds then we say they are a breath
 single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
 logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
@@ -702,8 +709,17 @@ end
 p4 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 1))), 'g*');
 p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*');
 
-% For single surfacings - determine middle and assign this a breath
-p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
+% For single surfacings - determine minima and assign this a breath
+%p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
+for r = length(single_breath_surf_rows):-1:1
+    %Column four is the index of the minima
+    p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))));
+    % Has to be make it to at least 0.25 m - this is to
+    % avoid the non-surfacings that break 0.5 m
+    if min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))) >0.25
+       p_shallow_ints(single_breath_surf_rows(r), :) = [];
+    end    
+end
 p_shallow_ints(logging_surf_rows, 4) = NaN;
 
 %Plot assumed breaths in single surfacings
