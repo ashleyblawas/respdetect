@@ -1,0 +1,609 @@
+---
+title: "breath_workup"
+author: "Ashley Blawas"
+date: "5/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import libraries
+```{r, warning=FALSE, message = FALSE}
+library(tidyverse)
+library(R.matlab)
+library(cowplot) # For subplotting
+library(dbscan) # For dbscan clustering
+library(segmented) # For piecewise linear regression
+library(DescTools)
+```
+
+## Import breath data output from Matlab 
+
+```{r}
+imported_data <- readMat("C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/Gm_BreathingPatterns/data/all_breath_data.mat")
+```
+
+```{r}
+# Pull list of tags
+taglist = unlist(imported_data$taglist)
+
+# Pull duration of all dives
+dive_start_s = imported_data$dive.start.s
+
+# Pull duration of all surfacings
+dive_end_s = imported_data$dive.end.s
+
+# Pull index of each breath
+breath_idx = imported_data$breath.idx
+
+# Pull fs
+fs= unlist(imported_data$fs)
+
+# Pull time of breath within each surface interval (t=0 is first breath)
+p_full = imported_data$depth
+
+# Remove imported data
+# rm(imported_data)
+```
+
+## Sort breaths into a dataframe
+
+```{r}
+breaths_all = data.frame()
+
+for (k in 1:length(taglist)){
+  tag = taglist[[k]]
+  
+  # Create time vectors
+   p = as.vector(p_full[[k]][[1]])
+   time_s = seq(0, ((1/fs[k])*length(p)), by = 1/fs[k])
+  # time_s = time_s[-length(time_s)] # Had to do this because timing was randomly acting up 
+  # time_m = time_s/60
+  # time_h = time_m/60
+  
+  # depth = data.frame(tag, time_s, time_m, time_h, p)
+  
+  # Get time-stamp of each breath
+  breath_idx_tag = as.vector(breath_idx[[k]][[1]])
+  breath_time_s = time_s[breath_idx_tag]
+  breath_time_m = breath_time_s/60
+  breath_time_h = breath_time_m/60
+  
+  breath_depth = p[breath_idx_tag]
+  
+  breaths = data.frame(tag, breath_time_s, breath_time_m, breath_time_h, breath_depth)
+  
+  breaths_all = rbind(breaths_all, breaths)
+}
+
+rm(breath_idx_tag, breath_time_s, breath_time_m, breath_time_h, breath_depth, breaths, breath_idx, p, time_s, k, tag)
+
+```
+
+## Divide depth data into dives and surfacings
+
+```{r}
+
+# Initialize dataframes
+dives_all = data.frame()
+surfs_all = data.frame()
+pre_dive_all = data.frame()
+post_dive_all = data.frame()
+
+for (k in 1:length(taglist)){
+  tag = taglist[[k]]
+  
+  # Create time vectors
+  p = as.vector(p_full[[k]][[1]])
+  time_s = seq(0, ((1/fs[k])*length(p)), by = 1/fs[k])
+  time_s = time_s[-length(time_s)] # Had to do this because timing was randomly acting up 
+  time_m = time_s/60
+  time_h = time_m/60
+  
+  
+  depth = data.frame(time_s, time_m, time_h, p)
+  
+  # Get dive starts and ends and calculate dive duration
+  dive_start_s_tag = dive_start_s[[k]][[1]]
+  dive_end_s_tag = dive_end_s[[k]][[1]]
+  dive_start_m = t(dive_start_s_tag/60)
+  dive_end_m = t(dive_end_s_tag/60)
+  dive_start_h = dive_start_m/60
+  dive_end_h = dive_end_m/60
+  
+  dive_dur_s = t(dive_end_s_tag - dive_start_s_tag)
+  dive_dur_m = dive_dur_s/60
+  
+  # Find indexes of dive starts/ends
+  dive_start_idx = c()
+  dive_end_idx = c()
+  dive_depth = c()
+  
+  for (i in 1:length(dive_start_s_tag)){
+    dive_start_idx[i] = which(min(abs(dive_start_s_tag[i]-depth$time_s)) == abs(dive_start_s_tag[i]-depth$time_s))
+    dive_end_idx[i] =   which(min(abs(dive_end_s_tag[i]-depth$time_s)) == abs(dive_end_s_tag[i]-depth$time_s))
+    dive_depth[i] = max(depth$p[dive_start_idx[i]:dive_end_idx[i]])
+  }
+  
+  # Find depth at dive start/end
+  dive_start_depth = p[dive_start_idx]
+  dive_end_depth = p[dive_end_idx]
+  
+  # Save dive information in a dataframe
+  dives = data.frame(tag = tag, 
+                     dive_start_s=t(dive_start_s_tag), dive_end_s=t(dive_end_s_tag),
+                     dive_start_m = dive_start_m, dive_end_m  = dive_end_m, 
+                     dive_start_h = dive_start_h, dive_end_h = dive_end_h, 
+                     dive_start_idx = dive_start_idx, dive_end_idx = dive_end_idx, 
+                     dive_dur_s = dive_dur_s, dive_dur_m = dive_dur_m, 
+                     dive_start_depth = dive_start_depth, dive_end_depth = dive_end_depth, 
+                     dive_depth = dive_depth)
+  
+  
+  # Calculate surface duration as time between dives - remember dives here are defined by 5m threshold
+  surf_dur_s = c()
+  # First one is NaN because we don't know how long animal was at surface before the tag went on/after its last dive
+  surf_dur_s[1] = NaN 
+  # Last one is NaN because we don't know how long animal was at surface after tag came off/before its next dive
+  surf_dur_s[length(dive_start_s_tag)+1] = NaN 
+  # Surface durations in middle are difference between end and start of successive dives
+  surf_dur_s[2:length(dive_start_s_tag)] = dive_start_s_tag[2:length(dive_start_s_tag)] - dive_end_s_tag[1:length(dive_start_s_tag)-1] 
+  surf_dur_m = surf_dur_s/60
+  
+  # Calculate start and end of each surface interval
+  surf_start_s = c(); surf_end_s = c()
+  # First one/last one is NaN because we don't know how long animal was at surface before the tag went on/tag came off
+  surf_start_s[1] = NaN
+  surf_end_s[length(dive_start_s_tag)+1] = NaN
+  # Surface starts/ends in middle are end and start of dives
+  surf_start_s[2:(length(dive_start_s_tag)+1)] = dive_end_s_tag[1,]
+  surf_end_s[1:length(dive_start_s_tag)] = dive_start_s_tag[1,]
+  
+  surf_start_m = surf_start_s/60
+  surf_end_m = surf_end_s/60
+  surf_start_h = surf_start_m/60
+  surf_end_h = surf_end_m/60
+  
+  
+  surfs =  data.frame(tag, surf_start_s = surf_start_s, surf_end_s = surf_end_s,
+                      surf_start_m = surf_start_m, surf_end_m = surf_end_m,
+                      surf_start_h = surf_start_h, surf_end_h = surf_end_h,
+                      surf_dur_s = surf_dur_s, surf_dur_m = surf_dur_m);
+  
+  # Remove variables that are now in dataframe
+  rm(dive_start_s_tag, dive_start_m, dive_start_h, dive_end_s_tag, dive_end_m, dive_end_h, dive_dur_s, dive_dur_m, dive_start_idx, dive_end_idx, dive_start_depth, dive_end_depth, dive_depth)
+  
+  # Remove variables that are now in dataframe
+  rm(surf_start_s, surf_start_m, surf_start_h, surf_end_s, surf_end_m, surf_end_h, surf_dur_s, surf_dur_m)
+  
+  # Create dataframe with dives and their associated pre-dive surface intervals 
+  pre_dive = data.frame(dive_dur_m = dives$dive_dur_m, pre_surf_dur_m = surfs$surf_dur_m[1:(length(surfs$surf_dur_m)-1)])
+  
+  # Create dataframe with dives and their associated post-dive surface intervals 
+  post_dive = data.frame(dive_dur_m = dives$dive_dur_m, post_surf_dur_m = surfs$surf_dur_m[2:length(surfs$surf_dur_m)])
+  
+  
+  dives_all = rbind(dives_all, dives)
+  surfs_all = rbind(surfs_all, surfs)
+  pre_dive_all = rbind(pre_dive_all, pre_dive)
+  post_dive_all = rbind(post_dive_all, post_dive)
+  
+  # Remove old dataframes and others
+  rm(dives, surfs, pre_dive, post_dive, i, tag, depth, time_s, time_m, time_h)
+  
+  # Print out tag so can track progress
+  print(taglist[[k]])
+}
+
+rm(k)
+```
+
+## Determine breaths during each surface interval
+
+```{r}
+# For each tag, want to go through breaths and assign them to a surface intervals
+
+# Get number of breaths per tag
+breaths_all %>% group_by(tag) %>% summarize(breath_count=n())
+
+# Initiate lists for storing breath info
+surf_breaths = data.frame()
+surf_breaths_idx = list()
+surf_breaths_time_s = list()
+surf_fr = list()
+
+for (k in 1:length(taglist)) {
+  # Inititate more lists
+  surf_breaths_tag = list()
+  surf_breaths_time_s_tag = list()
+  surf_fr_tag = list()
+  
+  tag_name = taglist[[k]]
+  
+  surfs_tag = na.omit(surfs_all) %>% filter(tag == tag_name)
+  breaths_tag = breaths_all %>% filter(tag == tag_name)
+  for (j in 1:dim(surfs_tag)[1]) {
+    surf_breaths_tag[[j]] = breaths_tag$breath_time_s[which(
+      between(
+        breaths_tag$breath_time_s,
+        surfs_tag$surf_start_s[j],
+        surfs_tag$surf_end_s[j]
+      ) == TRUE
+    )]
+    surf_breaths_time_s_tag[[j]] = surf_breaths_tag[[j]] - surf_breaths_tag[[j]][1]
+    surf_fr_tag[[j]] = 60 / diff(surf_breaths_tag[[j]])
+  }
+  surf_breaths_idx[[k]] = surf_breaths_tag
+  surf_breaths_time_s[[k]] = surf_breaths_time_s_tag
+  surf_fr[[k]] = surf_fr_tag
+  
+    rm(surf_breaths_tag, surf_breaths_time_s_tag, surf_fr_tag)
+}
+
+rm(j, k, tag_name, surfs_tag)
+
+```
+
+## Cluster analysis of dives
+```{r}
+set.seed(420)  # Setting seed
+dive_dur = data.frame(dive_depth = dives_all$dive_depth, dive_dur_m = dives_all$dive_dur_m)
+dive_dur.dbscan_cl <- dbscan::dbscan(dive_dur, eps = 10 , minPts = round(dim(dive_dur)[1]/10, 0))
+
+dive_dur = dive_dur %>%
+  mutate(cluster = dive_dur.dbscan_cl$cluster)
+
+dives_all = dives_all%>%
+  mutate(cluster = dive_dur.dbscan_cl$cluster)
+
+```
+
+## Doing calculations for surface breathing investigation
+
+### Dive duration (in minutes) versus dive depth
+```{r, echo = FALSE}
+p1 = ggplot(data = dives_all, aes(y = dive_depth, x = dive_dur_m)) + 
+  geom_point(color = 'black', alpha = 0.5)+
+  ylab('Dive Depth (m)') + xlab('Dive Duration (min)') +
+  theme_bw()
+
+p2 = ggplot(data = dives_all, aes(y = dive_depth, x = dive_dur_m, color = factor(cluster))) + 
+  scale_color_manual(values=c("darkblue", "red")) +
+  geom_point(alpha = 0.5)+
+  geom_vline(xintercept = 11.8, color = "darkblue", linetype = "longdash") +
+  geom_vline(xintercept = 1.7, color = "red", linetype = "longdash") +
+  geom_hline(yintercept = 9.94, color = "red", linetype = "longdash") +
+  geom_hline(yintercept = 376, color = "darkblue", linetype = "longdash") +
+  ylab('Dive Depth (m)') + xlab('Dive Duration (min)') +
+  theme_bw()+
+  theme(legend.position="none")
+
+# Print out summary stats
+dives_all %>% group_by(cluster) %>% summarize(n = n(), mean_dur = mean(dive_dur_m), median_dur = median(dive_dur_m), mean_depth = mean(dive_depth), median_depth = median(dive_depth))
+
+
+p = plot_grid(p1, p2, 
+              ncol = 2, labels = c('A', 'B'), label_size = 12)
+
+
+#ggsave("C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/Gm_BreathingPatterns/doc/figs/divedur_divedepth_dbscan.pdf", width = 6, height = 3, units = "in")
+
+
+rm(p1, p2)
+
+```
+
+### Dive duration (in minutes) versus surface duration preceeding dive and following dive
+```{r, echo = FALSE}
+
+p1 = ggplot(data = pre_dive_all, aes(y = pre_surf_dur_m, x = dive_dur_m)) + 
+  geom_point(color = 'black', alpha = 0.5)+
+  ylab('Pre-Dive Surface Duration (min)') + xlab('Dive Duration (min)') +
+  theme_bw()
+
+
+p2 = ggplot(data = post_dive_all, aes(y = post_surf_dur_m, x = dive_dur_m)) + 
+  geom_point(color = 'black', alpha = 0.5)+
+  ylab('Post-Dive Surface Duration (min)') + xlab('Dive Duration (min)') +
+  theme_bw()
+
+# Segmented linear regression
+pre_dive_fit <- lm(pre_surf_dur_m~dive_dur_m, data=pre_dive_all)
+pre_dive_segmented.fit <- segmented(pre_dive_fit, seg.Z = ~dive_dur_m, psi=5)
+summary(pre_dive_segmented.fit)
+
+## Create a data frame to hold prediction
+pre_dive.segmented_pred <- data.frame(dive_dur_m = seq(from = min(pre_dive_all$dive_dur_m), to = max(pre_dive_all$dive_dur_m), by = 0.1))
+
+## Predict
+pre_dive.segmented_pred$pred <- predict(pre_dive_segmented.fit, newdata = pre_dive.segmented_pred)
+
+p3 = ggplot(data = pre_dive_all, aes(y = pre_surf_dur_m, x = dive_dur_m)) + 
+  geom_point(color = 'black', alpha = 0.5)+
+  geom_vline(xintercept = pre_dive_segmented.fit$psi[2], color = 'blue', linetype = "longdash") +
+  geom_line(data = pre_dive.segmented_pred, aes(x = dive_dur_m, y = pred), color = 'red', size = 1)+
+  ylab('Pre-Dive Surface Duration (min)') + xlab('Dive Duration (min)') +
+  theme_bw() +
+  annotate(geom="text", x=20, y=55, label="After 3.6 min, 24.6 s/1 min diving",
+              color="black")
+
+
+# Segmented linear regression
+post_dive_fit <- lm(post_surf_dur_m~dive_dur_m, data=post_dive_all)
+post_dive_segmented.fit <- segmented(post_dive_fit, seg.Z = ~dive_dur_m, psi=5)
+summary(post_dive_segmented.fit)
+
+## Create a data frame to hold prediction
+post_dive.segmented_pred <- data.frame(dive_dur_m = seq(from = min(post_dive_all$dive_dur_m), to = max(post_dive_all$dive_dur_m), by = 0.1))
+
+## Predict
+post_dive.segmented_pred$pred <- predict(post_dive_segmented.fit, newdata = post_dive.segmented_pred)
+
+p4 = ggplot(data = post_dive_all, aes(y = post_surf_dur_m, x = dive_dur_m)) + 
+  geom_point(color = 'black', alpha = 0.5)+
+  geom_vline(xintercept = post_dive_segmented.fit$psi[2], color = 'blue',linetype = "longdash") +
+  geom_line(data = post_dive.segmented_pred, aes(x = dive_dur_m, y = pred), color = 'red', size = 1)+
+  ylab('Post-Dive Surface Duration (min)') + xlab('Dive Duration (min)') +
+  theme_bw()+
+  annotate(geom="text", x=20, y=55, label="After 3.5 min, 22.2 s/1 min diving",
+              color="black")
+
+plot_grid(p1, p2, p3, p4, ncol = 2, labels = c('A', 'B', 'C', 'D'), label_size = 12)
+
+#ggsave("C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/Gm_BreathingPatterns/doc/figs/divedur_surfdur.pdf", width = 6.5, height = 6.5, units = "in")
+
+rm(pre_dive_fit, pre_dive_segmented.fit, pre_dive.segmented_pred, post_dive_fit, post_dive_segmented.fit, post_dive.segmented_pred)
+
+rm(p1, p2, p3, p4)
+```
+
+##  Sort all breaths into surfacing intervals
+```{r}
+surf_fr_all = unlist(surf_fr, recursive = FALSE)
+surf_breaths_time_s_all = unlist(surf_breaths_time_s, recursive = FALSE)
+
+surf_fr_all_df = data.frame()
+
+for (i in 1:length(surf_fr_all)){
+  if (length(surf_fr_all[[i]]) != 0) {
+    temp = cbind(surf_fr_all[[i]], surf_breaths_time_s_all[[i]][2:length(surf_breaths_time_s_all[[i]])], 1:(length(surf_breaths_time_s_all[[i]])-1))
+    }
+  else {
+  }
+  surf_fr_all_df = rbind(surf_fr_all_df, temp)
+}
+colnames(surf_fr_all_df) <- c("fr","time_s", "index")
+
+sorted_surf_fr_all_df = surf_fr_all_df %>% 
+                          group_by(index) %>%
+                          summarise(mean_fr = mean(fr), median = median(fr)) 
+
+# Count values above 3 SD for fR
+paste("# values above 3*SD for fr:", nrow(surf_fr_all_df %>% filter(fr > mean(surf_fr_all_df$fr) + 3*sd(surf_fr_all_df$fr))))
+
+# Detect outliers and replace with mean of that index...
+surf_fr_all_df <- surf_fr_all_df %>% mutate(fr_filt = ifelse(fr > mean(fr) + 3*sd(fr), sorted_surf_fr_all_df$median[index], fr))
+
+# Calculate number of bins using Sturge's rule
+n = 1 + 3.322*log(length(surf_fr_all_df$fr))
+
+
+p1 = ggplot(surf_fr_all_df,  aes(x = fr)) +
+  geom_histogram(aes(y = ..density..), colour = 1, fill = "gray", bins = n) +
+  geom_density() +
+  labs(
+    x = expression(f[R]~(breaths/min)),
+    y = "Density",
+    title = bquote(paste('Density of f'['R']*' (with outliers)'))
+  ) +
+  theme_bw()
+
+p2 = ggplot(surf_fr_all_df,  aes(x = fr_filt)) +
+  geom_histogram(aes(y = ..density..), colour = 1, fill = "gray", bins = n) +
+  geom_density() +
+  labs(
+    x = expression(f[R]~(breaths/min)),
+    title = bquote(paste('Density of f'['R']*' (w/o outliers)'))
+  ) +
+  theme_bw()
+
+plot_grid(p1, p2, ncol = 2, labels = c('A', 'B'), label_size = 12)
+
+#ggsave("C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/Gm_BreathingPatterns/doc/figs/frdensity_outliers.pdf", width = 6, height = 3, units = "in")
+
+
+```
+
+### Things to do...
+
+
+# Plot fR for all tags/all dives/all surface intervals
+```{r}
+
+p1 = ggplot(data = surf_fr_all_df, aes(x = index, y = fr_filt))+
+  geom_point(color = 'black', alpha = 0.1, size = 0.5)+
+  ylab(expression(f[R]~(breaths/min))) + xlab('Breath # of surface interval') +
+  ggtitle(bquote(paste('f'['R']*' during all surfacings'))) +
+  theme_bw()
+
+p2 = ggplot(data = surf_fr_all_df, aes(x = index, y = fr_filt))+
+  geom_jitter(color = 'black', alpha = 0.1, width =0.3, size =0.5)+
+  ylab(expression(f[R]~(breaths/min))) + xlab('Breath # of surface interval') +
+  ggtitle(bquote(paste('f'['R']*' for first 10 breaths of surfacing'))) +
+  theme_bw() + xlim(0.5, 20.5)
+
+p = plot_grid(p1, p2, labels = c('A', 'B'), rel_widths = c(1,2.25), label_size = 12)
+
+
+#ggsave("C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/Gm_BreathingPatterns/doc/figs/all_frs.pdf", width = 8, height = 2.5, units = "in")
+
+#rm(p1)
+```
+## Assigning breaths to surfacings and surfacings to pre and post dives
+
+```{r}
+pre_dive_bydive = data.frame()
+post_dive_bydive = data.frame()
+
+for (i in 1:length(taglist)) {
+
+  tag_name = taglist[[i]]
+  
+  temp_dives = dives_all %>%
+    filter(tag == tag_name)
+  
+  temp_surfs = surfs_all %>%
+    filter(tag == tag_name)
+  
+  temp_breaths =  breaths_all %>%
+    filter(tag == tag_name)
+  
+  temp_surf_breaths = list()
+    temp_surf_breaths_time_s = list()
+    temp_surf_fr = list()
+    temp_breath_num = list()
+    temp_breath_tot = vector()
+  
+  for (j in 1:dim(temp_surfs)[1]) {
+    
+    temp_surf_breaths[[j]] = temp_breaths$breath_time_s[which(
+      between(temp_breaths$breath_time_s,
+              temp_surfs$surf_start_s[j], 
+        temp_surfs$surf_end_s[j]
+      ) == TRUE
+    )]
+    temp_surf_breaths_time_s[[j]] = temp_surf_breaths[[j]] - temp_surf_breaths[[j]][1]
+    temp_surf_fr[[j]] = 60 / diff(temp_surf_breaths[[j]])
+    if (length(temp_surf_fr[[j]]) == 0){
+      temp_breath_num[[j]] = 1
+    }
+    else{
+    temp_breath_num[[j]] = seq(1, length(temp_surf_fr[[j]]), by = 1)
+    }
+    temp_breath_tot[j] = length(temp_surf_breaths[[j]])
+  }
+  temp_surfs =  temp_surfs %>%
+      mutate(breath_idx = temp_surf_breaths,
+             breath_times_s = temp_surf_breaths_time_s,
+             fr = temp_surf_fr,
+             breath_num = temp_breath_num,
+             breath_tot = temp_breath_tot)
+    
+    
+    rm(temp_surf_breaths,
+       temp_surf_breaths_time_s,
+       temp_surf_fr,
+       temp_breath_num, 
+       temp_breath_tot)
+  
+  temp_pre_dive_bydive = cbind(temp_dives, temp_surfs[1:(dim(temp_surfs)[1] -
+                                                           1),])
+  temp_post_dive_bydive = cbind(temp_dives, temp_surfs[2:dim(temp_surfs)[1],])
+  
+  pre_dive_bydive = rbind(pre_dive_bydive, na.omit(temp_pre_dive_bydive))
+  post_dive_bydive = rbind(post_dive_bydive, na.omit(temp_post_dive_bydive))
+  
+  rm(temp_dives, temp_surfs,temp_pre_dive_bydive, temp_post_dive_bydive )
+  
+}
+
+duplicated_names <- duplicated(colnames(pre_dive_bydive))
+pre_dive_bydive = pre_dive_bydive[!duplicated_names]
+
+duplicated_names <- duplicated(colnames(post_dive_bydive))
+post_dive_bydive = post_dive_bydive[!duplicated_names]
+
+rm(temp_breaths, i, j, p, tag_name, duplicated_names, surf_breaths, surf_breaths_time_s, surf_fr, breaths_tag, dive_dur, dive_dur.dbscan_cl)
+
+```
+
+
+## Plot pre and post dive breathing rates for long and short dives
+```{r}
+pre_dive_longdives = pre_dive_bydive %>%
+  filter(cluster == 0) %>%
+  filter(breath_tot>1)
+
+pre_dive_breaths = data.frame(breath_num = unlist(pre_dive_longdives$breath_num), fr = unlist(pre_dive_longdives$fr), dive_dur_m  = rep(pre_dive_longdives$dive_dur_m, pre_dive_longdives$breath_tot-1))
+
+
+p1 = ggplot(data = pre_dive_breaths, aes(x = breath_num, y = fr, color = dive_dur_m))+
+  geom_point(alpha = 0.25, size = 1)+
+  ylab(expression(f[R]~(breaths/min))) + xlab('Breath # of surface interval') +
+  theme_bw()
+
+p1
+
+
+post_dive_longdives = post_dive_bydive %>%
+  filter(cluster == 0) %>%
+  filter(breath_tot>1)
+
+
+post_longdive_breaths = data.frame(breath_num = unlist(post_dive_longdives$breath_num), fr = unlist(post_dive_longdives$fr), dive_dur_m  = rep(post_dive_longdives$dive_dur_m, post_dive_longdives$breath_tot-1))
+
+p2 = ggplot(data = post_longdive_breaths, aes(x = breath_num, y = fr, color = dive_dur_m))+
+  geom_point(alpha = 0.25, size = 0.5)+
+  ylab(expression(f[R]~(breaths/min))) + xlab('Breath # of surface interval') +
+  theme_bw()+
+  scale_color_gradient(
+    guide = guide_colorbar(title = "Dive Duration (min)", barheight = 10),
+    # Set your limits
+    limits = c(0, 25))
+
+p2
+
+post_dive_shortdives = post_dive_bydive %>%
+  filter(cluster == 1) %>%
+  filter(breath_tot>1)
+
+post_shortdive_breaths = data.frame(breath_num = unlist(post_dive_shortdives$breath_num), fr = unlist(post_dive_shortdives$fr), dive_dur_m  = rep(post_dive_shortdives$dive_dur_m, post_dive_shortdives$breath_tot-1))
+
+p3 = ggplot(data = post_shortdive_breaths, aes(x = breath_num, y = fr, color = dive_dur_m))+
+  geom_point(alpha = 0.25, size = 0.5)+
+  ylab(expression(f[R]~(breaths/min))) + xlab('Breath # of surface interval') +
+  theme_bw() +
+  scale_color_gradient(
+    guide = guide_colorbar(title = "Dive Duration (min)", barheight = 10),
+    # Set your limits
+    limits = c(0, 25))+ theme(legend.position="none")
+
+p3
+
+p <- plot_grid(p3, p2, labels = c('A', 'B'), rel_widths = c(1,1.5), label_size = 12)
+
+
+#ggsave("C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/Gm_BreathingPatterns/doc/figs/postfrs_deepcluster.pdf", width = 7, height = 5, units = "in")
+```
+
+
+# Calculate the breathing rate during each surfacing interval so can compare changes in fR with duration of dive before and dive after
+
+# Calculate pre and post dive average breathing rates across relevant windows: 1, 3, 5 minutes
+
+
+## Additional plots
+
+#### Plot dive profile with breaths for one tag
+```{r, echo=FALSE}
+ggplot(data = depth, aes(x = time_h, p)) + 
+  geom_line()+
+  geom_point(data = breaths, aes(x = breath_time_h, y = breath_depth), color = 'blue') +
+  xlab('Time (hour)') + ylab('Depth (m)') + ggtitle(taglist[k]) +
+  scale_y_reverse() +
+  theme_bw()
+```
+
+#### Plot dive profile with dives
+```{r, echo=FALSE}
+# Set above to k = 1
+ggplot(data = depth, aes(x = time_h, p)) + 
+  geom_line()+
+  geom_point(data =dives, aes(x = dive_start_h, y = dive_start_depth), color = 'green')+
+  geom_point(data =dives, aes(x = dive_end_h, y = dive_end_depth), color = 'red')+
+  xlab('Time (hour)') + ylab('Depth (m)') + ggtitle(taglist[k]) +
+  scale_y_reverse() +
+  theme_bw()
+```
