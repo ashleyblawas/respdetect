@@ -9,46 +9,46 @@
 clear; clc; close all
 
 % Load variable with tag names
- taglist = {%'gm08_143a',...
-%     'gm08_143b',...
-%     'gm08_147a',...
-%     'gm08_151a',...
-%     'gm08_151b',...
-%     'gm10_185b',...
-%     'gm10_187a',...
-%     'gm10_208a',...
-%     'gm10_186a',...
-%     'gm10_186b',...
-%     'gm10_187b',...
-%     'gm10_209a',...
-%     'gm10_209c',...
-%     'gm10_266a',...
-%     'gm10_267a',...
-%     'gm11_147a',...
-%     'gm11_148a',...
-%     'gm11_149b',...
-%     'gm11_149c',...
-%     'gm11_150a',...
-%     'gm11_150b',...
-%     'gm11_155a',...
-%     'gm11_156a',...
-%     'gm11_158b',...
-%     'gm11_165a',...
-%     'gm12_125a',...
-%     'gm12_125b',...
-%     'gm12_161a',...
-%     'gm12_162a',...
-%     'gm12_163a',...
-%     'gm12_163b',...
-%     'gm12_172a',...
-%     'gm12_246a',...
-%     'gm14_145a',...
-%     'gm14_167a',...
-%     'gm14_178a',...
-%     'gm14_178b',...
-%     'gm14_279a',...
-%     'gm16_133a',...
-%     'gm16_181a'
+ taglist = {'gm08_143a',...
+    'gm08_143b',...
+    'gm08_147a',...
+    'gm08_151a',...
+    'gm08_151b',...
+    'gm10_185b',...
+    'gm10_187a',...
+    'gm10_208a',...
+    'gm10_186a',...
+    'gm10_186b',...
+    'gm10_187b',...
+    'gm10_209a',...
+    'gm10_209c',...
+    'gm10_266a',...
+    'gm10_267a',...
+    'gm11_147a',...
+    'gm11_148a',...
+    'gm11_149b',...
+    'gm11_149c',...
+    'gm11_150a',...
+    'gm11_150b',...
+    'gm11_155a',...
+    'gm11_156a',...
+    'gm11_158b',...
+    'gm11_165a',...
+    'gm12_125a',...
+    'gm12_125b',...
+    'gm12_161a',...
+    'gm12_162a',...
+    'gm12_163a',...
+    'gm12_163b',...
+    'gm12_172a',...
+    'gm12_246a',...
+    'gm14_145a',...
+    'gm14_167a',...
+    'gm14_178a',...
+    'gm14_178b',...
+    'gm14_279a',...
+    'gm16_133a',...
+    'gm16_181a',...
     'gm15_145b',...
     'gm15_153a',...
     'gm17_234a',...
@@ -81,6 +81,7 @@ addpath(genpath(data_path)); %Add all of your data to the path
 
 % Add good color schemes to path
 addpath('C:\Users\ashle\Dropbox\Ashley\Graduate\Toolboxes\linspecer')
+addpath('C:\Users\ashle\Dropbox\Ashley\Graduate\Toolboxes\export_fig')
 
 %% For tag data processing - ONLY DO ONCE 
 % Read in data
@@ -330,7 +331,9 @@ tag_cols = cell2mat([tag_cols_cell']);
 clear diving_dir filesAndFolders filesInDir temp foundStr rel_files
 
 %% Plot dives and do some dive EDA
+
 f = figure;
+%sgtitle('Dive depth vs. duration for all dives', 'FontSize', 14);
 subplot(1, 3, 1)
 scatter(dive_table.dive_dur./60, dive_table.max_depth, [], 'k', 'o', 'MarkerEdgeAlpha',.5); box on;
 xlabel('Dive duration (min)'); ylabel('Max depth (m)');
@@ -352,8 +355,12 @@ ax = gca;
 ax.FontSize = 12;
 f.Position = [10 700 1000 300];
 
+ax = gcf;
+exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\alltags_divesummary.pdf');
+
 % Plotting clustering of dives/depths
 f = figure;
+%sgtitle('Dbscan cluster analysis', 'FontSize', 14);
 % dbscan clustering
 idx = dbscan([dive_table.dive_dur./60, dive_table.max_depth], 10, round(length(dive_table.dive_dur)/10, 0));
 cluster_cols = linspecer(length(unique(idx)));
@@ -376,7 +383,11 @@ deep_dive_surf_dur(idx == 1) = [];
 deep_color = tag_cols;
 deep_color(idx == 1, :) = [];
 
+ax = gcf;
+exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\alltags_dbscanclustering.pdf');
+
 f = figure;
+%sgtitle("Dive duration vs. surface duration for deep cluster", 'FontSize', 14);
 subplot(1, 2, 1)
 scatter(deep_dive_dur./60, deep_dive_surf_dur./60, [], 'k',  'MarkerEdgeAlpha',.5); box on;
 xlabel('Dive duration (min)'); ylabel('Post-dive surface interval (min)');
@@ -393,9 +404,11 @@ ax.FontSize = 12;
 f.Position = [10 150 630 300];
 
 % Fit some basic linear models 
-
 mdl_post = fitlm(deep_dive_dur./60, deep_dive_surf_dur./60);
 mdl_pre = fitlm(deep_dive_dur(2:end)./60, deep_dive_surf_dur(1:end-1)./60)
+
+ax = gcf;
+exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\alltags_divevssurf_deepcluster.pdf');
 
 %% Process movement information if needed
 
@@ -590,7 +603,7 @@ for k = 1%:length(taglist);
     %fprintf("Press any key to view the next tag record");
 end
 
-%% Breath audit %USING THIS
+%% Breath audit 
 for k = 1:length(taglist);
 tag = taglist{k};
 
@@ -711,19 +724,14 @@ p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p
 
 % For single surfacings - determine minima and assign this a breath
 %p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
-for r = length(single_breath_surf_rows):-1:1
-    %Column four is the index of the minima
-    p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))));
-    % Has to be make it to at least 0.25 m - this is to
-    % avoid the non-surfacings that break 0.5 m
-    if min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))) >0.25
-       p_shallow_ints(single_breath_surf_rows(r), :) = [];
-    end    
-end
-p_shallow_ints(logging_surf_rows, 4) = NaN;
+ for r = length(single_breath_surf_rows):-1:1
+%     %Column four is the index of the minima
+     p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) - 1 + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))))); 
+ end
+ p_shallow_ints(logging_surf_rows, 4) = NaN;
 
 %Plot assumed breaths in single surfacings
-p6 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))-1), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))), 'k*');
+p6 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4)-1)), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))), 'k*');
 
 % Get the indicies of breaths assoicated with single surfacings from
 % p_smooth
@@ -737,6 +745,9 @@ logging_start_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 1));
 logging_end_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 2));
 
 legend([p1 p2 p3 p4 p5 p6],{'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
+
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
+savefig(figfile);
 
 %% Now only want to do pitch/jerk detections for the logging periods
 % Subset tag on to tag off of pressure 
@@ -764,8 +775,8 @@ pitch_smooth = rescale(pitch_smooth, 0, 1);
 
 %% Peak detection - JERK
 % Whichever one is second is the one getting audited
-figure('Position',[10 700 800 200])
-
+figure
+subplot(311)
 plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
 xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 
@@ -778,8 +789,7 @@ xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
 
 %% Peak detection - SURGE JERK
-figure('Position',[10 400 800 200])
-
+subplot(312)
 plot(time_min(start_idx:end_idx), surge_jerk_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
@@ -791,8 +801,7 @@ xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 scatter(time_min(s_max_locs+start_idx), surge_jerk_smooth(s_max_locs), 'b*')
 
 %% Peak detection - PITCH
-figure('Position',[10 100 800 200])
-
+subplot(313)
 plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
@@ -803,10 +812,13 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
 
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_movementdetections.fig');
+savefig(figfile);
+
 %% Find indexes where all conditions are met 
 
-% Have to exactly meet pressure but for others within some window - maybe a
-% 2 second window - 1 second on each side of max
+% Have to exactly meet pressure but for others within some window -  a
+% 5 second window - 2.5 second on each side of max
 
 j_max_wins = [];
 for a = 1:length(j_max_locs)
@@ -878,6 +890,9 @@ ylabel('Pitch IDs'); xlabel('Index');
 linkaxes(ax, 'xy');
 legend([p1 p2 p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
 
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_breathdetections.fig');
+savefig(figfile);
+
 %% Write breaths to audit 
 
 save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
@@ -928,42 +943,14 @@ scatter(breath_times, p_smooth(breath_idx), 'r*')
 ylabel('Depth (m)'); xlabel('Time(min)');
 title(taglist{k}, 'Interpreter', 'none');
 
-% %% Run acoustic audit
-% settagpath('PRH',strcat(data_path, '\prh\50 Hz'))
-% R = loadaudit(metadata.tag); % Load an audit if one exists
-% %R = d3audit(re                                                                                                                                                             cdir, prefix, 0, R); %Run audit (for d3s)
-% R = tagaudit2(metadata.tag,0, R, jerk_smooth ); % Run audit (for d2s), tagaudit2 in resp_detect
-% saveaudit(metadata.tag, R); % Save audit
-% 
-% %% Import acoustic audit
-% [startcom, comdur, com, acous_start_idx, acous_end_idx] = import_acous(acousaud_filename);
-% 
-% %% Plot detected breaths vs audited breaths from acoustics
-% count = 0;
-% for k = 1:length(acous_end_idx)
-%     if com(k) == 'breath'
-%         count = count + 1;
-%         matched_breath_idx(count) = find(abs(acous_end_idx(k)-breath_idx) == min(abs(acous_end_idx(k)-breath_idx)));
-%     end
-% end
-% 
-% breath_num = 1:1:sum(com == 'breath');
-% figure
-% count = 0;
-% for m  = 1:length(acous_start_idx)
-%     if com(m) == 'breath'
-%         count = count + 1;
-%         line([0 time_sec(acous_end_idx(m))-time_sec(acous_start_idx(m))], [breath_num(count) breath_num(count)]); 
-%         hold on;
-%         plot(breath_times(matched_breath_idx(count))-time_sec(acous_start_idx(m)), breath_num(count), 'r*');
-%     end
-% end
-
 %Calculate and plot fR
 [fR] = get_contfR(breath_times, breath_idx, p, time_min);
 title(taglist{k}, 'Interpreter', 'none');
 
-clearvars -except taglist tools_path mat_tools_path data_path; clc; %close all
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
+savefig(figfile);
+
+clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 end
 %% Get surf fRs and plot
@@ -977,7 +964,7 @@ metadata = load(strcat(data_path, "\metadata\", tag, "md"));
 clear tag
 
 % Load in movement data
-load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
+% load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
 
 % Load in dives
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"))
@@ -988,23 +975,36 @@ load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"))
 % Load in breathing information
 load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
+% Load full p from prh file - this will replace appended p from breathing
+% file
+load(strcat(data_path, "\prh\50 Hz\", metadata.tag, "prh.mat"),'p');
+
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
 
+depth{k} = p;
+fs{k} = metadata.fs;
+dive_start_s{k} = dive_start;
+dive_end_s{k} = dive_end;
+
 % Load in breaths
-breath_idx = sort(all_breath_locs.breath_idx);
-breath_times = time_sec(all_breath_locs.breath_idx);
-breath_times = sort(breath_times);
+breath_idx{k} = sort(all_breath_locs.breath_idx)+start_idx;
+%breath_times = time_sec(all_breath_locs.breath_idx);
+%breath_times = sort(breath_times);
 
 % Plot breaths
-[si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(Tab, breath_times, dive_dur);
+%[si_breathtimes, si_fR, surf_int_breaths, surf_int_fR]=get_surffRs(Tab, breath_times, dive_dur);
 
-all_breath_times{k} = breath_times;
-all_si_breathtimes{k} = si_breathtimes;
-all_fR{k} = si_fR;
-all_dive_dur{k} = dive_dur;
-all_surf_dur{k} = surf_dur;
+%all_breath_times{k} = breath_times;
+%all_si_breathtimes{k} = si_breathtimes;
+%all_fR{k} = si_fR;
+%all_dive_dur{k} = dive_dur;
+%all_surf_dur{k} = surf_dur;
 
 end
+
+% Save data to bring into R
+save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'depth', 'fs')
+
 %% Plot change in fR during surface interval between various dive types... i.e. short-med, short-short, long-short, etc.
 %fRbwdivetypes(T, surf_int_breaths, surf_int_fR, dive_durs);
 
@@ -1039,6 +1039,8 @@ all_surf_dur{j} = all_surf_dur{j}./60;
 %[all_dive_type{j}] = assign_divetype(all_dive_dur{j});
 
 end
+
+
 %% Plot dive duration versus surface duration
 %plot_dive2surfb(dive_dur, breathing_dur)
 
