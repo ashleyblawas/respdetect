@@ -869,8 +869,10 @@ temp_all_breaths_s(rm_rows, :) = [];
 temp_all_breaths_type_s(rm_rows, :) = [];
 
 % Remember that these are within the tag on to tag off range
-all_breath_locs.breath_idx = temp_all_breaths_s;
-all_breath_locs.type = temp_all_breaths_type_s;
+all_breath_locs.breath_idx = [all_breath_locs.breath_idx; val3; diff_vals_ps]; %diff_vals_jp];
+all_breath_locs.type = [all_breath_locs.type; repmat("jsp", length(val3), 1); repmat("ps", length(diff_vals_ps), 1)];% repmat("jp", length(diff_vals_jp), 1)];
+
+
 
 % Plot all locations where these three conditions are met
 figure
