@@ -759,19 +759,15 @@ end
 delete_rows = find(delete_rows ==1);
 p_shallow_ints(delete_rows, :) = [];
 
-% If minima of a surfacing is not at least within a reasonable range of the
-% average of the previous couple of surfacings...
-% NEED TO DELETE THESE RIGHT AWAY, NOT ALL AT END BECAUSE LAST OF A BUNCH
-% GETS THROUGH
-delete_rows = [];
-for r = 3:length(p_shallow_ints)
+%If minima of a surfacing is not at least within a reasonable range of the
+%average of the previous and next surfacings...
+for r = length(p_shallow_ints)-1:-1:2 % Go backwards so can delete as you go
     min1 = min(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))));
-    min2 = min(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))));
+    min2 = min(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))));
     if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean([min1, min2])+0.15 
-    delete_rows = [delete_rows, r];
+    p_shallow_ints(r, :) = [];
     end
 end
-p_shallow_ints(delete_rows, :) = [];
 
 
 % If the start of the next surfacing is <1/2th of a  sec from the end of the last
@@ -807,7 +803,7 @@ p4 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p
 p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*');
 
 % For single surfacings - determine minima and assign this a breath
-%p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
+% p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
  for r = length(single_breath_surf_rows):-1:1
 %     %Column four is the index of the minima
      p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) - 1 + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))), 1); 
