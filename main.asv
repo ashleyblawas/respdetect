@@ -942,10 +942,16 @@ end
 % breath index as depth minima of each section
 temp_diff_break = find(diff(val3)>1); % Find where there is a break in where these conditions are met
 
+% Save ranges of continuous periods where conditions are met
 log_breath_locs = [];
+cont_conds = [];
 for c = 1:length(temp_diff_break)+1
     
+    % Assign last cont_val3 to this variable to compare later
+    cont_val3_prev = cont_val3;
+    
     if c == 1
+        cont_val_prev = [];
         cont_range = [1:temp_diff_break(1)];
         cont_val3 = val3(cont_range);
     elseif c == length(temp_diff_break)+1
@@ -956,23 +962,28 @@ for c = 1:length(temp_diff_break)+1
         cont_val3 = val3(cont_range);
     end
     
+    if cont_val3(1)>cont_val3_prev(end)+3*fs || (max(cont_val3_prev)>0.5 || max(cont_val3)>0.5) %If the first value of the range is less than 150 indices away from the last value of the last range...
         if length(cont_val3)>1*fs && min(p_smooth(cont_val3))<0.5 % If surfacing itself is not greater than 1 second it doesn't count
-            log_breath_locs = [log_breath_locs; cont_val3(find(p_smooth(cont_val3) == min(p_smooth(cont_val3))))];
+            log_breath_locs = [log_breath_locs; cont_val3(find(p_smooth(cont_val3) == min(p_smooth(cont_val3))),1)];
         end
+    %end
 end
 
-% Places where only two conditions (jerk and surge jerk) are met
-%[val2_ps] = intersect(intersect(p_shallow_idx, p_max_wins), s_max_wins);
-%[val2_jp] = intersect(intersect(p_shallow_idx, j_max_locs), p_max_wins);
+% Check to make sure that two breaths haven't been detected within 3
+% seconds of eachother to limit to max fR of 20 breaths/min. If there are
+% two breaths that close then select to keep the one at the minimum depth
+for c = length(log_breath_locs)-1:-1:1
+    diff_log_breath_locs = diff(log_breath_locs);
+    if diff_log_breath_locs(c)<3*fs
+        rm_idx = find([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]==max([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]));
+        log_breath_locs(c-1+rm_idx) = [];
+    end
+end
 
-%diff_vals_ps = setdiff(val2_ps, val3);
-%diff_vals_jp = setdiff(val2_jp, val3);
-
-% ADDING A SECTION HERE - if a breath detection from a single surfacing is
-% close than 3 seconds (e.g. 20 breaths/min) to a breath detection from
+% If a breath detection from a single surfacing is closer than 3 seconds  
+% (e.g. 20 breaths/min) to a breath detection from
 % logging, then the ss breath trumps and we remove the logging breath
-%find(diff(all_breath_locs.breath_idx)<3*fs)
-temp_all_breaths= [all_breath_locs.breath_idx; log_breath_locs]; %diff_vals_ps];
+temp_all_breaths= [all_breath_locs.breath_idx; log_breath_locs]; 
 temp_all_breaths_type = [repmat("ss", length(all_breath_locs.breath_idx), 1); repmat("log", length(log_breath_locs), 1)];%; diff_vals_ps]), 1)];
 
 [temp_all_breaths_s, sortidx] = sort(temp_all_breaths);
@@ -997,18 +1008,18 @@ all_breath_locs.type = temp_all_breaths_type_s;
 % Plot all locations where these three conditions are met
 figure
 subplot(3, 2, [2, 4, 6])
-p1 = plot(time_sec(start_idx:end_idx), p_smooth);
+p1 = plot(time_min, p_smooth);
 set(gca, 'ydir', 'reverse')
 hold on
 p_smooth_p2 = p_smooth;
 idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
 p_smooth_p2(~idx_temp) = NaN;
-p2 = plot(time_sec(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
-p3 = scatter(time_sec(start_idx+log_breath_locs-1), p_smooth(log_breath_locs), 'b*');
+p2 = plot(time_min, p_smooth_p2, 'k-', 'LineWidth', 2);
+p3 = scatter(time_min(log_breath_locs-1), p_smooth(log_breath_locs), 'b*');
 %scatter(time_min(start_idx+diff_vals_jp), p_smooth(diff_vals_jp), 'g*')
 title('Breath IDs during logging')
 
-ylabel('Depth (m)'); xlabel('Time (s)');
+ylabel('Depth (m)'); xlabel('Time (min)');
 
 %Plot individual IDs
 ax(1) = subplot(321);
