@@ -88,9 +88,9 @@ addpath('C:\Users\ashle\Dropbox\Ashley\Graduate\Toolboxes\export_fig')
 
 %% For tag data processing - ONLY DO ONCE 
 % Read in data
-tag = taglist{48};
-recdir = 'D:\gm\gm18\gm18_239a';
-prefix = 'gm239a';
+tag = taglist{25};
+recdir = 'D:\gm\gm11\gm11_165a';
+prefix = 'gm165a';
 deploy_name = prefix;
 
 % X=d3readswv(recdir,prefix,df); %often a df of 10 or 20 is good. Want final sampling rate of 10-20Hz
@@ -764,7 +764,7 @@ p_shallow_ints(delete_rows, :) = [];
 for r = length(p_shallow_ints)-1:-1:2 % Go backwards so can delete as you go
     min1 = min(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))));
     min2 = min(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))));
-    if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean([min1, min2])+0.15 
+    if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean([min1, min2])+0.25 
     p_shallow_ints(r, :) = [];
     end
 end
@@ -904,7 +904,7 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.1, 'MinPeakDistance', 3*metadata.fs);
+[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.2, 'MinPeakDistance', 3*metadata.fs);
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
@@ -947,40 +947,45 @@ log_breath_locs = [];
 
 for c = 1:length(temp_diff_break)+1
     
-    
     if c == 1
         cont_val3_prev = -3*fs;
         cont_range = [1:temp_diff_break(1)];
-        cont_val3 = val3(cont_range);
+        if length(cont_range)>1*fs 
+            cont_val3 = val3(cont_range);
+        end
     elseif c == length(temp_diff_break)+1
         % Assign last cont_val3 to this variable to compare later
         cont_val3_prev = cont_val3;
         cont_range = [(temp_diff_break(c-1)+1):length(val3)];
-        cont_val3 = val3(cont_range);
+        if length(cont_range)>1*fs
+            cont_val3 = val3(cont_range);
+        end
     elseif c > 1 && c < length(temp_diff_break)+1
         % Assign last cont_val3 to this variable to compare later
         cont_val3_prev = cont_val3;
         cont_range = [(temp_diff_break(c-1)+1):temp_diff_break(c)];
-        cont_val3 = val3(cont_range);
+        if length(cont_range)>1*fs
+            cont_val3 = val3(cont_range);
+        end
     end
     
     if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+3*fs || max(p_smooth(cont_val3_prev))>0.5 || max(p_smooth(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
-        if length(cont_val3)>1*fs && min(p_smooth(cont_val3))<0.5 % If surfacing itself is not greater than 1 second it doesn't count
-            log_breath_locs = [log_breath_locs; cont_val3(find(p_smooth(cont_val3) == min(p_smooth(cont_val3))),1)];
-        end
+        % Mark breath at max of pitch SE? 
+        log_breath_locs = [log_breath_locs; cont_val3(find(pitch_smooth(cont_val3) == max(pitch_smooth(cont_val3))),1)];
     end
 end
 
 % Check to make sure that two breaths haven't been detected within 3
 % seconds of eachother to limit to max fR of 20 breaths/min. If there are
 % two breaths that close then select to keep the one at the minimum depth
-for c = length(log_breath_locs)-1:-1:1
-    diff_log_breath_locs = diff(log_breath_locs);
-    if diff_log_breath_locs(c)<3*fs
-        rm_idx = find([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]==max([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]));
-        log_breath_locs(c-1+rm_idx) = [];
-    end
-end
+% clear c
+% for c = (length(log_breath_locs)-1):-1:1
+%     diff_log_breath_locs = diff(log_breath_locs);
+%     if diff_log_breath_locs(c)<3*fs
+%         rm_idx = find([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]==max([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]));
+%         log_breath_locs(c-1+rm_idx) = [];
+%     end
+% end
 
 % If a breath detection from a single surfacing is closer than 3 seconds  
 % (e.g. 20 breaths/min) to a breath detection from
@@ -1054,6 +1059,7 @@ savefig(figfile);
  %% Write breaths to audit 
  save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
 
+ clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 end
 
 %% Import breaths from audit - audits ONLY worked for D2s NOT D3s
@@ -1078,24 +1084,57 @@ loadprh(metadata.tag);
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
 load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
 
+% Load in movement data
+load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
+
 % Load in breathing information
 load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
 
 % Load in breaths
-breath_idx = sort(all_breath_locs.breath_idx);
+breath_idx = all_breath_locs.breath_idx;
 breath_times = time_sec(all_breath_locs.breath_idx);
-breath_times = sort(breath_times);
 
-% Plot all locations where these three conditions are met
-figure
-plot(time_sec, p_smooth);
-set(gca, 'ydir', 'reverse')
-hold on
-scatter(breath_times, p_smooth(breath_idx), 'r*')
-ylabel('Depth (m)'); xlabel('Time(min)');
-title(taglist{k}, 'Interpreter', 'none');
+[breath_times, sortidx]  = sort(breath_times);
+breath_type = all_breath_locs.type(sortidx, :);
+
+%% Plot all locations where these three conditions are met
+    figure
+    title(metadata.tag, 'Interpreter', 'none');
+    ax(1)=subplot(4, 1, 1);
+    plot(time_min, p_smooth, 'k', 'LineWidth', 1.5); hold on
+        set(gca,'Ydir','reverse')
+        ylabel('Depth (m)');
+
+    hold on
+    scatter(breath_times(breath_type == 'ss')/60, p_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, p_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+
+    legend('Depth', 'Single surface breaths', 'Log breaths');
+
+    ax(2)=subplot(4, 1, 2);
+    plot(time_min, surge_smooth(start_idx:end_idx), 'r', 'LineWidth', 1.5); hold on 
+    scatter(breath_times(breath_type == 'ss')/60, surge_smooth(start_idx+breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, surge_smooth(start_idx+breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    ylabel('Smoothed Surge SE');
+
+    ax(3)=subplot(4, 1, 3);
+    plot(time_min, jerk_smooth(start_idx:end_idx), 'b', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss')/60, jerk_smooth(start_idx+breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, jerk_smooth(start_idx+breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    ylabel('Smoothed Jerk SE');
+    
+    ax(4)=subplot(4, 1, 4);
+    plot(time_min, pitch_smooth(start_idx:end_idx), 'g', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss')/60, pitch_smooth(start_idx+breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, pitch_smooth(start_idx+breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    linkaxes(ax, 'x');
+    ylabel('Smoothed Pitch SE');
+    xlabel('Time (min)');
+    
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\all_breaths\', metadata.tag, '_allbreaths.fig');
+savefig(figfile);
 
 %Calculate and plot fR
 [fR] = get_contfR(breath_times, breath_idx, p, time_min);
@@ -1104,7 +1143,7 @@ title(taglist{k}, 'Interpreter', 'none');
 figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
 savefig(figfile);
 
-clearvars -except taglist tools_path mat_tools_path data_path; clc; %close all
+clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 end
 %% Get surf fRs and plot
