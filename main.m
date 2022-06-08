@@ -416,7 +416,7 @@ exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_Breathi
 %% Process movement information if needed
 
 % Load in metadata and prh 
-for k = 1:length(taglist)
+for k = 17%1:length(taglist)
     
     % Load in tag
     tag = taglist{k};
@@ -428,7 +428,7 @@ for k = 1:length(taglist)
     % Make movement filename
     movement_fname = strcat(data_path, "\movement\", metadata.tag, "movement.mat");
     
-     if isfile(movement_fname) == 1 %Should be 1 for actual function
+     if isfile(movement_fname) == 0 %Should be 1 for actual function
         fprintf("A movement table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No movement table  exists for %s.\n", metadata.tag)
@@ -457,7 +457,7 @@ for k = 1:length(taglist)
             % Filter all three accel vectors, 5th order butterworth, used 10 and 0.2
             %as upper in saved movement files
             fny = metadata.fs/2;
-            pass = [2, 12];
+            pass = [0.2, 10];
             [b,a]=butter(5,pass/fny,'bandpass');
             
             surge_filt = filtfilt(b,a, surge);
@@ -477,10 +477,11 @@ for k = 1:length(taglist)
             sway_se = log(abs(sway_diff))*sum(abs(sway_diff));
             heave_se = log(abs(heave_diff))*sum(abs(heave_diff));
 
-            %Get smoothed Shannon entropy
+            %Get smoothed Shannon entropy - over 5 second window
             surge_smooth = movmean(surge_se, 5*fs);
             sway_smooth = movmean(sway_se, 5*fs);
             heave_smooth = movmean(heave_se, 5*fs);
+            
 % 
 %             %Calculate jerk for each direction
 %             %Fitler acceleration using Savitsky-Golay filter, using 3,11
@@ -503,12 +504,12 @@ for k = 1:length(taglist)
 %             end
 
             %Get smoothed Shannon entropy
-            jerk_smooth = movmean(jerk_se', 5*fs);
+            jerk_smooth = movmean(jerk_se', 5*fs); 
             %surge_jerk_smooth = movmean(surge_jerk_se', 2*fs);
             
             % Build filter for prh
             fny = metadata.fs/2;
-            pass = [1, 5]; % Change to [1 5] on 5/3/2022
+            pass = [2, 15]; % Change to [1 5] on 5/3/2022
             [b,a]=butter(5,pass/fny,'bandpass');
 
             % Calculate filtered prh signals
@@ -542,7 +543,7 @@ for k = 1:length(taglist)
                 'pitch_se', 'head_se', 'roll_se',...
                 'pitch_smooth', 'head_smooth', 'roll_smooth');
           
-            beep on; beep
+            %beep on; beep
 
             display('Movement information calculation complete!');
        
@@ -553,7 +554,7 @@ end
 
 %% Load movement data, plot
 
-for k = 1:length(taglist);
+for k = 1%:length(taglist);
     
     tag = taglist{k};
     
@@ -622,15 +623,15 @@ for k = 1:length(taglist);
     %pause;
     %fprintf("Press any key to view the next tag record");
     
-    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\movement_data\', metadata.tag, '_surfacedetections.fig');
-    savefig(figfile);
+    %figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\movement_data\', metadata.tag, '_surfacedetections.fig');
+    %savefig(figfile);
    
-    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    %clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 end
 
 %% Breath audit 
-for k = 1:length(taglist);
+for k = 17%34:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -694,7 +695,7 @@ p_smooth = smoothdata(p, 'movmean', fs);
 p_shallow = p_smooth;
 
 % Define shallow as any depth less than 0.5 m
-p_shallow(p_smooth>1) = NaN; %Changed to 1m from 0.5m on 6/1/22
+p_shallow(p_smooth>0.5) = NaN; 
 p_shallow_idx = find(~isnan(p_shallow));
 
 % Plot smoothed depth with areas highlighted in red that are conditions
@@ -873,42 +874,105 @@ pitch_smooth = rescale(pitch_smooth, 0, 1);
 %% Peak detection - JERK
 % Whichever one is second is the one getting audited
 figure
-subplot(311)
+ax(1) = subplot(311);
 plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
 xlabel('Time (min)'); ylabel('Jerk SE Smooth');
+
+% Divide into sections
+find(isnan(diff(jerk_smooth))==0)
 
 %Peak detect jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
 % Could peak detect across smaller overlapping ranges
-[j_max_height, j_max_locs] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.05, 'MinPeakDistance', 3*metadata.fs);
+[j_max_height, j_max_locs, jw, jp] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.025, 'MinPeakDistance', 3*metadata.fs);
+
+if length(j_max_height)>1
+%Calculate distance to max peak and max prom - should I do this section by
+%section?
+dist_max_j = sqrt((max(j_max_height) - j_max_height).^2 + (max(jp) - jp).^2);
+[j_dens, xj_dens] = ksdensity(dist_max_j); 
+[j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens); 
+
+% Remove peaks that are too far from maxes
+rm_idx = [];
+if length(j_dist_locs>0) && xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))>0.5
+for c = 1:length(j_max_locs)
+    if dist_max_j(c) > xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))
+        rm_idx = [rm_idx, c];
+    end
+end
+end
+
+j_max_locs(rm_idx) = [];
+end
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
 
+
 %% Peak detection - SURGE JERK
-subplot(312)
+ax(2) = subplot(312);
 plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[s_max_height, s_max_locs] =findpeaks(surge_smooth, 'MinPeakProminence', 0.05, 'MinPeakDistance', 3*metadata.fs);
+[s_max_height, s_max_locs, sw, sp] =findpeaks(surge_smooth, 'MinPeakProminence', 0.025, 'MinPeakDistance', 3*metadata.fs);
+
+if length(s_max_height)>1
+% Calculate distance to max peak and max prom
+dist_max_s = sqrt((max(s_max_height) - s_max_height).^2 + (max(sp) - sp).^2);
+[s_dens, xs_dens] = ksdensity(dist_max_s); 
+[s_dist_h, s_dist_locs, s_dist_w, s_dist_p]= findpeaks(-s_dens); 
+
+% Remove peaks that are too far from maxes
+rm_idx = [];
+if length(s_dist_locs>0) && xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))>0.5
+for c = 1:length(s_max_locs)
+    if dist_max_s(c) > xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))
+        rm_idx = [rm_idx, c];
+    end
+end
+end
+
+s_max_locs(rm_idx) = [];
+end
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(s_max_locs+start_idx), surge_smooth(s_max_locs), 'b*')
 
+
 %% Peak detection - PITCH
-subplot(313)
+ax(3) = subplot(313);
 plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[p_max_height, p_max_locs] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.2, 'MinPeakDistance', 3*metadata.fs);
+[p_max_height, p_max_locs, pw, pp] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.075, 'MinPeakDistance', 3*metadata.fs);
 
+if length(p_max_height)>1
+% Calculate distance to max peak and max prom
+dist_max_p = sqrt((max(p_max_height) - p_max_height).^2 + (max(pp) - pp).^2);
+[p_dens, xp_dens] = ksdensity(dist_max_p); 
+[p_dist_h, p_dist_locs, p_dist_w, p_dist_p]= findpeaks(-p_dens); 
+
+% Remove peaks that are too far from maxes
+rm_idx = [];
+if length(p_dist_locs>0) && xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))>0.5
+for c = 1:length(p_max_locs)
+    if dist_max_p(c) > xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))
+        rm_idx = [rm_idx, c];
+    end
+end
+end
+
+p_max_locs(rm_idx) = [];
+end
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
 
+linkaxes(ax, 'x')
 figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_movementdetections.fig');
 savefig(figfile);
 
@@ -945,13 +1009,16 @@ temp_diff_break = find(diff(val3)>1); % Find where there is a break in where the
 % Save ranges of continuous periods where conditions are met
 log_breath_locs = [];
 
+if length(temp_diff_break)>0
 for c = 1:length(temp_diff_break)+1
     
     if c == 1
         cont_val3_prev = -3*fs;
         cont_range = [1:temp_diff_break(1)];
         if length(cont_range)>1*fs 
-            cont_val3 = val3(cont_range);
+           cont_val3 = val3(cont_range);
+        else 
+           cont_val3 =  -3*fs; 
         end
     elseif c == length(temp_diff_break)+1
         % Assign last cont_val3 to this variable to compare later
@@ -969,12 +1036,14 @@ for c = 1:length(temp_diff_break)+1
         end
     end
     
-    if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+3*fs || max(p_smooth(cont_val3_prev))>0.5 || max(p_smooth(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
+    if length(cont_range)>1*fs 
+    if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+1*fs || max(p_smooth(cont_val3_prev))>0.5 || max(p_smooth(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
         % Mark breath at max of pitch SE? 
         log_breath_locs = [log_breath_locs; cont_val3(find(pitch_smooth(cont_val3) == max(pitch_smooth(cont_val3))),1)];
     end
+    end
 end
-
+end
 % Check to make sure that two breaths haven't been detected within 3
 % seconds of eachother to limit to max fR of 20 breaths/min. If there are
 % two breaths that close then select to keep the one at the minimum depth
@@ -1022,7 +1091,7 @@ p_smooth_p2 = p_smooth;
 idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
 p_smooth_p2(~idx_temp) = NaN;
 p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
-p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth(log_breath_locs), 'b*');
+p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth(log_breath_locs), 'm*');
 %scatter(time_min(start_idx+diff_vals_jp), p_smooth(diff_vals_jp), 'g*')
 title('Breath IDs during logging')
 
@@ -1064,7 +1133,7 @@ end
 
 %% Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
-for k = 1:length(taglist);
+for k = 17%1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
