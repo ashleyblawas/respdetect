@@ -612,7 +612,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 1:length(taglist);
+for k = 1%:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -1022,48 +1022,78 @@ for c = 1:length(p_max_locs)
     p_max_wins = [p_max_wins, p_max_win];
 end
 
+% Identify where one window stops and the next starts
+j_wins_breaks = [j_max_wins(diff(j_max_wins)>1), j_max_wins(end)];
+s_wins_breaks = [s_max_wins(diff(s_max_wins)>1), s_max_wins(end)];
+p_wins_breaks = [p_max_wins(diff(p_max_wins)>1), p_max_wins(end)];
+
 % Places where all three conditions are met
 [val3] = intersect(intersect(intersect(p_shallow_idx, p_max_wins), j_max_wins), s_max_wins);
 
-% Find where values are continuous for at least 2 seconds and then assign
-% breath index as depth minima of each section
-temp_diff_break = find(diff(val3)>1); % Find where there is a break in where these conditions are met
+% Find where there is a break in where these conditions are met
+temp_diff_break = find(diff(val3)>1); 
 
 % Save ranges of continuous periods where conditions are met
 log_breath_locs = [];
 
+% Go through continuous periods where conditions are met one by one
 if length(temp_diff_break)>0
 for c = 1:length(temp_diff_break)+1
     
-    if c == 1
+    % If the first period...
+    if c == 1 
+        j_win_count = 0; s_win_count = 0; p_win_count = 0;
         cont_val3_prev = -3*fs;
+        % Save the indexes of the continuous range that meets all three
+        % conditions
         cont_range = [1:temp_diff_break(1)];
+        % If this period is greater than 1 second 
         if length(cont_range)>1*fs 
+           % Save this range of indices 
            cont_val3 = val3(cont_range);
         else 
            cont_val3 =  -3*fs; 
         end
-    elseif c == length(temp_diff_break)+1
+    elseif c == length(temp_diff_break)+1 % If the last period...
         % Assign last cont_val3 to this variable to compare later
         cont_val3_prev = cont_val3;
         cont_range = [(temp_diff_break(c-1)+1):length(val3)];
         if length(cont_range)>1*fs
             cont_val3 = val3(cont_range);
         end
-    elseif c > 1 && c < length(temp_diff_break)+1
+    elseif c > 1 && c < length(temp_diff_break)+1 % If a period between the first and last
         % Assign last cont_val3 to this variable to compare later
         cont_val3_prev = cont_val3;
         cont_range = [(temp_diff_break(c-1)+1):temp_diff_break(c)];
         if length(cont_range)>1*fs
             cont_val3 = val3(cont_range);
-        end
+        end 
     end
     
-    if length(cont_range)>1*fs 
-    if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+1*fs || max(p_smooth(cont_val3_prev))>0.5 || max(p_smooth(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
-        % Mark breath at max of pitch SE? 
-        log_breath_locs = [log_breath_locs; cont_val3(find(pitch_smooth(cont_val3) == max(pitch_smooth(cont_val3))),1)];
-    end
+    % Find the indexes where this window overlaps with the known regions
+    % with jerk maxes
+    % Save the old window 
+    j_win_count_prev = j_win_count;
+    % Find where this period intersects with the jerk windows
+    j_temp_int = intersect(cont_val3, j_max_wins);
+    % Find which window (count-wise) this period came from 
+    j_win_count = find(j_temp_int(end)<=j_wins_breaks, 1, 'first')
+    
+    s_win_count_prev = s_win_count;
+    s_temp_int = intersect(cont_val3, s_max_wins);
+    s_win_count = find(s_temp_int(end)<=s_wins_breaks, 1, 'first')
+    
+    p_win_count_prev = p_win_count;
+    p_temp_int = intersect(cont_val3, p_max_wins);
+    p_win_count = find(p_temp_int(end)<=p_wins_breaks, 1, 'first')
+    
+    % If the same window as last time for any of these then keep first,
+    % skip second instance
+    if length(cont_range)>1*fs && j_win_count>j_win_count_prev && s_win_count>s_win_count_prev && p_win_count>p_win_count_prev
+        if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+1*fs || max(p_smooth(cont_val3_prev))>0.5 || max(p_smooth(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
+            % Mark breath at halfway point of each period
+            log_breath_locs = [log_breath_locs; cont_val3(length(cont_val3)];
+        end
     end
 end
 end
@@ -1156,7 +1186,7 @@ end
 
 %% Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
-for k = 17%1:length(taglist);
+for k = 1%:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
