@@ -416,7 +416,7 @@ exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_Breathi
 %% Process movement information if needed
 
 % Load in metadata and prh 
-for k = 17%1:length(taglist)
+for k = 1:length(taglist)
     
     % Load in tag
     tag = taglist{k};
@@ -457,7 +457,7 @@ for k = 17%1:length(taglist)
             % Filter all three accel vectors, 5th order butterworth, used 10 and 0.2
             %as upper in saved movement files
             fny = metadata.fs/2;
-            pass = [0.2, 10];
+            pass = [2, 15];
             [b,a]=butter(5,pass/fny,'bandpass');
             
             surge_filt = filtfilt(b,a, surge);
@@ -482,30 +482,11 @@ for k = 17%1:length(taglist)
             sway_smooth = movmean(sway_se, 5*fs);
             heave_smooth = movmean(heave_se, 5*fs);
             
-% 
-%             %Calculate jerk for each direction
-%             %Fitler acceleration using Savitsky-Golay filter, using 3,11
-%             surge_sgf = sgolayfilt(surge_filt,3,11);
-%             sway_sgf = sgolayfilt(sway_filt,3,11);
-%             heave_sgf = sgolayfilt(heave_filt,3,11);
-
-%             %Calculate jerk in each vector
-%             surge_jerk = 9.81*fs*sqrt(diff(surge_sgf).^2);
-%             sway_jerk = 9.81*fs*sqrt(diff(sway_sgf).^2);
-%             heave_jerk = 9.81*fs*sqrt(diff(heave_sgf).^2);
-% 
-%             jerk = [surge_jerk, sway_jerk, heave_jerk];
-
             %Get Shannon entropy of jerk
             jerk_se = log(abs(jerk_filt))*sum(abs(jerk_filt));
-%             for i = 1:length(jerk)
-%                 jerk_se(i) = sum(abs(jerk(i, :)).*log(abs(jerk(i, :))));
-%                 surge_jerk_se(i) = sum(abs(surge_jerk(i, :)).*log(abs(surge_jerk(i, :))));
-%             end
-
+ 
             %Get smoothed Shannon entropy
             jerk_smooth = movmean(jerk_se', 5*fs); 
-            %surge_jerk_smooth = movmean(surge_jerk_se', 2*fs);
             
             % Build filter for prh
             fny = metadata.fs/2;
@@ -631,7 +612,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 17%34:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -878,48 +859,75 @@ ax(1) = subplot(311);
 plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
 xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 
-% Divide into sections
-cont_sections = find(isnan(diff(jerk_smooth))==0);
-trans_sections = find(diff(cont_sections)>1); % This gives you transitions between surfacings
-for c = 1:length(trans_sections)
-    if c == 1
-        section_idx = 1:trans_sections(c);
-        j_section = jerk_smooth(cont_sections(section_idx));
-    elseif c>1 && c<length(trans_sections)
-        section_idx = trans_sections(c-1)+1:trans_sections(c);
-        j_section = jerk_smooth(cont_sections(section_idx));
-    elseif c==length(trans_sections)
-        section_idx = trans_sections(c-1)+1:length(cont_sections);
-        j_section = jerk_smooth(cont_sections(section_idx));
-    end
-    %plot(j_section); hold on
-    [j_max_height, j_max_locs, jw, jp] = findpeaks(jerk_section, 'MinPeakDistance', 3*metadata.fs);
-end
+% j_max_locs_all = [];
+% % Divide into sections
+% cont_sections = find(isnan(diff(jerk_smooth))==0);
+% trans_sections = find(diff(cont_sections)>1); % This gives you transitions between surfacings
+% for c = 1:length(trans_sections)
+%     if c == 1
+%         section_idx = 1:trans_sections(c);
+%         j_section = jerk_smooth(cont_sections(section_idx));
+%     elseif c>1 && c<length(trans_sections)
+%         section_idx = trans_sections(c-1)+1:trans_sections(c);
+%         j_section = jerk_smooth(cont_sections(section_idx));
+%     elseif c==length(trans_sections)
+%         section_idx = trans_sections(c-1)+1:length(cont_sections);
+%         j_section = jerk_smooth(cont_sections(section_idx));
+%     end
+%     %plot(j_section); hold on
+%     if length(j_section) < 3*metadata.fs
+%         MPD = length(j_section)-2; 
+%     else 
+%         MPD = 3*metadata.fs;
+%     end
+%     [j_max_height, j_max_locs, jw, jp] = findpeaks(j_section, 'MinPeakDistance', MPD);
+%     
+%     if length(j_max_height)>1
+%         %Calculate distance to max peak and max prom
+%         dist_max_j = sqrt((max(j_max_height) - j_max_height).^2 + (max(jp) - jp).^2);
+%         [j_dens, xj_dens] = ksdensity(dist_max_j);
+%         [j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens);
+%         
+%         % Remove peaks that are too far from maxes
+%         rm_idx = [];
+%         if length(j_dist_locs>0) %&& xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))>0.5
+%             for d = 1:length(j_max_locs)
+%                 if dist_max_j(d) > xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))
+%                     rm_idx = [rm_idx, d];
+%                 end
+%             end
+%         end
+%         
+%         j_max_locs(rm_idx) = [];
+%         j_max_locs = j_max_locs + cont_sections(section_idx(1))-1;
+%     end
+%     j_max_locs_all = [j_max_locs_all, j_max_locs];
+% end
 
 %Peak detect jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
 % Could peak detect across smaller overlapping ranges
-%[j_max_height, j_max_locs, jw, jp] = findpeaks(jerk_smooth, 'MinPeakProminence', 0.025, 'MinPeakDistance', 3*metadata.fs);
+[j_max_height, j_max_locs, jw, jp] = findpeaks(jerk_smooth, 'MinPeakDistance', 3*metadata.fs);
 
 if length(j_max_height)>1
-%Calculate distance to max peak and max prom - should I do this section by
-%section?
-dist_max_j = sqrt((max(j_max_height) - j_max_height).^2 + (max(jp) - jp).^2);
-[j_dens, xj_dens] = ksdensity(dist_max_j); 
-[j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens); 
-
-% Remove peaks that are too far from maxes
-rm_idx = [];
-if length(j_dist_locs>0) && xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))>0.5
-for c = 1:length(j_max_locs)
-    if dist_max_j(c) > xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))
-        rm_idx = [rm_idx, c];
-    end
-end
-end
-
+        %Calculate distance to max peak and max prom and max width 
+        dist_max_j = sqrt((max(jw) - jw).^2 + (max(jp) - jp).^2);
+        [j_dens, xj_dens] = ksdensity(dist_max_j);
+        [j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens);
+        
+        % Remove peaks that are too far from maxes
+        rm_idx = [];
+        if length(j_dist_locs>0) %&& xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))>0.5
+            for c = 1:length(j_max_locs)
+                if dist_max_j(c) > xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))
+                    rm_idx = [rm_idx, c];
+                end
+            end
+        end
+        
 j_max_locs(rm_idx) = [];
 end
+
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
@@ -932,17 +940,17 @@ xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[s_max_height, s_max_locs, sw, sp] =findpeaks(surge_smooth, 'MinPeakProminence', 0.025, 'MinPeakDistance', 3*metadata.fs);
+[s_max_height, s_max_locs, sw, sp] =findpeaks(surge_smooth, 'MinPeakDistance', 3*metadata.fs);
 
 if length(s_max_height)>1
 % Calculate distance to max peak and max prom
-dist_max_s = sqrt((max(s_max_height) - s_max_height).^2 + (max(sp) - sp).^2);
+dist_max_s = sqrt((max(sw) - sw).^2 + (max(sp) - sp).^2);
 [s_dens, xs_dens] = ksdensity(dist_max_s); 
 [s_dist_h, s_dist_locs, s_dist_w, s_dist_p]= findpeaks(-s_dens); 
 
 % Remove peaks that are too far from maxes
 rm_idx = [];
-if length(s_dist_locs>0) && xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))>0.5
+if length(s_dist_locs>0) %&& xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))>0.5
 for c = 1:length(s_max_locs)
     if dist_max_s(c) > xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))
         rm_idx = [rm_idx, c];
@@ -964,17 +972,17 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
-[p_max_height, p_max_locs, pw, pp] =findpeaks(pitch_smooth,  'MinPeakProminence', 0.075, 'MinPeakDistance', 3*metadata.fs);
+[p_max_height, p_max_locs, pw, pp] =findpeaks(pitch_smooth, 'MinPeakDistance', 3*metadata.fs);
 
 if length(p_max_height)>1
 % Calculate distance to max peak and max prom
-dist_max_p = sqrt((max(p_max_height) - p_max_height).^2 + (max(pp) - pp).^2);
+dist_max_p = sqrt((max(pw) - pw).^2 + (max(pp) - pp).^2);
 [p_dens, xp_dens] = ksdensity(dist_max_p); 
 [p_dist_h, p_dist_locs, p_dist_w, p_dist_p]= findpeaks(-p_dens); 
 
 % Remove peaks that are too far from maxes
 rm_idx = [];
-if length(p_dist_locs>0) && xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))>0.5
+if length(p_dist_locs>0) %&& xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))>0.5
 for c = 1:length(p_max_locs)
     if dist_max_p(c) > xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))
         rm_idx = [rm_idx, c];

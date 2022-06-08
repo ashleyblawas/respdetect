@@ -482,30 +482,11 @@ for k = 1:length(taglist)
             sway_smooth = movmean(sway_se, 5*fs);
             heave_smooth = movmean(heave_se, 5*fs);
             
-% 
-%             %Calculate jerk for each direction
-%             %Fitler acceleration using Savitsky-Golay filter, using 3,11
-%             surge_sgf = sgolayfilt(surge_filt,3,11);
-%             sway_sgf = sgolayfilt(sway_filt,3,11);
-%             heave_sgf = sgolayfilt(heave_filt,3,11);
-
-%             %Calculate jerk in each vector
-%             surge_jerk = 9.81*fs*sqrt(diff(surge_sgf).^2);
-%             sway_jerk = 9.81*fs*sqrt(diff(sway_sgf).^2);
-%             heave_jerk = 9.81*fs*sqrt(diff(heave_sgf).^2);
-% 
-%             jerk = [surge_jerk, sway_jerk, heave_jerk];
-
             %Get Shannon entropy of jerk
             jerk_se = log(abs(jerk_filt))*sum(abs(jerk_filt));
-%             for i = 1:length(jerk)
-%                 jerk_se(i) = sum(abs(jerk(i, :)).*log(abs(jerk(i, :))));
-%                 surge_jerk_se(i) = sum(abs(surge_jerk(i, :)).*log(abs(surge_jerk(i, :))));
-%             end
-
+ 
             %Get smoothed Shannon entropy
             jerk_smooth = movmean(jerk_se', 5*fs); 
-            %surge_jerk_smooth = movmean(surge_jerk_se', 2*fs);
             
             % Build filter for prh
             fny = metadata.fs/2;
@@ -631,7 +612,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 17%34:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -1175,7 +1156,7 @@ end
 
 %% Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
-for k = 17%1:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
