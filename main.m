@@ -258,7 +258,7 @@ end
 clear tag prefix recdir fs tag_ver acousaud_filename breathaud_filename tag_on tag_off tag_dur metadata_fname str
 
 %% Find dives if needed
-for k = 4:length(taglist);
+for k = 1:length(taglist);
     
     % Load in tag
     tag = taglist{k};
@@ -1349,6 +1349,7 @@ savefig(figfile);
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 end
+
 %% Get surf fRs and plot
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
@@ -1380,9 +1381,17 @@ dive_start_s{k} = dive_start;
 dive_end_s{k} = dive_end;
 
 % Load in breaths
-breath_idx{k} = sort(all_breath_locs.breath_idx)+start_idx;
+[temp_all_breaths_s, sortidx] = sort(all_breath_locs.breath_idx);
+temp_all_breaths_type_s = all_breath_locs.type(sortidx, :);
+
+breath_idx{k} = temp_all_breaths_s+start_idx;
+breath_type{k} = temp_all_breaths_type_s;
+breath_type{k}(breath_type{k}=="ss") = 1;
+breath_type{k}(breath_type{k}=="log") = 2;
+
+breath_type{k} = str2double(breath_type{k});
 
 end
 
 % Save data to bring into R
-save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'depth', 'fs')
+save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs')

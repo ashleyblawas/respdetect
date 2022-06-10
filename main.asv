@@ -282,12 +282,12 @@ for k = 1:length(taglist);
     
     % Make diving file
     diving_fname = strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat");
-    if isfile(diving_fname) == 1
+    if isfile(diving_fname) == 0
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)
-        str = input("Do you want to make a diving table now? (y/n)\n",'s');
-        if strcmp(str, "y") == 1
+        %str = input("Do you want to make a diving table now? (y/n)\n",'s');
+        %if strcmp(str, "y") == 1
             % Set dive threshold, calculate dive and surface durations
             dive_thres = 5; % Quick et al., 2017
             [dive_thres, T]=get_dives(p, metadata.fs, dive_thres); % Give p(depth) and fs(sampling frequency)
@@ -297,7 +297,7 @@ for k = 1:length(taglist);
                 
             else
                 % Plot dives
-                [dive_dur_plot, surf_dur_plot] = plot_dives(T, time_sec, p);
+                %[dive_dur_plot, surf_dur_plot] = plot_dives(T, time_sec, p);
                 
                 for i = 1:size(T, 1)
                     tag{i} = metadata.tag;
@@ -331,7 +331,7 @@ for k = 1:length(taglist);
             end
             clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
         end
-    end
+    %end
 end
 
 %% Load dives
@@ -1267,7 +1267,7 @@ end
 
 %% Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
-for k = 12%1:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -1349,6 +1349,7 @@ savefig(figfile);
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 end
+
 %% Get surf fRs and plot
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
@@ -1380,7 +1381,11 @@ dive_start_s{k} = dive_start;
 dive_end_s{k} = dive_end;
 
 % Load in breaths
+[temp_all_breaths_s, sortidx] = sort(all_breath_locs.breath_idx)+start_idx;
+temp_all_breaths_type_s = temp_all_breaths_type(sortidx, :);
+
 breath_idx{k} = sort(all_breath_locs.breath_idx)+start_idx;
+breath_type{k} = 
 
 end
 
