@@ -182,6 +182,32 @@ d3savecal(deploy_name,'Location','')
 %d3makeprhfile(recdir,prefix,tag,10)
 saveprh(tag,'p','A','M','fs','Aw','Mw','pitch','roll','head'); %Save the prh file to your directory
 
+%% For D2 processing
+settagpath('raw', 'D:\gm\gm10\gm10_209a');
+settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
+settagpath('prh', 'D:\gm\prh');
+tag = 'gm10_209a';
+
+% Have to do this once - saving raw file in deployment folder
+settagpath('raw',rawdir) % add raw directory to paths
+[s,fs] = swvread(tag, [], 1) ; % read the .swv files
+saveraw(tag,s,fs) % save a raw file
+
+% Bring in CAL file from cal folder
+[s,fs] = loadraw(tag) ; % if workspace was cleared after step 5
+CAL= TAGID ; % read the calibration for the device used
+
+[p_new,tempr_new,CAL] = calpressure(s_chopped,CAL, 'full') ; % follow screen directions
+[M,CAL] = autocalmag(s,CAL) ; % accept or reject test results
+[A,CAL] = autocalacc(s,p,tempr,CAL) ; % accept or reject test results
+
+savecal(tag,'CAL',CAL) % save calibration results
+saveprh(tag,'p','tempr','fs','A','M') % save tag frame results
+
+loadprh(tag) % if workspace was cleared
+[Aw Mw] = tag2whale(A,M,OTAB,fs) ;
+makeprhfile(tag);
+
 %% Make metadata file if needed
 for k = 1:length(taglist);
     % Step 2: Input tag names and DTAG version
@@ -232,7 +258,7 @@ end
 clear tag prefix recdir fs tag_ver acousaud_filename breathaud_filename tag_on tag_off tag_dur metadata_fname str
 
 %% Find dives if needed
-for k = 1:length(taglist);
+for k = 4:length(taglist);
     
     % Load in tag
     tag = taglist{k};
@@ -256,12 +282,12 @@ for k = 1:length(taglist);
     
     % Make diving file
     diving_fname = strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat");
-    if isfile(diving_fname) == 1
+    if isfile(diving_fname) == 0
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)
-        str = input("Do you want to make a diving table now? (y/n)\n",'s');
-        if strcmp(str, "y") == 1
+        %str = input("Do you want to make a diving table now? (y/n)\n",'s');
+        %if strcmp(str, "y") == 1
             % Set dive threshold, calculate dive and surface durations
             dive_thres = 5; % Quick et al., 2017
             [dive_thres, T]=get_dives(p, metadata.fs, dive_thres); % Give p(depth) and fs(sampling frequency)
@@ -271,7 +297,7 @@ for k = 1:length(taglist);
                 
             else
                 % Plot dives
-                [dive_dur_plot, surf_dur_plot] = plot_dives(T, time_sec, p);
+                %[dive_dur_plot, surf_dur_plot] = plot_dives(T, time_sec, p);
                 
                 for i = 1:size(T, 1)
                     tag{i} = metadata.tag;
@@ -305,7 +331,7 @@ for k = 1:length(taglist);
             end
             clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
         end
-    end
+    %end
 end
 
 %% Load dives
@@ -612,7 +638,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 1:length(taglist);
+for k = 11:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -746,32 +772,32 @@ p_shallow_ints(delete_rows, :) = [];
 for r = length(p_shallow_ints):-1:1 % Go backwards so can delete as you go
     if r == length(p_shallow_ints)
         min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
-        min2 = 0;
+        min2 = min1;
         min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
-        min4 = 0;
+        min4 = min3;
     elseif r == length(p_shallow_ints)-1
         min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
         min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
         min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
-        min4 = 0;
+        min4 = min3;
     elseif r == 2
         min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
         min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
-        min3 = 0;
         min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
+        min3 = min4;
     elseif r == 1
-        min1 = 0;
         min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
-        min3 = 0;
+        min1 = min2;
         min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
+        min3 = min4;
     else
         min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
         min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
         min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
         min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
     end
-        temp_sort = sort([min1, min2, min3, min4]);
-        if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean(temp_sort(1:2))+0.15
+        temp_sort = sort([min1, min2, min3, min4])
+        if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean(temp_sort(1:2))+0.30
             p_shallow_ints(r, :) = [];
         end
     end
@@ -936,24 +962,32 @@ xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 [j_max_height, j_max_locs, jw, jp] = findpeaks(jerk_smooth, 'MinPeakDistance', 3*metadata.fs);
 
 if length(j_max_height)>1
-        %Calculate distance to max peak and max prom and max width 
-        dist_max_j = sqrt((max(jw) - jw).^2 + (max(jp) - jp).^2);
-        [j_dens, xj_dens] = ksdensity(dist_max_j);
-        [j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens);
+    
+% Calculate distance to max peak and max prom and max width 
+% dist_max_j = sqrt((max(j_max_height) - j_max_height).^2 + (max(jp) - jp).^2);
+% [j_dens, xj_dens] = ksdensity(dist_max_j);
+% [j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens);
         
-        % Remove peaks that are too far from maxes
-        rm_idx = [];
-        if length(j_dist_locs>0) %&& xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))>0.5
-            for c = 1:length(j_max_locs)
-                if dist_max_j(c) > xj_dens(j_dist_locs(find(j_dist_p == max(j_dist_p))))
-                    rm_idx = [rm_idx, c];
-                end
-            end
-        end
-        
+jw = rescale(jw); jp = rescale(jp);
+X = [jw', jp'];
+Z = linkage([jw', jp'], 'ward');
+T = cluster(Z,'MAXCLUST', 2);      
+%gscatter(X(:,1),X(:,2),T);
+g1_mean = mean(X(T==1), 1); g2_mean = mean(X(T==2), 1);
+
+% Remove peaks that are too far from maxes
+rm_idx = [];
+if length(jw)>0
+rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
+for c = 1:length(j_max_locs)
+    if T(c) == rm_group
+        rm_idx = [rm_idx, c];
+    end
+    end
 j_max_locs(rm_idx) = [];
 end
-
+        
+end
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
@@ -970,20 +1004,27 @@ xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
 
 if length(s_max_height)>1
 % Calculate distance to max peak and max prom
-dist_max_s = sqrt((max(sw) - sw).^2 + (max(sp) - sp).^2);
-[s_dens, xs_dens] = ksdensity(dist_max_s); 
-[s_dist_h, s_dist_locs, s_dist_w, s_dist_p]= findpeaks(-s_dens); 
+% dist_max_s = sqrt((max(s_max_height) - s_max_height).^2 + (max(sp) - sp).^2);
+% [s_dens, xs_dens] = ksdensity(dist_max_s); 
+% [s_dist_h, s_dist_locs, s_dist_w, s_dist_p]= findpeaks(-s_dens); 
+
+sw = rescale(sw); sp = rescale(sp);
+X = [sw, sp];
+Z = linkage(X, 'ward');
+T = cluster(Z,'MAXCLUST', 2);
+g1_mean = mean(X(T==1), 1); g2_mean = mean(X(T==2), 1);
+%gscatter(X(:,1),X(:,2),T)
 
 % Remove peaks that are too far from maxes
 rm_idx = [];
-if length(s_dist_locs>0) %&& xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))>0.5
+if length(sw)>0
+rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
 for c = 1:length(s_max_locs)
-    if dist_max_s(c) > xs_dens(s_dist_locs(find(s_dist_p == max(s_dist_p))))
+    if T(c) == rm_group
         rm_idx = [rm_idx, c];
     end
 end
 end
-
 s_max_locs(rm_idx) = [];
 end
 
@@ -1002,15 +1043,23 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
 if length(p_max_height)>1
 % Calculate distance to max peak and max prom
-dist_max_p = sqrt((max(pw) - pw).^2 + (max(pp) - pp).^2);
-[p_dens, xp_dens] = ksdensity(dist_max_p); 
-[p_dist_h, p_dist_locs, p_dist_w, p_dist_p]= findpeaks(-p_dens); 
+%dist_max_p = sqrt((max(p_max_height) - p_max_height).^2 + (max(pp) - pp).^2);
+%[p_dens, xp_dens] = ksdensity(dist_max_p); 
+%[p_dist_h, p_dist_locs, p_dist_w, p_dist_p]= findpeaks(-p_dens); 
+
+pw = rescale(pw); pp = rescale(pp);
+X = [pw, pp];
+Z = linkage(X,'ward');
+T = cluster(Z,'MAXCLUST', 2);
+g1_mean = mean(X(T==1), 1); g2_mean = mean(X(T==2), 1);
+%gscatter(X(:,1),X(:,2),T)
 
 % Remove peaks that are too far from maxes
 rm_idx = [];
-if length(p_dist_locs>0) %&& xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))>0.5
+if length(pw)>0
+rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
 for c = 1:length(p_max_locs)
-    if dist_max_p(c) > xp_dens(p_dist_locs(find(p_dist_p == max(p_dist_p))))
+    if T(c) == rm_group
         rm_idx = [rm_idx, c];
     end
 end
@@ -1210,8 +1259,8 @@ legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location',
 figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_breathdetections.fig');
 savefig(figfile);
  
- %% Write breaths to audit 
- save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
+%% Write breaths to audit 
+save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
 
  clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 end
