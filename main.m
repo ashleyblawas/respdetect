@@ -243,7 +243,7 @@ for k = 1:length(taglist);
             tag_ver = 'D3'; % Or D2, change this manually
             
             %Setup directories
-            [tag, tag_ver, recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path);
+            [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path);
             
             % Make a metadata file
             [metadata] = make_metadata(tag, recdir, prefix, fs, tag_ver, acousaud_filename, breathaud_filename, tag_on, tag_off);
@@ -282,7 +282,7 @@ for k = 1:length(taglist);
     
     % Make diving file
     diving_fname = strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat");
-    if isfile(diving_fname) == 0
+    if isfile(diving_fname) == 1
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)
@@ -638,7 +638,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 11:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -796,7 +796,7 @@ for r = length(p_shallow_ints):-1:1 % Go backwards so can delete as you go
         min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
         min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
     end
-        temp_sort = sort([min1, min2, min3, min4])
+        temp_sort = sort([min1, min2, min3, min4]);
         if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean(temp_sort(1:2))+0.30
             p_shallow_ints(r, :) = [];
         end
@@ -968,9 +968,9 @@ if length(j_max_height)>1
 % [j_dens, xj_dens] = ksdensity(dist_max_j);
 % [j_dist_h, j_dist_locs, j_dist_w, j_dist_p] = findpeaks(-j_dens);
         
-jw = rescale(jw); jp = rescale(jp);
-X = [jw', jp'];
-Z = linkage([jw', jp'], 'ward');
+jw = rescale(jw); jp = rescale(jp); j_max_height = rescale(j_max_height);
+X = [j_max_height', jw', jp'];
+Z = linkage([j_max_height', jw', jp'], 'ward');
 T = cluster(Z,'MAXCLUST', 2);      
 %gscatter(X(:,1),X(:,2),T);
 g1_mean = mean(X(T==1), 1); g2_mean = mean(X(T==2), 1);
@@ -996,7 +996,7 @@ scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
 %% Peak detection - SURGE JERK
 ax(2) = subplot(312);
 plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
-xlabel('Time (min)'); ylabel('Surge Jerk SE Smooth');
+xlabel('Time (min)'); ylabel('Surge SE Smooth');
 
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
@@ -1008,8 +1008,8 @@ if length(s_max_height)>1
 % [s_dens, xs_dens] = ksdensity(dist_max_s); 
 % [s_dist_h, s_dist_locs, s_dist_w, s_dist_p]= findpeaks(-s_dens); 
 
-sw = rescale(sw); sp = rescale(sp);
-X = [sw, sp];
+sw = rescale(sw); sp = rescale(sp); s_max_height = rescale(s_max_height);
+X = [s_max_height, sw, sp];
 Z = linkage(X, 'ward');
 T = cluster(Z,'MAXCLUST', 2);
 g1_mean = mean(X(T==1), 1); g2_mean = mean(X(T==2), 1);
@@ -1047,8 +1047,8 @@ if length(p_max_height)>1
 %[p_dens, xp_dens] = ksdensity(dist_max_p); 
 %[p_dist_h, p_dist_locs, p_dist_w, p_dist_p]= findpeaks(-p_dens); 
 
-pw = rescale(pw); pp = rescale(pp);
-X = [pw, pp];
+pw = rescale(pw); pp = rescale(pp); p_max_height = rescale(p_max_height);
+X = [p_max_height, pw, pp];
 Z = linkage(X,'ward');
 T = cluster(Z,'MAXCLUST', 2);
 g1_mean = mean(X(T==1), 1); g2_mean = mean(X(T==2), 1);
@@ -1220,38 +1220,38 @@ all_breath_locs.type = temp_all_breaths_type_s;
 % Plot all locations where these three conditions are met
 figure
 subplot(3, 2, [2, 4, 6])
-p1 = plot(time_min(start_idx:end_idx), p_smooth);
+p1 = plot(time_min(start_idx:end_idx), p_smooth, 'k');
 set(gca, 'ydir', 'reverse')
 hold on
 p_smooth_p2 = p_smooth;
 idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
 p_smooth_p2(~idx_temp) = NaN;
 p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
-p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth(log_breath_locs), 'm*');
+p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth(log_breath_locs), 80, 'm*', 'LineWidth', 2);
 title('Breath IDs during logging')
 ylabel('Depth (m)'); xlabel('Time (min)');
 
 %Plot individual IDs
 ax(1) = subplot(321);
-plot(p_smooth);
+plot(time_min(start_idx:end_idx), p_smooth, 'k');
 set(gca, 'ydir', 'reverse')
 hold on
-scatter(j_max_locs, p_smooth(j_max_locs), 'r*')
+scatter(time_min(start_idx+j_max_locs), p_smooth(j_max_locs), 'r*')
 ylabel('Jerk IDs');
 
 ax(2) = subplot(323);
-plot(p_smooth);
+plot(time_min(start_idx:end_idx), p_smooth, 'k');
 set(gca, 'ydir', 'reverse')
 hold on
-scatter(s_max_locs, p_smooth(s_max_locs), 'b*')
-ylabel('Surge Jerk IDs');
+scatter(time_min(start_idx+s_max_locs), p_smooth(s_max_locs), 'b*')
+ylabel('Surge IDs');
 
 ax(3) = subplot(325);
-plot(p_smooth);
+plot(time_min(start_idx:end_idx), p_smooth, 'k');
 set(gca, 'ydir', 'reverse')
 hold on
-scatter(p_max_locs, p_smooth(p_max_locs), 'g*')
-ylabel('Pitch IDs'); xlabel('Index');
+scatter(time_min(start_idx+p_max_locs), p_smooth(p_max_locs), 'g*')
+ylabel('Pitch IDs'); xlabel('Time (min)');
 
 linkaxes(ax, 'xy');
 legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
@@ -1394,4 +1394,4 @@ breath_type{k} = str2double(breath_type{k});
 end
 
 % Save data to bring into R
-save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs')
+%save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs')
