@@ -18,6 +18,7 @@ library(dbscan) # For dbscan clustering
 library(segmented) # For piecewise linear regression
 library(DescTools)
 library(viridis) # For viridis color palette
+library(plyr)
 ```
 
 # Import data
@@ -40,6 +41,18 @@ dive_end_s = imported_data$dive.end.s
 # Pull index of each breath
 breath_idx = imported_data$breath.idx
 
+# Pull type of each breath
+breath_type = imported_data$breath.type
+for (i in 1:length(breath_type)){
+  temp = unlist(breath_type[i])
+  temp[temp==1] = "ss"
+  temp[temp==2] = "log"
+  breath_type[i] = list(temp)
+}
+
+# Pull logging intervals
+log_ints = imported_data$logging.intervals.s
+
 # Pull fs
 fs = unlist(imported_data$fs)
 
@@ -47,10 +60,107 @@ fs = unlist(imported_data$fs)
 p_full = imported_data$depth
 
 # Remove imported data
-rm(imported_data)
+#rm(imported_data)
 ```
 
+# Randomly sample logintervals for acoustic auditing
+```{r}
+log_times = data.frame()
 
+# Go tag by tag
+for (k in 1:length(taglist)) {
+  if (length(unlist(log_ints[[k]]))>0) {
+  tag = taglist[[k]]
+  
+  # Get the type of breath
+  log_times_temp = log_ints[[k]]
+  
+  # Save all of this information to a dataframe
+  logs_temp = data.frame(tag,
+                         log_times_temp)
+  
+  # Append to breath info from all tags
+  log_times = rbind(log_times, logs_temp)
+  
+  rm(logs_temp)
+  }
+}
+
+names(log_times)[2] <- "log_start"
+names(log_times)[3] <- "log_end"
+
+log_times = log_times %>% mutate(log_dur = log_end-log_start)
+
+total_log_time_s = sum(log_times$log_dur)
+total_log_time_m = total_log_time_s/60
+total_log_time_h = total_log_time_m/60
+
+rm(tag, log_times_temp, logs_temp)
+
+# Randomly pull rows and add their duration until you get to a total of 5% of total logging time
+n = floor(0.05*total_log_time_s)
+paste("The duration of logging periods to audit is:", n, "seconds")
+
+total_sampled_dur = 0 
+logs_to_audit = data.frame()
+
+set.seed(2022)
+while(total_sampled_dur <= n){
+  sample_temp = sample_n(log_times, 1)
+  if(dim(match_df(sample_temp, logs_to_audit))[1]==0){
+    logs_to_audit = rbind(logs_to_audit, sample_temp)
+    total_sampled_dur = total_sampled_dur + sample_temp$log_dur
+  }
+}
+
+```
+
+## Sample breaths labeled log
+```{r}
+breath_info = data.frame()
+
+# Go tag by tag
+for (k in 1:length(taglist)) {
+  tag = taglist[[k]]
+  
+  # Create time vectors
+  p = as.vector(p_full[[k]][[1]])
+  time_s = seq(0, ((1 / fs[k]) * length(p)), by = 1 / fs[k])
+  
+  # Get index of each breath relative to length of p
+  breath_idx_tag = as.vector(breath_idx[[k]][[1]])
+  
+  # Get time in seconds of each breath
+  breath_time_s = time_s[breath_idx_tag]
+  
+  # Get the type of breath
+  breath_type_tag = as.vector(breath_type[[k]])
+  
+  # Save all of this information to a dataframe
+  breaths_temp = data.frame(tag,
+                            breath_time_s,
+                            breath_type_tag)
+  
+  # Append to breath info from all tags
+  breath_info = rbind(breath_info, breaths_temp)
+}
+
+mid_log_breaths = breath_info %>% filter(breath_type_tag == "log" & lag(breath_type_tag) == "log" & lead(breath_type_tag)== "log")
+
+log_breaths = breath_info %>% filter(breath_type_tag == "log")
+
+
+# Number of log breaths to do acoustic audit for
+n = floor(dim(log_breaths)[1]*0.05)
+paste("The number of log breaths to audit is:", n)
+
+rm(tag, p, time_s, breath_idx_tag, breath_time_s, breath_type_tag, breaths_temp, breath_info, log_breaths)
+
+
+set.seed(420)
+log_breaths_sample = sample_n(mid_log_breaths, n)
+
+```
 
 # Build useful dataframes
 ## Create dataframe with breath information

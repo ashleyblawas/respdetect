@@ -1264,7 +1264,7 @@ figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_Breathin
 savefig(figfile);
  
 %% Write breaths to audit 
-save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
+save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
 
  clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 end
@@ -1383,7 +1383,7 @@ depth{k} = p;
 fs{k} = metadata.fs;
 dive_start_s{k} = dive_start;
 dive_end_s{k} = dive_end;
-logging_intervals_s{k} = logging_ints_s;
+logging_intervals_s{k} = logging_ints;
 
 % Load in breaths
 [temp_all_breaths_s, sortidx] = sort(all_breath_locs.breath_idx);
@@ -1399,6 +1399,4 @@ breath_type{k} = str2double(breath_type{k});
 end
 
 % Save data to bring into R
-save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
-
-%% Acoustic auditing
+%save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs')
