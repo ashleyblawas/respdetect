@@ -626,15 +626,6 @@ for k = 1%:length(taglist);
     ylabel('Depth/Normalized Movement Metrics');
     xlabel('Time (min)');
     
-    %%
-    %pause;
-    %fprintf("Press any key to view the next tag record");
-    
-    %figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\movement_data\', metadata.tag, '_surfacedetections.fig');
-    %savefig(figfile);
-   
-    %clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
-
 end
 
 %% Breath audit 
@@ -693,22 +684,23 @@ if p(start_idx)<5
 end
 
 % Subset tag on to tag off of pressure 
-p = p(start_idx:end_idx);
+p_tag = p(start_idx:end_idx);
 
 %% First, identify minimia of pressure (aka surfacings)
 % Smooth depth signal
 %p_smooth = smoothdata(p, 'gaussian', fs);
+p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
 p_smooth = smoothdata(p, 'movmean', fs);
-p_shallow = p_smooth;
+p_shallow = p_smooth_tag;
 
 % Define shallow as any depth less than 0.5 m
-p_shallow(p_smooth>0.5) = NaN; 
+p_shallow(p_smooth_tag>0.5) = NaN; 
 p_shallow_idx = find(~isnan(p_shallow));
 
 % Plot smoothed depth with areas highlighted in red that are conditions
 % where a breath could occur
 figure('units','normalized','outerposition',[0 0 1 1]);
-p1 = plot(time_min(start_idx:end_idx), p_smooth, 'k', 'LineWidth', 1); hold on
+p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k', 'LineWidth', 1); hold on
 %plot(time_min(start_idx:end_idx), p_shallow, 'b-', 'LineWidth', 2);
 set(gca, 'YDir', 'reverse'); 
 xlabel('Time (min)'); ylabel('Depth (m)');
@@ -881,8 +873,8 @@ logging_ints_s = [logging_start_s', logging_end_s'];
 
 legend([p1 p2 p3 p4 p5 p6],{'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
 
-%figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
-%savefig(figfile);
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
+savefig(figfile);
 
 %% Now only want to do pitch/jerk detections for the logging periods
 % Subset tag on to tag off of pressure 
@@ -891,7 +883,7 @@ surge_smooth=surge_smooth(start_idx:end_idx);
 pitch_smooth=pitch_smooth(start_idx:end_idx);
 
 % Get idxes of p_smooth that are are logging with 5s window on each side
-idx_temp = zeros(length(p_smooth), 1);
+idx_temp = zeros(length(p_smooth_tag), 1);
 for d = 1:length(logging_start_idxs);
     idx_temp(logging_start_idxs(d)-5*metadata.fs:logging_end_idxs(d)+5*metadata.fs) = 1;
 end
@@ -911,7 +903,7 @@ pitch_smooth = rescale(pitch_smooth, 0, 1);
 %% Peak detection - JERK
 % Whichever one is second is the one getting audited
 figure
-ax(1) = subplot(311);
+ax(1) = subplot(321);
 plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
 xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 
@@ -998,7 +990,7 @@ scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
 
 
 %% Peak detection - SURGE JERK
-ax(2) = subplot(312);
+ax(2) = subplot(323);
 plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Surge SE Smooth');
 
@@ -1037,7 +1029,7 @@ scatter(time_min(s_max_locs+start_idx), surge_smooth(s_max_locs), 'b*')
 
 
 %% Peak detection - PITCH
-ax(3) = subplot(313);
+ax(3) = subplot(325);
 plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
 xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 
@@ -1074,9 +1066,9 @@ end
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
 
-linkaxes(ax, 'x')
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_movementdetections.fig');
-savefig(figfile);
+
+%figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_movementdetections.fig');
+%savefig(figfile);
 
 %% Find indexes where all conditions are met 
 
@@ -1176,7 +1168,7 @@ for c = 1:length(temp_diff_break)+1
     % If the same window as last time for any of these then keep first,
     % skip second instance
     if length(cont_range)>1*fs && j_win_count>j_win_count_prev && s_win_count>s_win_count_prev && p_win_count>p_win_count_prev
-        if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+1*fs || max(p_smooth(cont_val3_prev))>0.5 || max(p_smooth(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
+        if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+1*fs || max(p_smooth_tag(cont_val3_prev))>0.5 || max(p_smooth_tag(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
             % Mark breath at halfway point of each period
             log_breath_locs = [log_breath_locs; cont_val3(floor(length(cont_val3)/2))];
         end
@@ -1217,54 +1209,54 @@ end
 temp_all_breaths_s(rm_rows, :) = [];
 temp_all_breaths_type_s(rm_rows, :) = [];
 
-% Remember that these are within the tag on to tag off range
-all_breath_locs.breath_idx = temp_all_breaths_s;
+% Changing these to be in full range of "p"
+all_breath_locs.breath_idx = temp_all_breaths_s + start_idx;
 all_breath_locs.type = temp_all_breaths_type_s;
 
 % Plot all locations where these three conditions are met
-figure
-subplot(3, 2, [2, 4, 6])
-p1 = plot(time_min(start_idx:end_idx), p_smooth, 'k');
+%figure
+ax(4) = subplot(3, 2, [2, 4, 6])
+p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
 set(gca, 'ydir', 'reverse')
 hold on
-p_smooth_p2 = p_smooth;
+p_smooth_p2 = p_smooth_tag;
 idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
 p_smooth_p2(~idx_temp) = NaN;
 p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
-p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth(log_breath_locs), 80, 'm*', 'LineWidth', 2);
+p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth_tag(log_breath_locs), 80, 'm*', 'LineWidth', 2);
 title('Breath IDs during logging')
 ylabel('Depth (m)'); xlabel('Time (min)');
 
-%Plot individual IDs
-ax(1) = subplot(321);
-plot(time_min(start_idx:end_idx), p_smooth, 'k');
-set(gca, 'ydir', 'reverse')
-hold on
-scatter(time_min(start_idx+j_max_locs), p_smooth(j_max_locs), 'r*')
-ylabel('Jerk IDs');
-
-ax(2) = subplot(323);
-plot(time_min(start_idx:end_idx), p_smooth, 'k');
-set(gca, 'ydir', 'reverse')
-hold on
-scatter(time_min(start_idx+s_max_locs), p_smooth(s_max_locs), 'b*')
-ylabel('Surge IDs');
-
-ax(3) = subplot(325);
-plot(time_min(start_idx:end_idx), p_smooth, 'k');
-set(gca, 'ydir', 'reverse')
-hold on
-scatter(time_min(start_idx+p_max_locs), p_smooth(p_max_locs), 'g*')
-ylabel('Pitch IDs'); xlabel('Time (min)');
-
-linkaxes(ax, 'xy');
-legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
-
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_breathdetections.fig');
+% %Plot individual IDs
+% ax(1) = subplot(321);
+% plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
+% set(gca, 'ydir', 'reverse')
+% hold on
+% scatter(time_min(start_idx+j_max_locs), p_smooth_tag(j_max_locs), 'r*')
+% ylabel('Jerk IDs');
+% 
+% ax(2) = subplot(323);
+% plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
+% set(gca, 'ydir', 'reverse')
+% hold on
+% scatter(time_min(start_idx+s_max_locs), p_smooth_tag(s_max_locs), 'b*')
+% ylabel('Surge IDs');
+% 
+% ax(3) = subplot(325);
+% plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
+% set(gca, 'ydir', 'reverse')
+% hold on
+% scatter(time_min(start_idx+p_max_locs), p_smooth_tag(p_max_locs), 'g*')
+% ylabel('Pitch IDs'); xlabel('Time (min)');
+% 
+% linkaxes(ax, 'xy');
+% legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
+linkaxes(ax, 'x')
+figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_loggingdetections.fig');
 savefig(figfile);
  
 %% Write breaths to audit 
-save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
+save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
 
  clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 end
@@ -1297,7 +1289,7 @@ load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth
 % Load in breathing information
 load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, pitch); %Recalculate time
 
 % Load in breaths
 breath_idx = all_breath_locs.breath_idx;
@@ -1321,21 +1313,21 @@ breath_type = all_breath_locs.type(sortidx, :);
     legend('Depth', 'Single surface breaths', 'Log breaths');
 
     ax(2)=subplot(4, 1, 2);
-    plot(time_min, surge_smooth(start_idx:end_idx), 'r', 'LineWidth', 1.5); hold on 
-    scatter(breath_times(breath_type == 'ss')/60, surge_smooth(start_idx+breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, surge_smooth(start_idx+breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    plot(time_min(2:end), surge_smooth, 'r', 'LineWidth', 1.5); hold on 
+    scatter(breath_times(breath_type == 'ss')/60, surge_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, surge_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Surge SE');
 
     ax(3)=subplot(4, 1, 3);
-    plot(time_min, jerk_smooth(start_idx:end_idx), 'b', 'LineWidth', 1.5); hold on
-    scatter(breath_times(breath_type == 'ss')/60, jerk_smooth(start_idx+breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, jerk_smooth(start_idx+breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    plot(time_min(2:end), jerk_smooth, 'b', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss')/60, jerk_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, jerk_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Jerk SE');
     
     ax(4)=subplot(4, 1, 4);
-    plot(time_min, pitch_smooth(start_idx:end_idx), 'g', 'LineWidth', 1.5); hold on
-    scatter(breath_times(breath_type == 'ss')/60, pitch_smooth(start_idx+breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, pitch_smooth(start_idx+breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    plot(time_min(2:end), pitch_smooth, 'g', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss')/60, pitch_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log')/60, pitch_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     linkaxes(ax, 'x');
     ylabel('Smoothed Pitch SE');
     xlabel('Time (min)');
@@ -1389,7 +1381,7 @@ logging_intervals_s{k} = logging_ints_s;
 [temp_all_breaths_s, sortidx] = sort(all_breath_locs.breath_idx);
 temp_all_breaths_type_s = all_breath_locs.type(sortidx, :);
 
-breath_idx{k} = temp_all_breaths_s+start_idx;
+breath_idx{k} = temp_all_breaths_s;
 breath_type{k} = temp_all_breaths_type_s;
 breath_type{k}(breath_type{k}=="ss") = 1;
 breath_type{k}(breath_type{k}=="log") = 2;
@@ -1402,3 +1394,13 @@ end
 save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
 
 %% Acoustic auditing
+settagpath('audit', 'D:\gm\audit');
+tag = 'gm14_167a'
+tcue = 745;
+
+%Load in metadata
+metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+
+R = loadaudit(tag);
+R = tagaudit(tag, tcue, R);
+saveaudit(tag, R);

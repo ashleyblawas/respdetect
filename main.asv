@@ -1217,8 +1217,8 @@ end
 temp_all_breaths_s(rm_rows, :) = [];
 temp_all_breaths_type_s(rm_rows, :) = [];
 
-% Remember that these are within the tag on to tag off range
-all_breath_locs.breath_idx = temp_all_breaths_s;
+% Changing these to be in full range of "p"
+all_breath_locs.breath_idx = temp_all_breaths_s + start_idx;
 all_breath_locs.type = temp_all_breaths_type_s;
 
 % Plot all locations where these three conditions are met
@@ -1264,7 +1264,7 @@ figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_Breathin
 savefig(figfile);
  
 %% Write breaths to audit 
-save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs');
+save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p', 'p_smooth', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
 
  clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 end
@@ -1297,7 +1297,7 @@ load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth
 % Load in breathing information
 load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
+[time_sec, time_min, time_hour] =calc_time(metadata.fs, pitch); %Recalculate time
 
 % Load in breaths
 breath_idx = all_breath_locs.breath_idx;
@@ -1310,7 +1310,7 @@ breath_type = all_breath_locs.type(sortidx, :);
     figure
     title(metadata.tag, 'Interpreter', 'none');
     ax(1)=subplot(4, 1, 1);
-    plot(time_min, p_smooth, 'k', 'LineWidth', 1.5); hold on
+    plot(time_min(start, p_smooth, 'k', 'LineWidth', 1.5); hold on
         set(gca,'Ydir','reverse')
         ylabel('Depth (m)');
 
@@ -1383,7 +1383,7 @@ depth{k} = p;
 fs{k} = metadata.fs;
 dive_start_s{k} = dive_start;
 dive_end_s{k} = dive_end;
-logging_intervals_s{k} = logging_ints;
+logging_intervals_s{k} = logging_ints_s;
 
 % Load in breaths
 [temp_all_breaths_s, sortidx] = sort(all_breath_locs.breath_idx);
@@ -1399,4 +1399,16 @@ breath_type{k} = str2double(breath_type{k});
 end
 
 % Save data to bring into R
-%save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs')
+save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
+
+%% Acoustic auditing
+settagpath('audit', 'D:\gm\audit');
+tag = 'gm16_133a'
+tcue = 11931.06;
+
+%Load in metadata
+metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+
+R = loadaudit(tag);
+R = tagaudit(tag, tcue, R);
+saveaudit(tag, R);
