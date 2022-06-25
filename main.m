@@ -1215,7 +1215,7 @@ all_breath_locs.type = temp_all_breaths_type_s;
 
 % Plot all locations where these three conditions are met
 %figure
-ax(4) = subplot(3, 2, [2, 4, 6])
+ax(4) = subplot(3, 2, [2, 4, 6]);
 p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
 set(gca, 'ydir', 'reverse')
 hold on
