@@ -1413,8 +1413,8 @@ save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\da
 %% Acoustic auditing
 settagpath('audit', 'D:\gm\audit');
 settagpath('prh', 'D:\gm\prh\50 Hz');
-tag = 'gm14_167a';
-tcue = 745;
+tag = 'gm08_143a';
+tcue = 556.92;
 
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
