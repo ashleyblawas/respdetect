@@ -33,8 +33,7 @@ clear; clc; close all
     'gm11_155a',...
     'gm11_156a',...
     'gm11_158b',...
-    'gm11_165a',...
-    'gm12_125a',...
+    'gm11_165a',...%'gm12_125a',... Bad pressure cal for some logging periods
     'gm12_125b',...%'gm12_161a',...
     'gm12_162a',...
     'gm12_163a',...
@@ -193,9 +192,12 @@ saveraw(tag,s,fs) % save a raw file
 [s,fs] = loadraw(tag) ; % if workspace was cleared after step 5
 CAL= TAGID ; % read the calibration for the device used
 
-[p_c,tempr_c,CAL] = calpressure(s_chopped, CAL, 'full') ; % follow screen directions
+[p_c,tempr_c,CAL] = calpressure(s, CAL, 'full') ; % follow screen directions
 [M,CAL] = autocalmag(s,CAL) ; % accept or reject test results
-[A,CAL] = autocalacc(s,p,tempr,CAL) ; % accept or reject test results
+[A,CAL] = autocalacc(s,p_c,tempr_c,CAL) ; % accept or reject test results
+
+p=p_c;
+tempr=tempr_c;
 
 savecal(tag,'CAL',CAL) % save calibration results
 saveprh(tag, 'p','tempr','fs','A', 'M') % save tag frame results
@@ -625,7 +627,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 1:length(taglist);
+for k = 6:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -687,8 +689,8 @@ p_tag = p(start_idx:end_idx);
 %% First, identify minimia of pressure (aka surfacings)
 % Smooth depth signal
 %p_smooth = smoothdata(p, 'gaussian', fs);
-p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
 p_smooth = smoothdata(p, 'movmean', fs);
+p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
 p_shallow = p_smooth_tag;
 
 % Define shallow as any depth less than 0.5 m
@@ -717,24 +719,36 @@ p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
 % This works for D2s but NOT for D3s
 delete_rows = [];
 for r = 1:length(p_shallow_ints)
-    if p_shallow_ints(r, 3) > 10*metadata.fs %&& any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))<0.25)
-        
+    
+    if p_shallow_ints(r, 3) > 10*metadata.fs && any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))>0.35)
+       
         p_temp = p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)));
         
         p_shallower_breaks = find(p_temp>0.35);
         
         % Find start and end of surface periods
         p_shallower_breaks_end = p_shallower_breaks(find(diff(p_shallower_breaks)>1));
-        p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1)+1);
-       
-        if length(p_shallower_breaks_end>1);
+        p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1))+1;
+        
+        if length(p_shallower_breaks_end)>1
             p_shallower_breaks_end(1) = [];
             p_shallower_breaks_start(end) = [];
-             
-            % Add these to p_ints
-            p_shallow_ints_temp =  [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_end-1], [p_shallow_ints(r, 1)+p_shallower_breaks_start-1; p_shallow_ints(r, 2)]];
+            
+           % Add these to p_ints
+            p_shallow_ints_temp = [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_start], [p_shallow_ints(r, 1)+p_shallower_breaks_end; p_shallow_ints(r, 2)]];
             p_shallow_ints_temp(:, 3) = p_shallow_ints_temp(:, 2) -p_shallow_ints_temp(:, 1);
             
+            % Concatenate short p_ints that were separated
+            delete_rows_2 = [];
+            for m = 1:length(p_shallow_ints_temp)-1
+                if p_shallow_ints_temp(m, 3) < 10*fs && ~any(delete_rows_2 == m)
+                   p_shallow_ints_temp(m+1, 1) = p_shallow_ints_temp(m, 1);
+                   p_shallow_ints_temp(m+1, 3) = p_shallow_ints_temp(m+1, 2) -p_shallow_ints_temp(m+1, 1);
+                   delete_rows_2 = [delete_rows_2, m];
+                end
+            end
+            p_shallow_ints_temp(delete_rows_2, :) = [];
+
             p_shallow_ints = [p_shallow_ints; p_shallow_ints_temp];
             % Remove old rows from p_int
             delete_rows = [delete_rows, r];
@@ -892,12 +906,6 @@ surge_smooth(idx_temp==0) = NaN;
 pitch_smooth(idx_temp==0) = NaN;
 
 %% Normalize pitch and jerk 
-% Rescale between 0 and 1 so that can set a prominence that is standard
-% across tags
-% jerk_smooth = rescale(jerk_smooth, 0, 1);
-% surge_smooth = rescale(surge_smooth, 0, 1);
-% pitch_smooth = rescale(pitch_smooth, 0, 1);
-
 % Divide signal into continue sections to rescale
 cont_sections_jerk = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelValues');
 cont_sections_surge = regionprops(~isnan(surge_smooth), surge_smooth, 'PixelValues');
@@ -936,7 +944,7 @@ xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
 jw = rescale(jw); jp = rescale(jp); j_max_height = rescale(j_max_height);
 
 if length(j_max_height)>1
-    dist = sqrt((max(jw)-jw).^2 + (max(jp)-jp).^2);
+    dist = sqrt((max(j_max_height)-j_max_height).^2 +(max(jw)-jw).^2 + (max(jp)-jp).^2);
     [f_d,xi_d] = ksdensity(dist);
     thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
     if isempty(thres_d) == 1
@@ -946,19 +954,10 @@ if length(j_max_height)>1
         g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
     else
         idx = [dist<thres_d];
-        %         if sum(double(idx))<jerk_temp_breathest
-        %             to_find = jerk_temp_breathest-sum(idx);
-        %             [ii,ii] = sort(dist);
-        %             if dist(ii(to_find+sum(double(idx)))) < mean(dist(ii(to_find+sum(double(idx))+1:end)))-2*std(dist(ii(to_find+sum(double(idx))+1:end)))
-        %                 idx(ii(to_find+sum(double(idx)))) = 1;
-        %             end
-        %         end
         idx = double(idx); idx(idx==0)=2;
         g1_mean = mean(jw(idx==1)); g2_mean = mean(jw(idx==2));
     end
-    %end
-    
-    
+     
     % Remove peaks that are too far from maxes
     rm_idx = [];
     if length(jw)>0
@@ -971,10 +970,7 @@ if length(j_max_height)>1
         end
         j_max_locs(rm_idx) = [];
     end
-    %end
-    
-    %j_max_locs = j_max_locs + jerk_temp_idx(1) - 1;
-    
+
     % Okay, so now we are saying breaths can only occur at these locations
     scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
     
@@ -998,7 +994,7 @@ xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
 sw = rescale(sw); sp = rescale(sp); s_max_height = rescale(s_max_height);
 
 if length(s_max_height)>0
-    dist = sqrt((max(sw)-sw).^2 + (max(sp)-sp).^2);
+    dist = sqrt((max(s_max_height)-s_max_height).^2 +(max(sw)-sw).^2 + (max(sp)-sp).^2);
     [f_d,xi_d] = ksdensity(dist);
     thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
     if isempty(thres_d) == 1
@@ -1049,7 +1045,7 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 pw = rescale(pw); pp = rescale(pp); p_max_height = rescale(p_max_height);
 
 if length(p_max_height)>0
-    dist = sqrt((max(pw)-pw).^2 + (max(pp)-pp).^2);
+    dist = sqrt((max(p_max_height)-p_max_height).^2 + (max(pw)-pw).^2 + (max(pp)-pp).^2);
     [f_d,xi_d] = ksdensity(dist);
     thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
     if isempty(thres_d) ==1
@@ -1284,7 +1280,7 @@ end
 
 % Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
-for k = 1:length(taglist);
+for k = 6:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
