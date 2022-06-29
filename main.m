@@ -35,8 +35,7 @@ clear; clc; close all
     'gm11_158b',...
     'gm11_165a',...
     'gm12_125a',...
-    'gm12_125b',...
-    'gm12_161a',...
+    'gm12_125b',...%'gm12_161a',...
     'gm12_162a',...
     'gm12_163a',...
     'gm12_163b',...
@@ -48,16 +47,13 @@ clear; clc; close all
     'gm14_178b',...
     'gm14_279a',...
     'gm16_133a',...
-    'gm16_181a'%,...
-%     'gm15_145b',...
-%     'gm15_153a',...
-%     'gm17_234a',...
-%     'gm18_157a',...
-%     'gm18_157b',...
-%     'gm18_159a',...
-%     'gm18_227a',...
-%     'gm18_239a'
-    };
+    'gm16_181a',...
+    'gm15_145b',...
+    'gm15_153a',...%'gm17_234a',...
+    'gm18_157a',...
+    'gm18_157b',...%'gm18_159a',...
+    'gm18_227a',...
+    'gm18_239a'};
 
 % I want to remove everything from the rest of the functions that has to do
 % with tag processing because I am operating under the assumption that tag
@@ -671,6 +667,8 @@ end
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
+%plot(jerk_smooth); hold on; plot(jerk_smooth2)
+
 %% Define start and end of tag deployment using metadata tag on/off times
 start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
 end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
@@ -717,33 +715,33 @@ p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
 % If the duration of a surfacing is >10 seconds, but the depth crosses 0.25
 % m during the surfacing then divide at 0.25 m into two single surfacings 
 % This works for D2s but NOT for D3s
-% delete_rows = [];
-% for r = 1:length(p_shallow_ints)
-%     if p_shallow_ints(r, 3) > 10*metadata.fs %&& any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))<0.25)
-%         
-%         p_temp = p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)));
-%         
-%         p_shallower_breaks = find(p_temp>0.35);
-%         
-%         % Find start and end of surface periods
-%         p_shallower_breaks_end = p_shallower_breaks(find(diff(p_shallower_breaks)>1));
-%         p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1)+1);
-%        
-%         if length(p_shallower_breaks_end>1);
-%             p_shallower_breaks_end(1) = [];
-%             p_shallower_breaks_start(end) = [];
-%              
-%             % Add these to p_ints
-%             p_shallow_ints_temp =  [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_end-1], [p_shallow_ints(r, 1)+p_shallower_breaks_start-1; p_shallow_ints(r, 2)]];
-%             p_shallow_ints_temp(:, 3) = p_shallow_ints_temp(:, 2) -p_shallow_ints_temp(:, 1);
-%             
-%             p_shallow_ints = [p_shallow_ints; p_shallow_ints_temp];
-%             % Remove old rows from p_int
-%             delete_rows = [delete_rows, r];
-%         end
-%     end
-% end
-% p_shallow_ints(delete_rows, :) = [];
+delete_rows = [];
+for r = 1:length(p_shallow_ints)
+    if p_shallow_ints(r, 3) > 10*metadata.fs %&& any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))<0.25)
+        
+        p_temp = p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)));
+        
+        p_shallower_breaks = find(p_temp>0.35);
+        
+        % Find start and end of surface periods
+        p_shallower_breaks_end = p_shallower_breaks(find(diff(p_shallower_breaks)>1));
+        p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1)+1);
+       
+        if length(p_shallower_breaks_end>1);
+            p_shallower_breaks_end(1) = [];
+            p_shallower_breaks_start(end) = [];
+             
+            % Add these to p_ints
+            p_shallow_ints_temp =  [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_end-1], [p_shallow_ints(r, 1)+p_shallower_breaks_start-1; p_shallow_ints(r, 2)]];
+            p_shallow_ints_temp(:, 3) = p_shallow_ints_temp(:, 2) -p_shallow_ints_temp(:, 1);
+            
+            p_shallow_ints = [p_shallow_ints; p_shallow_ints_temp];
+            % Remove old rows from p_int
+            delete_rows = [delete_rows, r];
+        end
+    end
+end
+p_shallow_ints(delete_rows, :) = [];
 
 % If surfacing is less than 50 indicies (which would be 1 second given 50
 % Hz sampling) then remove it - likely not a surfacing anyway but a period
@@ -789,7 +787,7 @@ for r = length(p_shallow_ints):-1:1 % Go backwards so can delete as you go
         min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
     end
         temp_sort = sort([min1, min2, min3, min4]);
-        if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean(temp_sort(1:2))+0.30
+        if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean(temp_sort(1:2))+0.15
             p_shallow_ints(r, :) = [];
         end
     end
@@ -901,11 +899,31 @@ surge_smooth = rescale(surge_smooth, 0, 1);
 pitch_smooth = rescale(pitch_smooth, 0, 1);
 
 %% Peak detection - JERK
+
+% Divide signal into continue sections to rescale
+cont_sections = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelValues');
+cont_sections_idx = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelList');
+
+for i = 1:length(cont_sections)
+
+% Assign jerk for this section to variables and indexes of section 
+jerk_temp = cont_sections(i).PixelValues;
+jerk_temp_idx = cont_sections_idx(i).PixelList(:, 1); 
+
+% Rescale the jerk in this section 
+jerk_temp = rescale(jerk_temp);
+
+jerk_smooth(jerk_temp_idx) = jerk_temp;
+end
+
 % Whichever one is second is the one getting audited
 figure('units','normalized','outerposition',[0 0 1 1]);
 ax(1) = subplot(3, 5, [1 2]);
 plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
-xlabel('Time (min)'); ylabel('Jerk SE Smooth');
+xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
+
+% Rough estimate of how many breaths there could be 
+%jerk_temp_breathest = floor(length(jerk_temp)/fs/10);
 
 %Peak detect jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
@@ -914,24 +932,28 @@ xlabel('Time (min)'); ylabel('Jerk SE Smooth');
 jw = rescale(jw); jp = rescale(jp); j_max_height = rescale(j_max_height);
 
 if length(j_max_height)>1
-    if length(j_max_height)<10
-        %jw = rescale(jw); jp = rescale(jp); j_max_height = rescale(j_max_height);
-        X = [jw', jp'];
+    dist = sqrt((max(j_max_height)-j_max_height).^2 + (max(jw)-jw).^2 + (max(jp)-jp).^2);
+    [f_d,xi_d] = ksdensity(dist);
+    thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
+    if isempty(thres_d) == 1
+        X = [j_max_height', jw', jp'];
         Z = linkage(X, 'ward');
         idx = cluster(Z,'MAXCLUST', 2);
         g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
     else
-        [f_jw,xi_jw] = ksdensity(jw, 'Bandwidth',0.01);
-        [f_jp,xi_jp] = ksdensity(jp, 'Bandwidth',0.01);
-        %figure
-        %plot(xi_jw, f_jw); hold on; plot(xi_jp, f_jp);
-        thres_jw = xi_jw(find(islocalmin(f_jw,2)>0, 1, 'first'));
-        thres_jp = xi_jp(find(islocalmin(f_jp,2)>0, 1, 'first'));
-        idx = [jw>thres_jw & jp>thres_jp];
+        idx = [dist<thres_d];
+%         if sum(double(idx))<jerk_temp_breathest
+%             to_find = jerk_temp_breathest-sum(idx);
+%             [ii,ii] = sort(dist);
+%             if dist(ii(to_find+sum(double(idx)))) < mean(dist(ii(to_find+sum(double(idx))+1:end)))-2*std(dist(ii(to_find+sum(double(idx))+1:end)))
+%                 idx(ii(to_find+sum(double(idx)))) = 1;
+%             end
+%         end
         idx = double(idx); idx(idx==0)=2;
         g1_mean = mean(jw(idx==1)); g2_mean = mean(jw(idx==2));
     end
-    
+%end
+
 
  % Remove peaks that are too far from maxes
  rm_idx = [];
@@ -945,19 +967,22 @@ if length(j_max_height)>1
      end
      j_max_locs(rm_idx) = [];
  end
-end
+%end
+
+%j_max_locs = j_max_locs + jerk_temp_idx(1) - 1;
 
 % Okay, so now we are saying breaths can only occur at these locations
 scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
 
-if length(jw)>0
-    subplot(3, 5, 3)
-    plot(jw(idx==rm_group), jp(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
-    hold on
-    plot(jw(idx~=rm_group), jp(idx~=rm_group), 'k.', 'MarkerSize', 12) 
-    xlabel('Peak Width'); ylabel('Peak Prominence'); %legend('Cluster 1', 'Cluster 2')
-end
+% if length(jw)>0
+%     subplot(3, 5, 3)
+%     plot(jw(idx==rm_group), jp(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
+%     hold on
+%     plot(jw(idx~=rm_group), jp(idx~=rm_group), 'k.', 'MarkerSize', 12) 
+%     xlabel('Peak Width'); ylabel('Peak Prominence'); %legend('Cluster 1', 'Cluster 2')
+% end
 
+end
 %% Peak detection - SURGE JERK
 ax(2) = subplot(3, 5, [6 7]);
 plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
@@ -969,18 +994,17 @@ xlabel('Time (min)'); ylabel('Surge SE Smooth');
 sw = rescale(sw); sp = rescale(sp); s_max_height = rescale(s_max_height);
 
 if length(s_max_height)>1
-    if length(s_max_height)<10
+    if length(s_max_height)<100
         %sw = rescale(sw); sp = rescale(sp); s_max_height = rescale(s_max_height);
         X = [sw, sp];
         Z = linkage(X, 'ward');
         idx = cluster(Z,'MAXCLUST', 2);
         g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
     else
-       [f_sw,xi_sw] = ksdensity(sw, 'Bandwidth',0.01);
-       [f_sp,xi_sp] = ksdensity(sp, 'Bandwidth',0.01);
-       thres_sw = xi_sw(find(islocalmin(f_sw,2)>0, 1, 'first'));
-       thres_sp = xi_sp(find(islocalmin(f_sp,2)>0, 1, 'first'));
-       idx = [sw>thres_sw & sp>thres_sp];
+       dist = sqrt((max(s_max_height)-s_max_height).^2 + (max(sw)-sw).^2 + (max(sp)-sp).^2);
+       [f_d,xi_d] = ksdensity(dist);
+       thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
+       idx = [dist>thres_d];
        idx = double(idx); idx(idx==0)=2;
        g1_mean = mean(sw(idx==1)); g2_mean = mean(sw(idx==2));
     end
@@ -1017,19 +1041,19 @@ xlabel('Time (min)'); ylabel('Pitch SE Smooth');
 %Peak detect surge jerk, defining here that the max breath rate is 20 breaths/min
 %given 2 second separation
 [p_max_height, p_max_locs, pw, pp] =findpeaks(pitch_smooth, 'MinPeakDistance', 3*metadata.fs);
+pw = rescale(pw); pp = rescale(pp); p_max_height = rescale(p_max_height);
 
 if length(p_max_height)>1
-    if length(p_max_height)<10
+    if length(p_max_height)<100
         X = [pw, pp];
         Z = linkage(X, 'ward');
         idx = cluster(Z,'MAXCLUST', 2);
         g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
     else
-       [f_pw,xi_pw] = ksdensity(pw, 'Bandwidth',0.01);
-       [f_pp,xi_pp] = ksdensity(pp, 'Bandwidth',0.01);
-       thres_pw = xi_pw(find(islocalmin(f_pw,2)>0, 1, 'first'));
-       thres_pp = xi_pp(find(islocalmin(f_pp,2)>0, 1, 'first'));
-       idx = [pw>thres_pw & pp>thres_pp];
+       dist = sqrt((max(p_max_height)-p_max_height).^2 + (max(pw)-pw).^2 + (max(pp)-pp).^2);
+       [f_d,xi_d] = ksdensity(dist);
+       thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
+       idx = [dist>thres_d];
        idx = double(idx); idx(idx==0)=2;
        g1_mean = mean(pw(idx==1)); g2_mean = mean(pw(idx==2));
     end
