@@ -178,10 +178,10 @@ d3savecal(deploy_name,'Location','')
 saveprh(tag,'p','A','M','fs','Aw','Mw','pitch','roll','head'); %Save the prh file to your directory
 
 %% For D2 processing
-settagpath('raw', 'D:\gm\gm12\gm12_125a');
+settagpath('raw', 'D:\gm\gm12\gm12_125b');
 settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
 settagpath('prh', 'D:\gm\prh');
-tag = 'gm12_125a';
+tag = 'gm12_125b';
 
 % Have to do this once - saving raw file in deployment folder
 %settagpath('raw',rawdir) % add raw directory to paths
@@ -192,12 +192,10 @@ saveraw(tag,s,fs) % save a raw file
 [s,fs] = loadraw(tag) ; % if workspace was cleared after step 5
 CAL= TAGID ; % read the calibration for the device used
 
-[p_c,tempr_c,CAL] = calpressure(s, CAL, 'full') ; % follow screen directions
+[p,tempr,CAL] = calpressure(s, CAL, 'full') ; % follow screen directions
 [M,CAL] = autocalmag(s,CAL) ; % accept or reject test results
-[A,CAL] = autocalacc(s,p_c,tempr_c,CAL) ; % accept or reject test results
+[A,CAL] = autocalacc(s,p,tempr,CAL) ; % accept or reject test results
 
-p=p_c;
-tempr=tempr_c;
 
 savecal(tag,'CAL',CAL) % save calibration results
 saveprh(tag, 'p','tempr','fs','A', 'M') % save tag frame results
@@ -627,7 +625,7 @@ for k = 1%:length(taglist);
 end
 
 %% Breath audit 
-for k = 6:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -717,45 +715,45 @@ p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
 % If the duration of a surfacing is >10 seconds, but the depth crosses 0.25
 % m during the surfacing then divide at 0.25 m into two single surfacings 
 % This works for D2s but NOT for D3s
-delete_rows = [];
-for r = 1:length(p_shallow_ints)
-    
-    if p_shallow_ints(r, 3) > 10*metadata.fs && any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))>0.35)
-       
-        p_temp = p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)));
-        
-        p_shallower_breaks = find(p_temp>0.35);
-        
-        % Find start and end of surface periods
-        p_shallower_breaks_end = p_shallower_breaks(find(diff(p_shallower_breaks)>1));
-        p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1))+1;
-        
-        if length(p_shallower_breaks_end)>1
-            p_shallower_breaks_end(1) = [];
-            p_shallower_breaks_start(end) = [];
-            
-           % Add these to p_ints
-            p_shallow_ints_temp = [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_start], [p_shallow_ints(r, 1)+p_shallower_breaks_end; p_shallow_ints(r, 2)]];
-            p_shallow_ints_temp(:, 3) = p_shallow_ints_temp(:, 2) -p_shallow_ints_temp(:, 1);
-            
-            % Concatenate short p_ints that were separated
-            delete_rows_2 = [];
-            for m = 1:length(p_shallow_ints_temp)-1
-                if p_shallow_ints_temp(m, 3) < 10*fs && ~any(delete_rows_2 == m)
-                   p_shallow_ints_temp(m+1, 1) = p_shallow_ints_temp(m, 1);
-                   p_shallow_ints_temp(m+1, 3) = p_shallow_ints_temp(m+1, 2) -p_shallow_ints_temp(m+1, 1);
-                   delete_rows_2 = [delete_rows_2, m];
-                end
-            end
-            p_shallow_ints_temp(delete_rows_2, :) = [];
-
-            p_shallow_ints = [p_shallow_ints; p_shallow_ints_temp];
-            % Remove old rows from p_int
-            delete_rows = [delete_rows, r];
-        end
-    end
-end
-p_shallow_ints(delete_rows, :) = [];
+% delete_rows = [];
+% for r = 1:length(p_shallow_ints)
+%     
+%     if p_shallow_ints(r, 3) > 10*metadata.fs %&& any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))>0.35)
+%        
+%         p_temp = p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)));
+%         
+%         p_shallower_breaks = find(p_temp>0.35);
+%         
+%         % Find start and end of surface periods
+%         p_shallower_breaks_end = p_shallower_breaks(find(diff(p_shallower_breaks)>1));
+%         p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1))+1;
+%         
+%         if length(p_shallower_breaks_end)>1
+%             p_shallower_breaks_end(1) = [];
+%             p_shallower_breaks_start(end) = [];
+%             
+%            % Add these to p_ints
+%             p_shallow_ints_temp = [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_end-1], [p_shallow_ints(r, 1)+p_shallower_breaks_start-1; p_shallow_ints(r, 2)]];
+%             p_shallow_ints_temp(:, 3) = p_shallow_ints_temp(:, 2) -p_shallow_ints_temp(:, 1);
+%             
+%             % Concatenate short p_ints that were separated
+% %             delete_rows_2 = [];
+% %             for m = 1:length(p_shallow_ints_temp)-1
+% %                 if p_shallow_ints_temp(m, 3) < 10*fs && ~any(delete_rows_2 == m)
+% %                    p_shallow_ints_temp(m+1, 1) = p_shallow_ints_temp(m, 1);
+% %                    p_shallow_ints_temp(m+1, 3) = p_shallow_ints_temp(m+1, 2) -p_shallow_ints_temp(m+1, 1);
+% %                    delete_rows_2 = [delete_rows_2, m];
+% %                 end
+% %             end
+% %             p_shallow_ints_temp(delete_rows_2, :) = [];
+% 
+%             p_shallow_ints = [p_shallow_ints; p_shallow_ints_temp];
+%             % Remove old rows from p_int
+%             delete_rows = [delete_rows, r];
+%         end
+%     end
+% end
+% p_shallow_ints(delete_rows, :) = [];
 
 % If surfacing is less than 50 indicies (which would be 1 second given 50
 % Hz sampling) then remove it - likely not a surfacing anyway but a period
@@ -1280,7 +1278,7 @@ end
 
 % Import breaths from audit - audits ONLY worked for D2s NOT D3s
 
-for k = 6:length(taglist);
+for k = 1:length(taglist);
 tag = taglist{k};
 
 %Load in metadata
@@ -1410,15 +1408,33 @@ end
 % Save data to bring into R
 save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
 
-%% Acoustic auditing
+%% Acoustic auditing - D2
 settagpath('audit', 'D:\gm\audit');
 settagpath('prh', 'D:\gm\prh\50 Hz');
-tag = 'gm08_143a';
-tcue = 556.92;
+settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
+
+tag = 'gm18_157b';
+tcue = 623.4;
 
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
 
 R = loadaudit(tag);
 R = tagaudit(tag, tcue, R);
+saveaudit(tag, R);
+
+%% Acoustic auditing - D3
+settagpath('audit', 'D:\gm\audit');
+settagpath('prh', 'D:\gm\prh\50 Hz');
+settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
+
+tag = 'gm15_153a';
+recdir = 'D:\gm\gm15\gm15_153a';
+tcue = 6185.94;
+
+%Load in metadata
+metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+
+R = loadaudit(tag);
+R = d3audit(recdir, tag,  tcue, R);
 saveaudit(tag, R);
