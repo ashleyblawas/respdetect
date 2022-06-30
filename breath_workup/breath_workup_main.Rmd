@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Import libraries
-```{r, warning=FALSE, message = FALSE}
+```{r, warning = FALSE, message = FALSE}
 library(tidyverse)
 library(R.matlab)
 library(cowplot) # For subplotting
@@ -19,6 +19,7 @@ library(segmented) # For piecewise linear regression
 library(DescTools)
 library(viridis) # For viridis color palette
 library(plyr)
+library(vroom)
 ```
 
 # Import data
@@ -60,10 +61,10 @@ fs = unlist(imported_data$fs)
 p_full = imported_data$depth
 
 # Remove imported data
-#rm(imported_data)
+rm(imported_data)
 ```
 
-# Randomly sample logintervals for acoustic auditing
+# Randomly sample log intervals for acoustic auditing
 ```{r}
 log_times = data.frame()
 
@@ -98,7 +99,7 @@ total_log_time_h = total_log_time_m/60
 rm(tag, log_times_temp, logs_temp)
 
 # Randomly pull rows and add their duration until you get to a total of 5% of total logging time
-n = floor(0.05*total_log_time_s)
+n = floor(0.10*total_log_time_s)
 paste("The duration of logging periods to audit is:", n, "seconds")
 
 total_sampled_dur = 0 
@@ -115,52 +116,6 @@ while(total_sampled_dur <= n){
 
 ```
 
-## Sample breaths labeled log
-```{r}
-breath_info = data.frame()
-
-# Go tag by tag
-for (k in 1:length(taglist)) {
-  tag = taglist[[k]]
-  
-  # Create time vectors
-  p = as.vector(p_full[[k]][[1]])
-  time_s = seq(0, ((1 / fs[k]) * length(p)), by = 1 / fs[k])
-  
-  # Get index of each breath relative to length of p
-  breath_idx_tag = as.vector(breath_idx[[k]][[1]])
-  
-  # Get time in seconds of each breath
-  breath_time_s = time_s[breath_idx_tag]
-  
-  # Get the type of breath
-  breath_type_tag = as.vector(breath_type[[k]])
-  
-  # Save all of this information to a dataframe
-  breaths_temp = data.frame(tag,
-                            breath_time_s,
-                            breath_type_tag)
-  
-  # Append to breath info from all tags
-  breath_info = rbind(breath_info, breaths_temp)
-}
-
-mid_log_breaths = breath_info %>% filter(breath_type_tag == "log" & lag(breath_type_tag) == "log" & lead(breath_type_tag)== "log")
-
-log_breaths = breath_info %>% filter(breath_type_tag == "log")
-
-
-# Number of log breaths to do acoustic audit for
-n = floor(dim(log_breaths)[1]*0.05)
-paste("The number of log breaths to audit is:", n)
-
-rm(tag, p, time_s, breath_idx_tag, breath_time_s, breath_type_tag, breaths_temp, breath_info, log_breaths)
-
-
-set.seed(420)
-log_breaths_sample = sample_n(mid_log_breaths, n)
-
-```
 
 # Build useful dataframes
 ## Create dataframe with breath information
@@ -217,6 +172,58 @@ rm(
 
 ```
 
+# Import acoustic audits
+```{r}
+list_of_files = list.files(path = "D:/gm/audit",
+                            pattern = "acousticaud.txt$", 
+                            full.names = TRUE)
+
+
+# Read all the files and create a FileName column to store filenames
+audited_breaths <- vroom(list_of_files, col_names = FALSE, id = "FileName")
+
+names(audited_breaths)[2] <- "breath_start"
+names(audited_breaths)[3] <- "breath_dur"
+names(audited_breaths)[4] <- "comment"
+
+audited_breaths = audited_breaths %>% mutate(tag = substr(FileName,13,21))
+
+matched_breaths = data.frame()
+
+for (i in unique(audited_breaths$tag)){
+  breaths_tag = breaths %>% filter(tag == i)
+  audited_breaths_tag = audited_breaths %>% filter(tag == i)
+  for (j in audited_breaths_tag$breath_start){
+  row_idx = which.min(abs(j-breaths_tag$breath_time_s))
+  row_temp = data.frame(i, j, audited_breaths_tag$breath_dur[which(audited_breaths_tag$breath_start==j)], breaths_tag$breath_time_s[row_idx])
+  matched_breaths = rbind(matched_breaths, row_temp)
+  }
+  
+}
+names(matched_breaths)[1] <- "tag"
+names(matched_breaths)[2] <- "audited_breath_start"
+names(matched_breaths)[3] <- "audited_breath_dur"
+names(matched_breaths)[4] <- "detected_breath"
+
+
+matched_breaths = matched_breaths %>% mutate(diff_start = audited_breath_start-detected_breath, diff_end = audited_breath_start+audited_breath_dur-detected_breath)
+
+for (k in 1:dim(matched_breaths)[1]){
+closest_point[k] = min(abs(matched_breaths$diff_start[k]), abs(matched_breaths$diff_end[k]))}
+
+matched_breaths = matched_breaths%>% mutate(diff = ifelse(diff_start*diff_end<0, 0, closest_point)) 
+
+ggplot() +  
+  #geom_rect(aes(xmin=-2, xmax=131, ymin=0, ymax=5), alpha = 0.1) +
+ # geom_segment(data=matched_breaths, aes(x = seq(1, length(audited_breath_start)), y = diff_start, xend = seq(1, length(audited_breath_start)), yend = diff_end)) +
+  geom_point(data=matched_breaths, aes(x = seq(1, length(audited_breath_start)), y =diff, color = tag)) + 
+  #geom_point(data=matched_breaths, aes(x = seq(1, length(audited_breath_start)), y = diff_end))+
+  xlab('Index') + ylab('Difference between audited breath and detected breath (s)') + theme_bw() +
+  xlim(-2, 131)
+
+model <- lm(detected_breath~audited_breath_start, data=matched_breaths)
+summary(model)
+```
 ## Create dataframes with dive and surfacing information
 ```{r}
 # Initialize dataframes
