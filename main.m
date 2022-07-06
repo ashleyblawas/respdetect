@@ -168,13 +168,13 @@ for k = 1:length(taglist);
                 surf_dur(size(T, 1)) = NaN';
                 
                 % Save dive variables to mat file
-                save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
+                save(strcat(data_path, "\diving\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
                 
                 % Save dive variables as a table (analog to typical T
                 % variable)
                 Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
                 Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
-                save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"), 'Tab')
+                save(strcat(data_path, "\diving\", metadata.tag, "divetable"), 'Tab')
                 beep on; beep
                 
                 display('Dive detection complete!');
@@ -218,7 +218,7 @@ for k = 1:length(taglist)
             [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
             % Calculate and save movement data
-            calc_mov(metadata.fs, Aw, data_path, metadata.tag, pitch, roll, head)
+            calc_move(metadata.fs, Aw, data_path, metadata.tag, pitch, roll, head)
         end
      end
 end
@@ -386,7 +386,7 @@ for k = 1:length(taglist)
     legend([p1 p2 p3 p4 p5 p6],{'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
     
     % Save surface detections figure
-    figfile = strcat(data_path, '/figs/', metadata.tag, '_surfacedetections.fig');
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
     savefig(figfile);
     
     %% Step 5g: Pre-process movement data for logging period breath detections
@@ -683,7 +683,7 @@ for k = 1:length(taglist)
     linkaxes(ax, 'x')
     
     % Save figure
-    figfile = strcat(data_path, '/figs/', metadata.tag, '_loggingdetections.fig');
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_loggingdetections.fig');
     savefig(figfile);
     
     %% Step 5l: Write breaths to audit
@@ -763,14 +763,14 @@ for k = 1:length(taglist)
     ylabel('Smoothed Pitch SE');
     xlabel('Time (min)');
     
-    figfile = strcat(data_path, '/figs/', metadata.tag, '_allbreaths.fig');
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\all_breaths\', metadata.tag, '_allbreaths.fig');
     savefig(figfile);
     
     %Calculate and plot fR
     [fR] = get_contfR(breath_times, breath_idx, p, time_min);
     title(taglist{k}, 'Interpreter', 'none');
     
-    figfile = strcat(data_path, '/figs/', metadata.tag, '_resprate.fig');
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
     savefig(figfile);
     
     clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
@@ -822,7 +822,7 @@ breath_type{k} = str2double(breath_type{k});
 end
 
 % Save data to bring into R
-save(strcat(data_path, 'all_breath_data.mat'),'dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
+save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
 
 %% Step 8: Acoustic audits
 

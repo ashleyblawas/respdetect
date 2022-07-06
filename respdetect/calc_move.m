@@ -1,6 +1,6 @@
 % Calculate movement metrics
 
-function calc_mov(fs, Aw, data_path, tag, pitch, roll, head)
+function calc_move(fs, Aw, data_path, tag, pitch, roll, head)
  %Calculate filtered acceleration
             %Rename Aw vector
             surge = Aw(:, 1);
