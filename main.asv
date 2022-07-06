@@ -217,86 +217,8 @@ for k = 1:length(taglist)
             %Calculate other vars
             [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
-            %Calculate filtered acceleration
-            %Rename Aw vector
-            surge = Aw(:, 1);
-            sway = Aw(:, 2);
-            heave = Aw(:, 3);
-            
-            % Filter all three accel vectors, 5th order butterworth, with
-            % passband between 2 Hz and 15 Hz
-            fny = metadata.fs/2;
-            pass = [2, 15];
-            [b,a]=butter(5,pass/fny,'bandpass');
-            
-            surge_filt = filtfilt(b,a, surge);
-            sway_filt = filtfilt(b,a, sway);
-            heave_filt = filtfilt(b,a, heave);
-           
-            % Get surge diff
-            surge_diff = diff(surge_filt);
-            sway_diff = diff(sway_filt);
-            heave_diff = diff(heave_filt);
-
-            % Get Shannon entropy
-            surge_se = log(abs(surge_diff))*sum(abs(surge_diff));
-            sway_se = log(abs(sway_diff))*sum(abs(sway_diff));
-            heave_se = log(abs(heave_diff))*sum(abs(heave_diff));
-
-            % Get smoothed Shannon entropy - over 5 second window
-            surge_smooth = movmean(surge_se, 5*fs);
-            sway_smooth = movmean(sway_se, 5*fs);
-            heave_smooth = movmean(heave_se, 5*fs);
-            
-            % Calculate jerk using njerk
-            jerk_filt = njerk([surge_filt, sway_filt, heave_filt], metadata.fs);
-            
-            % Get Shannon entropy of jerk
-            jerk_se = log(abs(jerk_filt))*sum(abs(jerk_filt));
- 
-            % Get smoothed Shannon entropy
-            jerk_smooth = movmean(jerk_se', 5*fs); 
-            
-            % Build filter for prh
-            fny = metadata.fs/2;
-            pass = [2, 15]; % Change to [1 5] on 5/3/2022
-            [b,a]=butter(5,pass/fny,'bandpass');
-
-            % Calculate filtered prh signals
-            pitch_filt = filtfilt(b, a, pitch);
-            roll_filt = filtfilt(b, a, roll);
-            head_filt = filtfilt(b, a, head);
-
-            %Get prh diff
-            pitch_diff = diff(pitch_filt);
-            roll_diff = diff(roll_filt);
-            head_diff = diff(head_filt);
-
-            %Get Shannon entropy
-            pitch_se = log(abs(pitch_diff))*sum(abs(pitch_diff));
-            roll_se = log(abs(roll_diff))*sum(abs(roll_diff));
-            head_se = log(abs(head_diff))*sum(abs(head_diff));
-
-            %Get smoothed Shannon entropy
-            pitch_smooth = movmean(pitch_se, 5*fs);
-            head_smooth = movmean(head_se, 5*fs);
-            roll_smooth = movmean(roll_se, 5*fs);
-
-            % Save all movement variables to mat file
-            save(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
-                'surge_filt', 'sway_filt', 'heave_filt',...
-                'surge_diff', 'sway_diff', 'heave_diff',...
-                'surge_se', 'sway_se', 'heave_se',...
-                'surge_smooth', 'sway_smooth', 'heave_smooth',...
-                'jerk_filt', 'jerk_se', 'jerk_smooth',...
-                'pitch_filt', 'head_filt', 'roll_filt',...
-                'pitch_diff', 'head_diff', 'roll_diff',...
-                'pitch_se', 'head_se', 'roll_se',...
-                'pitch_smooth', 'head_smooth', 'roll_smooth');
-          
-            display('Movement information calculation complete!');
-       
-            clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+            % Calculate and save movement data
+            calc_mov(metadata.fs, Aw, data_path, metadata.tag, pitch, roll, head)
         end
      end
 end
@@ -638,7 +560,7 @@ for k = 1:length(taglist)
     % Save ranges of continuous periods where conditions are met
     log_breath_locs = [];
     
-    %% Step 5j: Post-process windows for breaths during logging periods
+    %% Step 5j: Detect breaths during logging periods
     
     % Go through continuous periods where conditions are met one by one
     if length(temp_diff_break)>0
@@ -742,7 +664,7 @@ for k = 1:length(taglist)
     all_breath_locs.breath_idx = temp_all_breaths_s + start_idx;
     all_breath_locs.type = temp_all_breaths_type_s;
     
-    %% Plot breath detections for logging periods
+    %% Step 5k: Plot breath detections for logging periods
     
     ax(4) = subplot(3, 5, [4, 5, 9, 10, 14, 15]);
     p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
@@ -764,7 +686,7 @@ for k = 1:length(taglist)
     figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_loggingdetections.fig');
     savefig(figfile);
     
-    %% Write breaths to audit
+    %% Step 5l: Write breaths to audit
     
     save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
     
@@ -772,63 +694,61 @@ for k = 1:length(taglist)
     
 end
 
-% Import breaths from audit - audits ONLY worked for D2s NOT D3s
+%% Step 6: Plot all breaths
 
-for k = 1:length(taglist);
-tag = taglist{k};
-
-%Load in metadata
-metadata = load(strcat(data_path, "\metadata\", tag, "md"));
-clear tag
-
-% Set up directories
-[recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-
-% Set prh path to 50 Hz prh files
-settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
-
-% Load the existing prh file
-loadprh(metadata.tag);
-
-% Load in diving data
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
-
-% Load in movement data
-load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
-
-% Load in breathing information
-load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
-
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, pitch); %Recalculate time
-
-% Load in breaths
-breath_idx = all_breath_locs.breath_idx;
-breath_times = time_sec(all_breath_locs.breath_idx);
-
-[breath_times, sortidx]  = sort(breath_times);
-breath_type = all_breath_locs.type(sortidx, :);
-
-%% Plot all locations where these three conditions are met
+for k = 1:length(taglist)
+    %% Step 6a: Load in tag data
+    tag = taglist{k};
+    
+    %Load in metadata
+    metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+    clear tag
+    
+    % Set up directories
+    [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+       
+    % Load the existing prh file
+    loadprh(metadata.tag);
+    
+    % Load in diving data
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
+    
+    % Load in movement data
+    load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
+    
+    % Load in breathing information
+    load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
+    
+    [time_sec, time_min, time_hour] =calc_time(metadata.fs, pitch); %Recalculate time
+    
+    % Load in breaths
+    breath_idx = all_breath_locs.breath_idx;
+    breath_times = time_sec(all_breath_locs.breath_idx);
+    
+    [breath_times, sortidx]  = sort(breath_times);
+    breath_type = all_breath_locs.type(sortidx, :);
+    
+    %% Step 6b: Plot all breaths
     figure
     title(metadata.tag, 'Interpreter', 'none');
     ax(1)=subplot(4, 1, 1);
     plot(time_min, p_smooth, 'k', 'LineWidth', 1.5); hold on
-        set(gca,'Ydir','reverse')
-        ylabel('Depth (m)');
-
+    set(gca,'Ydir','reverse')
+    ylabel('Depth (m)');
+    
     hold on
     scatter(breath_times(breath_type == 'ss')/60, p_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log')/60, p_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-
+    
     legend('Depth', 'Single surface breaths', 'Log breaths');
-
+    
     ax(2)=subplot(4, 1, 2);
-    plot(time_min(2:end), surge_smooth, 'r', 'LineWidth', 1.5); hold on 
+    plot(time_min(2:end), surge_smooth, 'r', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss')/60, surge_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log')/60, surge_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Surge SE');
-
+    
     ax(3)=subplot(4, 1, 3);
     plot(time_min(2:end), jerk_smooth, 'b', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss')/60, jerk_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
@@ -843,21 +763,21 @@ breath_type = all_breath_locs.type(sortidx, :);
     ylabel('Smoothed Pitch SE');
     xlabel('Time (min)');
     
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\all_breaths\', metadata.tag, '_allbreaths.fig');
-savefig(figfile);
-
-%Calculate and plot fR
-[fR] = get_contfR(breath_times, breath_idx, p, time_min);
-title(taglist{k}, 'Interpreter', 'none');
-
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
-savefig(figfile);
-
-clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
-
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\all_breaths\', metadata.tag, '_allbreaths.fig');
+    savefig(figfile);
+    
+    %Calculate and plot fR
+    [fR] = get_contfR(breath_times, breath_idx, p, time_min);
+    title(taglist{k}, 'Interpreter', 'none');
+    
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
+    savefig(figfile);
+    
+    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    
 end
 
-%% Save for R
+%% Step 7: Save all breath information for analysis in  R
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 for k = 1:length(taglist);
@@ -904,7 +824,9 @@ end
 % Save data to bring into R
 save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
 
-%% Acoustic auditing - D2
+%% Step 8: Acoustic audits
+
+%% %% Step 8a: Acoustic auditing for D2s
 settagpath('audit', 'D:\gm\audit');
 settagpath('prh', 'D:\gm\prh\50 Hz');
 settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
@@ -919,7 +841,7 @@ R = loadaudit(tag);
 R = tagaudit(tag, tcue, R);
 saveaudit(tag, R);
 
-%% Acoustic auditing - D3
+%% %% Step 8a: Acoustic auditing for D3s
 settagpath('audit', 'D:\gm\audit');
 settagpath('prh', 'D:\gm\prh\50 Hz');
 settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
