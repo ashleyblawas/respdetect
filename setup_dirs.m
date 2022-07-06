@@ -24,9 +24,9 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_pat
     acousaud_filename = strcat(data_path, '\audit\', tag, '_acousticaud.txt'); 
     
     if strcmp(tag_ver, 'D3') == 1
-        addpath(genpath(strcat(mat_tools_path, '\DTAG3'))); %Add all of your tools to the path
+        addpath(genpath(strcat(mat_tools_path, '\d3'))); %Add all of your tools to the path
     elseif strcmp(tag_ver, 'D2') == 1
-        addpath(genpath(strcat(mat_tools_path, '\DTAG2'))); %Add all of your tools to the path
+        addpath(genpath(strcat(mat_tools_path, '\dtag2'))); %Add all of your tools to the path
         settagpath('audio',data_path,'cal',strcat(data_path,'\cal'));
     end
     

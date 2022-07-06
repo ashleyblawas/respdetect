@@ -16,15 +16,15 @@ taglist = {'gm08_143a',...
 %% Step 1: Set paths
 clearvars -except taglist; clc; close all
 
-% Add path to respdetect
+% Add path to respdetect - EDIT THIS FOR YOUR MACHINE
 tools_path = 'C:\Users\Ashley\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\src';
 addpath(genpath(tools_path)); 
 
-% Add path to D3 Matlab Tools 
-mat_tools_path = 'C:\Users\Ashley\Dropbox\Ashley\Graduate\Toolboxes\DTAG3';
+% Add path to Matlab Tools - EDIT THIS FOR YOUR MACHINE
+mat_tools_path = 'C:\Users\Ashley\Dropbox\Ashley\Graduate\Toolboxes\dtagtools';
 addpath(genpath(mat_tools_path)); 
 
-% Add path to DTAG data
+% Add path to DTAG data - EDIT THIS FOR YOUR MACHINE
 data_path = 'D:\gm';
 addpath(genpath(data_path)); 
 
@@ -301,336 +301,181 @@ for k = 1:length(taglist)
      end
 end
 
-%% Load movement data, plot
+%% Step 5: Detect breaths
 
-for k = 1%:length(taglist);
-    
+for k = 1:length(taglist)
     tag = taglist{k};
-    
+
     % Load in metadata
     metadata = load(strcat(data_path, "\metadata\", tag, "md"));
     clear tag
-      
+    
+    % Set up directories
+    [recdir, prefix, acousaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+       
+    % Load the existing prh file
+    loadprh(metadata.tag);
+    
     % Load in movement data
     load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
     
-    % Calculate time vars
-    [time_sec, time_min, time_hour] =calc_time(metadata.fs, surge);
-    %%
-    figure;
-    title(metadata.tag);
-    ax(1)=subplot(4, 2, 1);
-    plot(time_min, p, 'k'); hold on
-    set(gca,'Ydir','reverse')
-    ylabel('Depth (m)');
-
-%     ax(2)=subplot(7, 1, 2);
-%     plot(time_min, surge_filt); hold on
-%     plot(time_min, sway_filt);
-%     plot(time_min, heave_filt); 
-%     ylabel('Filtered Acc');
-% 
-%     ax(3)=subplot(7, 1, 3);
-%     plot(time_min(2:end), surge_se); hold on
-%     ylabel('Surge SE');
-
-    ax(2)=subplot(4, 2, 3);
-    plot(time_min(2:end), surge_smooth, 'r-'); hold on 
-    linkaxes(ax, 'x');
-    ylabel('Smoothed Surge SE');
-
-%     ax(5)=subplot(7, 1, 5);
-%     plot(time_min(2:end), jerk_filt); hold on
-%     ylabel('Jerk');
-% 
-%     ax(6)=subplot(7, 1, 6);
-%     plot(time_min(2:end), jerk_se, 'k'); hold on
-%     ylabel('Jerk SE');
-
-    ax(3)=subplot(4, 2, 5);
-    plot(time_min(2:end), jerk_smooth, 'b'); hold on
-    linkaxes(ax, 'x');
-    ylabel('Smoothed Jerk SE');
+    % Load in diving data
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
     
-    ax(4)=subplot(4, 2, 7);
-    plot(time_min(2:end), pitch_smooth, 'g'); hold on
-    linkaxes(ax, 'x');
-    ylabel('Smoothed Pitch SE');
-    xlabel('Time (min)');
+    % Calculate time variables for full tag deployment
+    [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
     
-    ax(5)=subplot(4, 2, [2 4 6 8]);
-    plot(time_min, -p, 'k'); hold on
-    plot(time_min(2:end), 5*rescale(surge_smooth), 'r-');
-    plot(time_min(2:end), 5*rescale(jerk_smooth), 'b'); 
-    plot(time_min(2:end), 5*rescale(pitch_smooth), 'g');
-    title(taglist{k}, 'interpreter', 'none');
-    linkaxes(ax, 'x');
-    ylabel('Depth/Normalized Movement Metrics');
-    xlabel('Time (min)');
+    % Want pitch to be positive for peak detect, so adding min
+    pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
     
-end
-
-%% Breath audit 
-for k = 1:length(taglist);
-tag = taglist{k};
-
-%Load in metadata
-metadata = load(strcat(data_path, "\metadata\", tag, "md"));
-clear tag
-
-% Set up directories
-[recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-
-% Set prh path to 50 Hz prh files
-settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
-
-% Load the existing prh file
-loadprh(metadata.tag);
-
-% Load in movement data
-load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
-
-% Load in diving data
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
-
-%% Make a new section to do auto detection
-% Just want to run a peak detector across jerk_smooth and pitch_smooth and
-% then want it to present me with each surfacing and I can either okay it
-% or edit it
-
-% Want pitch to be positive for peak detect, so adding min
-pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
-
-% Remove underwater portions
-for i = 1:length(jerk_smooth)
-    if p(i)>5 % The higher this threshold is the better for promience detections
-        jerk_smooth(i) = NaN; 
-        surge_smooth(i) = NaN; 
-        pitch_smooth(i) = NaN;
+    % Remove underwater portions of movement data
+    for i = 1:length(jerk_smooth)
+        if p(i)>5 % The higher this threshold is the better for promience detections
+            jerk_smooth(i) = NaN;
+            surge_smooth(i) = NaN;
+            pitch_smooth(i) = NaN;
+        end
     end
-end
-
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
-
-%plot(jerk_smooth); hold on; plot(jerk_smooth2)
-
-%% Define start and end of tag deployment using metadata tag on/off times
-start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on))); 
-end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
-
-% If the tag on time is when the tag is near the surface, we are going to
-% redefine the start idx as the first time the tag hits 1 m, the reason for
-% this being that the tag on result in a big jerk spike that will mess with
-% peak detection for breaths
-if p(start_idx)<5
-    start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
-end
-
-% Subset tag on to tag off of pressure 
-p_tag = p(start_idx:end_idx);
-
-%% First, identify minimia of pressure (aka surfacings)
-% Smooth depth signal
-%p_smooth = smoothdata(p, 'gaussian', fs);
-p_smooth = smoothdata(p, 'movmean', fs);
-p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
-p_shallow = p_smooth_tag;
-
-% Define shallow as any depth less than 0.5 m
-p_shallow(p_smooth_tag>0.5) = NaN; 
-p_shallow_idx = find(~isnan(p_shallow));
-
-% Plot smoothed depth with areas highlighted in red that are conditions
-% where a breath could occur
-figure('units','normalized','outerposition',[0 0 1 1]);
-p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k', 'LineWidth', 1); hold on
-%plot(time_min(start_idx:end_idx), p_shallow, 'b-', 'LineWidth', 2);
-set(gca, 'YDir', 'reverse'); 
-xlabel('Time (min)'); ylabel('Depth (m)');
-
-% Find start and end of surface periods
-p_shallow_breaks_end = find(diff(p_shallow_idx)>1);
-p_shallow_breaks_start = find(diff(p_shallow_idx)>1)+1;
-
-p_shallow_ints = [[1; p_shallow_breaks_start], [p_shallow_breaks_end; length(p_shallow_idx)]];
-
-% Make third column which is duration of surfacing in indices
-p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
-
-% If the duration of a surfacing is >10 seconds, but the depth crosses 0.25
-% m during the surfacing then divide at 0.25 m into two single surfacings 
-% This works for D2s but NOT for D3s
-% delete_rows = [];
-% for r = 1:length(p_shallow_ints)
-%     
-%     if p_shallow_ints(r, 3) > 10*metadata.fs %&& any(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)))>0.35)
-%        
-%         p_temp = p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2)));
-%         
-%         p_shallower_breaks = find(p_temp>0.35);
-%         
-%         % Find start and end of surface periods
-%         p_shallower_breaks_end = p_shallower_breaks(find(diff(p_shallower_breaks)>1));
-%         p_shallower_breaks_start = p_shallower_breaks(find(diff(p_shallower_breaks)>1))+1;
-%         
-%         if length(p_shallower_breaks_end)>1
-%             p_shallower_breaks_end(1) = [];
-%             p_shallower_breaks_start(end) = [];
-%             
-%            % Add these to p_ints
-%             p_shallow_ints_temp = [[p_shallow_ints(r, 1); p_shallow_ints(r, 1)+p_shallower_breaks_end-1], [p_shallow_ints(r, 1)+p_shallower_breaks_start-1; p_shallow_ints(r, 2)]];
-%             p_shallow_ints_temp(:, 3) = p_shallow_ints_temp(:, 2) -p_shallow_ints_temp(:, 1);
-%             
-%             % Concatenate short p_ints that were separated
-% %             delete_rows_2 = [];
-% %             for m = 1:length(p_shallow_ints_temp)-1
-% %                 if p_shallow_ints_temp(m, 3) < 10*fs && ~any(delete_rows_2 == m)
-% %                    p_shallow_ints_temp(m+1, 1) = p_shallow_ints_temp(m, 1);
-% %                    p_shallow_ints_temp(m+1, 3) = p_shallow_ints_temp(m+1, 2) -p_shallow_ints_temp(m+1, 1);
-% %                    delete_rows_2 = [delete_rows_2, m];
-% %                 end
-% %             end
-% %             p_shallow_ints_temp(delete_rows_2, :) = [];
-% 
-%             p_shallow_ints = [p_shallow_ints; p_shallow_ints_temp];
-%             % Remove old rows from p_int
-%             delete_rows = [delete_rows, r];
-%         end
-%     end
-% end
-% p_shallow_ints(delete_rows, :) = [];
-
-% If surfacing is less than 50 indicies (which would be 1 second given 50
-% Hz sampling) then remove it - likely not a surfacing anyway but a period
-% where depth briefly crosses above 0.25m 
-delete_rows = find(p_shallow_ints(:, 3) < 1*metadata.fs); 
-p_shallow_ints(delete_rows, :) = [];
-
-% If surfacing does not make it up to at least 0.35 m delete rows
-% delete_rows = [];
-% for r = 1:length(p_shallow_ints)
-% delete_rows(r) = min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>0.35; 
-% end
-% delete_rows = find(delete_rows ==1);
-% p_shallow_ints(delete_rows, :) = [];
-
-%If minima of a surfacing is not at least within a reasonable range of the
-%neighborhood (surrounding 4) of surfacings...
-for r = length(p_shallow_ints):-1:1 % Go backwards so can delete as you go
-    if r == length(p_shallow_ints)
-        min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
-        min2 = min1;
-        min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
-        min4 = min3;
-    elseif r == length(p_shallow_ints)-1
-        min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
-        min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
-        min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
-        min4 = min3;
-    elseif r == 2
-        min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
-        min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
-        min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
-        min3 = min4;
-    elseif r == 1
-        min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
-        min1 = min2;
-        min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
-        min3 = min4;
-    else
-        min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
-        min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
-        min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
-        min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
+       
+    %% Define start and end of tag deployment using metadata tag on and off times
+    
+    start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on)));
+    end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
+    
+    % If the tag on time is when the tag is near the surface, we are going to
+    % redefine the start idx as the first time the tag hits 5 m, the reason for
+    % this being that the tag on result in a big jerk spike that will interfere with
+    % peak detection for breaths
+    
+    if p(start_idx)<5
+        start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
     end
+    
+    % Subset p to only when tag is on
+    p_tag = p(start_idx:end_idx);
+
+    %% Identify minimia of pressure
+    % Smooth depth signal
+    p_smooth = smoothdata(p, 'movmean', fs);
+    p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
+    p_shallow = p_smooth_tag;
+    
+    % Remove any pressure data that is greater than 0.5 m and get indexes
+    % of shallow periods
+    p_shallow(p_smooth_tag>0.5) = NaN;
+    p_shallow_idx = find(~isnan(p_shallow));
+    
+    % Plot smoothed depth for only time when tag is on
+    figure('units','normalized','outerposition',[0 0 1 1]);
+    p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k', 'LineWidth', 1); hold on
+    set(gca, 'YDir', 'reverse');
+    xlabel('Time (min)'); ylabel('Depth (m)');
+    
+    % Find start and end of surface periods
+    p_shallow_breaks_end = find(diff(p_shallow_idx)>1);
+    p_shallow_breaks_start = find(diff(p_shallow_idx)>1)+1;
+    
+    % Define variable to store surfacings
+    p_shallow_ints = [[1; p_shallow_breaks_start], [p_shallow_breaks_end; length(p_shallow_idx)]];
+    
+    % Make third column which is duration of surfacing in indices
+    p_shallow_ints(:, 3) = p_shallow_ints(:, 2) - p_shallow_ints(:, 1);
+    
+    % If surfacing is less than 1 second then remove it - likely not a surfacing anyway but a period
+    % where depth briefly crosses above 0.25m
+    delete_rows = find(p_shallow_ints(:, 3) < 1*metadata.fs);
+    p_shallow_ints(delete_rows, :) = [];
+    
+    % If minima of a surfacing is not at least within a reasonable range of the
+    % neighborhood (surrounding 4) of surfacings then remove it
+    for r = length(p_shallow_ints):-1:1 % Go backwards so can delete as you go
+        if r == length(p_shallow_ints)
+            min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
+            min2 = min1;
+            min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
+            min4 = min3;
+        elseif r == length(p_shallow_ints)-1
+            min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
+            min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
+            min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
+            min4 = min3;
+        elseif r == 2
+            min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
+            min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
+            min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
+            min3 = min4;
+        elseif r == 1
+            min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
+            min1 = min2;
+            min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
+            min3 = min4;
+        else
+            min1 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-1, 1):p_shallow_ints(r-1, 2))),0));
+            min2 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+1, 1):p_shallow_ints(r+1, 2))),0));
+            min3 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r-2, 1):p_shallow_ints(r-2, 2))),0));
+            min4 = min(max(p_shallow(p_shallow_idx(p_shallow_ints(r+2, 1):p_shallow_ints(r+2, 2))),0));
+        end
         temp_sort = sort([min1, min2, min3, min4]);
         if min(p_shallow(p_shallow_idx(p_shallow_ints(r, 1):p_shallow_ints(r, 2))))>mean(temp_sort(1:2))+0.15
             p_shallow_ints(r, :) = [];
         end
     end
     
-
-% If the start of the next surfacing is <1/2th of a  sec from the end of the last
-% surfacing, this is probably not a full surfacing but remnant of the last one so remove...
-% delete_rows = [];
-% for r = 2:length(p_shallow_ints)
-%     if p_shallow_idx(p_shallow_ints(r, 1)) - p_shallow_idx(p_shallow_ints(r-1, 2)) < fs
-%         delete_rows = [delete_rows, find(min(p_shallow_ints(r-1:r, 3)) == p_shallow_ints(r-1:r, 3)) - 2 + r];
-%     end
-% end
-% p_shallow_ints(delete_rows, :) = [];
-
-% If these periods are less than 10 seconds then we say they are a breath
-single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
-logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
-
-% % Find the number of local minima in each period of depth <1m
-% single_breath_surf_rows = [];
-% logging_surf_rows = [];
-%  for r = 1:length(p_shallow_ints)
-%      p_int = p_shallow(p_shallow_idx(p_shallow_ints(r, 1)):p_shallow_idx(p_shallow_ints(r, 2)));
-%      temp_minima = find(islocalmin(p_int, 'MinProminence', 0.5)==1);
-%      if length(temp_minima) == 1
-%          single_breath_surf_rows = [single_breath_surf_rows; r];
-%          p_shallow_ints(r, 4) = p_shallow_ints(r, 1) - 1 + temp_minima;
-%      else 
-%          logging_surf_rows = [logging_surf_rows; r];
-%          p_shallow_ints(r, 4) = NaN;
-%      end
-%      %Column four is the index of the minima
-%      %p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) - 1 + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))), 1); 
-%  end
- %p_shallow_ints(logging_surf_rows, 4) = NaN;
-
-% Color logging periods in pink
-if length(logging_surf_rows)>0
-for r = 1:length(logging_surf_rows)
-   p2 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 2))), 'm-', 'LineWidth', 2);
-end
-else 
-    p2 = plot(NaN, NaN, 'm-', 'LineWidth', 2);
-end
-
-% Color single surfacings in cyan
-for r = 1:length(single_breath_surf_rows)
-    p3 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))), 'c-', 'LineWidth', 2);
-end
-
-% Plot start and end of surfacings
-p4 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 1))), 'g*');
-p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*');
-
-% For single surfacings - determine minima and assign this a breath
-% p_shallow_ints(single_breath_surf_rows, 4) = round(p_shallow_ints(single_breath_surf_rows, 1)+(p_shallow_ints(single_breath_surf_rows, 2)-p_shallow_ints(single_breath_surf_rows, 1))/2);
- for r = length(single_breath_surf_rows):-1:1
-%     %Column four is the index of the minima
-     p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) - 1 + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))), 1); 
- end
- p_shallow_ints(logging_surf_rows, 4) = NaN;
-
-%Plot assumed breaths in single surfacings
-p6 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4)-1)), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))), 'k*');
-
-% Get the indicies of breaths assoicated with single surfacings from
-% p_smooth
-single_breath_idxs = p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4));
-
-all_breath_locs.breath_idx = [single_breath_idxs]; %diff_vals_jp];
-all_breath_locs.type = [repmat("ss", length(single_breath_idxs), 1)];% repmat("jp", length(diff_vals_jp), 1)];
-
-% Define logging starts and ends
-logging_start_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 1));
-logging_end_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 2));
-
-logging_start_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 1)));
-logging_end_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 2)));
-logging_ints_s = [logging_start_s', logging_end_s'];
-
-legend([p1 p2 p3 p4 p5 p6],{'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
-
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
-savefig(figfile);
+    % If these periods are less than 10 seconds then we say they are a "single
+    % breath surfacing" otherwise they are a "logging surfacings"
+    single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
+    logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
+    
+    %% Add to plot logging vs single breath surfacings and start/end of surfacings
+    % Plot logging surfacings in pink
+    if length(logging_surf_rows)>0
+        for r = 1:length(logging_surf_rows)
+            p2 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(logging_surf_rows(r), 2))), 'm-', 'LineWidth', 2);
+        end
+        % Need this condition in case there is no logging
+    else
+        p2 = plot(NaN, NaN, 'm-', 'LineWidth', 2);
+    end
+    
+    % Plot single breath surfacings in cyan
+    for r = 1:length(single_breath_surf_rows)
+        p3 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1))-1:start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))), 'c-', 'LineWidth', 2);
+    end
+    
+    % Plot start and end of surfacings with asteriks
+    p4 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 1))), 'g*');
+    p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*');
+    
+    %% For single surfacings - determine depth minima and assign this as a breath
+    for r = length(single_breath_surf_rows):-1:1
+        % Column four is the index of the minima
+        p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) - 1 + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))), 1);
+    end
+    p_shallow_ints(logging_surf_rows, 4) = NaN;
+    
+    %% Plot breath detections for single breath surfacing
+    p6 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4)-1)), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))), 'k*');
+    
+    % Get the indicies of breaths assoicated with single surfacings from
+    sbs_idxs = p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4));
+    
+    all_breath_locs.breath_idx = sbs_idxs;
+    all_breath_locs.type = repmat("ss", length(sbs_idxs), 1);
+    
+    % Define logging starts and ends
+    logging_start_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 1));
+    logging_end_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 2));
+    
+    logging_start_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 1)));
+    logging_end_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 2)));
+    logging_ints_s = [logging_start_s', logging_end_s'];
+    
+    legend([p1 p2 p3 p4 p5 p6],{'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
+    
+    % Save surface detections figure
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
+    savefig(figfile);
 
 %% Now only want to do pitch/jerk detections for the logging periods
 % Subset tag on to tag off of pressure 
@@ -959,17 +804,6 @@ for c = 1:length(temp_diff_break)+1
 end
 end
 
-% Check to make sure that two breaths haven't been detected within 3
-% seconds of eachother to limit to max fR of 20 breaths/min. If there are
-% two breaths that close then select to keep the one at the minimum depth
-% clear c
-% for c = (length(log_breath_locs)-1):-1:1
-%     diff_log_breath_locs = diff(log_breath_locs);
-%     if diff_log_breath_locs(c)<3*fs
-%         rm_idx = find([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]==max([p_smooth(log_breath_locs(c)), p_smooth(log_breath_locs(c+1))]));
-%         log_breath_locs(c-1+rm_idx) = [];
-%     end
-% end
 
 % If a breath detection from a single surfacing is closer than 3 seconds  
 % (e.g. 20 breaths/min) to a breath detection from
