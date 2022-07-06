@@ -586,245 +586,247 @@ for k = 1:length(taglist)
         xlabel('Peak Width'); ylabel('Peak Prominence');
     end
 
-%% Find indexes where all conditions are met 
-
-% Have to exactly meet pressure but for others within some window -  a
-% 5 second window - 2.5 seconds on each side of max
-
-j_max_wins = [];
-for a = 1:length(j_locs)
-    j_max_win = j_locs(a)-2.5*metadata.fs:1:j_locs(a)+2.5*metadata.fs;
-    j_max_wins = [j_max_wins, j_max_win];
-end
-
-s_max_wins = [];
-for b = 1:length(s_locs)
-    s_max_win = s_locs(b)-2.5*metadata.fs:1:s_locs(b)+2.5*metadata.fs;
-    s_max_wins = [s_max_wins, s_max_win];
-end
-
-p_max_wins = [];
-for c = 1:length(p_locs)
-    p_max_win = p_locs(c)-2.5*metadata.fs:1:p_locs(c)+2.5*metadata.fs;
-    p_max_wins = [p_max_wins, p_max_win];
-end
-
-% Identify where one window stops and the next starts
-if length(j_max_wins)>0
-    j_wins_breaks = [j_max_wins(diff(j_max_wins)>1), j_max_wins(end)];
-end
-if length(s_max_wins)>0
-    s_wins_breaks = [s_max_wins(diff(s_max_wins)>1), s_max_wins(end)];
-end
-if length(p_max_wins)>0
-    p_wins_breaks = [p_max_wins(diff(p_max_wins)>1), p_max_wins(end)];
-end
-
-% Places where all three conditions are met
-[val3] = intersect(intersect(intersect(p_shallow_idx, p_max_wins), j_max_wins), s_max_wins);
-
-% Places where only two conditions (jerk and surge jerk) are met 
-[val2_js] = intersect(intersect(p_shallow_idx, j_max_wins), s_max_wins);
-[val2_jp] = intersect(intersect(p_shallow_idx, j_max_wins), p_max_wins);
-[val2_sp] = intersect(intersect(p_shallow_idx, s_max_wins), p_max_wins);
-
-diff_vals_js = setdiff(val2_js, val3);
-diff_vals_jp = setdiff(val2_jp, val3);
-diff_vals_sp = setdiff(val2_sp, val3);
-
-val3 = sort([val3; diff_vals_js; diff_vals_jp; diff_vals_sp]); 
-
-% Find where there is a break in where these conditions are met
-temp_diff_break = find(diff(val3)>1); 
-
-% Save ranges of continuous periods where conditions are met
-log_breath_locs = [];
-
-% Go through continuous periods where conditions are met one by one
-if length(temp_diff_break)>0
-for c = 1:length(temp_diff_break)+1
-   
-    % If the first period...
-    if c == 1 
-        j_win_count = 0; s_win_count = 0; p_win_count = 0;
-        cont_val3_prev = -3*fs;
-        % Save the indexes of the continuous range that meets all three
-        % conditions
-        cont_range = [1:temp_diff_break(1)];
-        % If this period is greater than 1 second 
-        if length(cont_range)>1*fs 
-           % Save this range of indices 
-           cont_val3 = val3(cont_range);
-        else 
-           cont_val3 =  -3*fs; 
+    %% Step 5i: Detect windows for breaths during logging periods
+    
+    % Identify 5 second windows around peaks
+    j_wins = [];
+    for a = 1:length(j_locs)
+        j_temp_win = j_locs(a)-2.5*metadata.fs:1:j_locs(a)+2.5*metadata.fs;
+        j_wins = [j_wins, j_temp_win];
+    end
+    
+    s_wins = [];
+    for b = 1:length(s_locs)
+        s_temp_win = s_locs(b)-2.5*metadata.fs:1:s_locs(b)+2.5*metadata.fs;
+        s_wins = [s_wins, s_temp_win];
+    end
+    
+    p_wins = [];
+    for c = 1:length(p_locs)
+        p_temp_win = p_locs(c)-2.5*metadata.fs:1:p_locs(c)+2.5*metadata.fs;
+        p_wins = [p_wins, p_temp_win];
+    end
+    
+    % Identify where one window stops and the next starts
+    if length(j_wins)>0
+        j_wins_breaks = [j_wins(diff(j_wins)>1), j_wins(end)];
+    end
+    if length(s_wins)>0
+        s_wins_breaks = [s_wins(diff(s_wins)>1), s_wins(end)];
+    end
+    if length(p_wins)>0
+        p_wins_breaks = [p_wins(diff(p_wins)>1), p_wins(end)];
+    end
+    
+    % Places where all three conditions are met
+    [val3] = intersect(intersect(intersect(p_shallow_idx, p_wins), j_wins), s_wins);
+    
+    % Places where only two conditions are met
+    [val2_js] = intersect(intersect(p_shallow_idx, j_wins), s_wins);
+    [val2_jp] = intersect(intersect(p_shallow_idx, j_wins), p_wins);
+    [val2_sp] = intersect(intersect(p_shallow_idx, s_wins), p_wins);
+    
+    diff_vals_js = setdiff(val2_js, val3);
+    diff_vals_jp = setdiff(val2_jp, val3);
+    diff_vals_sp = setdiff(val2_sp, val3);
+    
+    val3 = sort([val3; diff_vals_js; diff_vals_jp; diff_vals_sp]);
+    
+    % Find where there is a break in where these conditions are met
+    temp_diff_break = find(diff(val3)>1);
+    
+    % Save ranges of continuous periods where conditions are met
+    log_breath_locs = [];
+    
+    %% Step 5j: Detect breaths during logging periods
+    
+    % Go through continuous periods where conditions are met one by one
+    if length(temp_diff_break)>0
+        for c = 1:length(temp_diff_break)+1
+            
+            % If the first period...
+            if c == 1
+                j_win_count = 0; s_win_count = 0; p_win_count = 0;
+                cont_val3_prev = -3*fs;
+                % Save the indexes of the continuous range that meets all three
+                % conditions
+                cont_range = [1:temp_diff_break(1)];
+                % If this period is greater than 1 second
+                if length(cont_range)>1*fs
+                    % Save this range of indices
+                    cont_val3 = val3(cont_range);
+                else
+                    cont_val3 =  -3*fs;
+                end
+            elseif c == length(temp_diff_break)+1 % If the last period...
+                % Assign last cont_val3 to this variable to compare later
+                cont_val3_prev = cont_val3;
+                cont_range = [(temp_diff_break(c-1)+1):length(val3)];
+                if length(cont_range)>1*fs
+                    cont_val3 = val3(cont_range);
+                end
+            elseif c > 1 && c < length(temp_diff_break)+1 % If a period between the first and last
+                % Assign last cont_val3 to this variable to compare later
+                cont_val3_prev = cont_val3;
+                cont_range = [(temp_diff_break(c-1)+1):temp_diff_break(c)];
+                if length(cont_range)>1*fs
+                    cont_val3 = val3(cont_range);
+                end
+            end
+            
+            % Filter out instances where a peak region of one signal overlaps 
+            % with two peak regions from another signal - only allow one of
+            % these to be marked for breath ID
+            % Find the indexes where this window overlaps with peak regions
+            if length(cont_val3)>1*fs
+                cond = 0;
+                % Save the old window
+                j_win_count_prev = j_win_count;
+                % Find where this period intersects with the jerk windows
+                j_temp_int = intersect(cont_val3, j_wins);
+                % Find which window (count-wise) this period came from
+                if isempty(j_temp_int)==0
+                    j_win_count = find(j_temp_int(end)<=j_wins_breaks, 1, 'first');
+                    cond = 1;
+                end
+                
+                s_win_count_prev = s_win_count;
+                s_temp_int = intersect(cont_val3, s_wins);
+                if isempty(s_temp_int)==0
+                    s_win_count = find(s_temp_int(end)<=s_wins_breaks, 1, 'first');
+                    cond = 1;
+                end
+                
+                p_win_count_prev = p_win_count;
+                p_temp_int = intersect(cont_val3, p_wins);
+                if isempty(p_temp_int)==0
+                    p_win_count = find(p_temp_int(end)<=p_wins_breaks, 1, 'first');
+                    cond = 1;
+                end
+                
+                % If the same window as last time for any of these then keep first,
+                % skip second instance
+                if length(cont_range)>1*fs && (j_win_count>j_win_count_prev && s_win_count>s_win_count_prev && p_win_count>p_win_count_prev || cond == 1)
+                    if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+fs/10 || max(p_smooth_tag(cont_val3_prev))>0.5 || max(p_smooth_tag(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
+                        % Mark breath at halfway point of each period
+                        log_breath_locs = [log_breath_locs; cont_val3(floor(length(cont_val3)/2))];
+                    end
+                end
+            end
         end
-    elseif c == length(temp_diff_break)+1 % If the last period...
-        % Assign last cont_val3 to this variable to compare later
-        cont_val3_prev = cont_val3;
-        cont_range = [(temp_diff_break(c-1)+1):length(val3)];
-        if length(cont_range)>1*fs
-            cont_val3 = val3(cont_range);
-        end
-    elseif c > 1 && c < length(temp_diff_break)+1 % If a period between the first and last
-        % Assign last cont_val3 to this variable to compare later
-        cont_val3_prev = cont_val3;
-        cont_range = [(temp_diff_break(c-1)+1):temp_diff_break(c)];
-        if length(cont_range)>1*fs
-            cont_val3 = val3(cont_range);
-        end 
     end
     
-    % Find the indexes where this window overlaps with the known regions
-    % with jerk maxes
-    % Keep in mind that for periods that are not associated with all three
-    % conditions one of these will not work...
-    if length(cont_val3)>1*fs
-        cond = 0;
-    % Save the old window 
-    j_win_count_prev = j_win_count;
-    % Find where this period intersects with the jerk windows
-    j_temp_int = intersect(cont_val3, j_max_wins);
-    % Find which window (count-wise) this period came from
-    if isempty(j_temp_int)==0
-        j_win_count = find(j_temp_int(end)<=j_wins_breaks, 1, 'first');
-        cond = 1;
-    end
     
-    s_win_count_prev = s_win_count;
-    s_temp_int = intersect(cont_val3, s_max_wins);
-    if isempty(s_temp_int)==0
-        s_win_count = find(s_temp_int(end)<=s_wins_breaks, 1, 'first');
-        cond = 1;
-    end
+    % If a breath detection from a single surfacing is closer than 3 seconds
+    % (e.g. 20 breaths/min) to a breath detection from
+    % logging, then the ss breath trumps and we remove the logging breath
+    temp_all_breaths= [all_breath_locs.breath_idx; log_breath_locs];
+    temp_all_breaths_type = [repmat("ss", length(all_breath_locs.breath_idx), 1); repmat("log", length(log_breath_locs), 1)];%; diff_vals_ps]), 1)];
     
-    p_win_count_prev = p_win_count;
-    p_temp_int = intersect(cont_val3, p_max_wins);
-    if isempty(p_temp_int)==0
-        p_win_count = find(p_temp_int(end)<=p_wins_breaks, 1, 'first');
-        cond = 1;
-    end
+    [temp_all_breaths_s, sortidx] = sort(temp_all_breaths);
+    temp_all_breaths_type_s = temp_all_breaths_type(sortidx, :);
     
-    % If the same window as last time for any of these then keep first,
-    % skip second instance
-    if length(cont_range)>1*fs && (j_win_count>j_win_count_prev && s_win_count>s_win_count_prev && p_win_count>p_win_count_prev || cond == 1)
-        if cont_val3(1)>cont_val3_prev(length(cont_val3_prev))+fs/10 || max(p_smooth_tag(cont_val3_prev))>0.5 || max(p_smooth_tag(cont_val3))>0.5 %If the first value of the range is less than 150 indices away from the last value of the last range...
-            % Mark breath at halfway point of each period
-            log_breath_locs = [log_breath_locs; cont_val3(floor(length(cont_val3)/2))];
+    sim_breaths = find(diff(temp_all_breaths_s)<3*fs);
+    rm_rows = [];
+    if isnan(sim_breaths) == 0
+        for i = 1:length(sim_breaths)
+            temp_row = find(temp_all_breaths_type_s(sim_breaths(i):sim_breaths(i)+1) == "log");
+            rm_rows = [rm_rows; sim_breaths(i)+temp_row-1];
         end
     end
-    end
-end
-end
-
-
-% If a breath detection from a single surfacing is closer than 3 seconds  
-% (e.g. 20 breaths/min) to a breath detection from
-% logging, then the ss breath trumps and we remove the logging breath
-temp_all_breaths= [all_breath_locs.breath_idx; log_breath_locs]; 
-temp_all_breaths_type = [repmat("ss", length(all_breath_locs.breath_idx), 1); repmat("log", length(log_breath_locs), 1)];%; diff_vals_ps]), 1)];
-
-[temp_all_breaths_s, sortidx] = sort(temp_all_breaths);
-temp_all_breaths_type_s = temp_all_breaths_type(sortidx, :);
-
-sim_breaths = find(diff(temp_all_breaths_s)<3*fs);
-rm_rows = [];
-if isnan(sim_breaths) == 0 
-    for i = 1:length(sim_breaths)
-    temp_row = find(temp_all_breaths_type_s(sim_breaths(i):sim_breaths(i)+1) == "log");
-    rm_rows = [rm_rows; sim_breaths(i)+temp_row-1];
-    end
-end
-
-temp_all_breaths_s(rm_rows, :) = [];
-temp_all_breaths_type_s(rm_rows, :) = [];
-
-% Changing these to be in full range of "p"
-all_breath_locs.breath_idx = temp_all_breaths_s + start_idx;
-all_breath_locs.type = temp_all_breaths_type_s;
-
-% Plot all locations where these three conditions are met
-%figure
-ax(4) = subplot(3, 5, [4, 5, 9, 10, 14, 15]);
-p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
-set(gca, 'ydir', 'reverse')
-hold on
-p_smooth_p2 = p_smooth_tag;
-idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
-p_smooth_p2(~idx_temp) = NaN;
-p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
-p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth_tag(log_breath_locs), 80, 'm*', 'LineWidth', 2);
-title('Breath IDs during logging')
-ylabel('Depth (m)'); xlabel('Time (min)');
-
-legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
-
-linkaxes(ax, 'x')
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_loggingdetections.fig');
-savefig(figfile);
- 
-%% Write breaths to audit 
-save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
-
- clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    
+    temp_all_breaths_s(rm_rows, :) = [];
+    temp_all_breaths_type_s(rm_rows, :) = [];
+    
+    % Changing these to be in full range of "p"
+    all_breath_locs.breath_idx = temp_all_breaths_s + start_idx;
+    all_breath_locs.type = temp_all_breaths_type_s;
+    
+    %% Step 5k: Plot breath detections for logging periods
+    
+    ax(4) = subplot(3, 5, [4, 5, 9, 10, 14, 15]);
+    p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
+    set(gca, 'ydir', 'reverse')
+    hold on
+    p_smooth_p2 = p_smooth_tag;
+    idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
+    p_smooth_p2(~idx_temp) = NaN;
+    p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
+    p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth_tag(log_breath_locs), 80, 'm*', 'LineWidth', 2);
+    title('Breath IDs during logging')
+    ylabel('Depth (m)'); xlabel('Time (min)');
+    
+    legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
+    
+    linkaxes(ax, 'x')
+    
+    % Save figure
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_loggingdetections.fig');
+    savefig(figfile);
+    
+    %% Step 5l: Write breaths to audit
+    
+    save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
+    
+    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    
 end
 
-% Import breaths from audit - audits ONLY worked for D2s NOT D3s
+%% Step 6: Plot all breaths
 
 for k = 1:length(taglist);
-tag = taglist{k};
-
-%Load in metadata
-metadata = load(strcat(data_path, "\metadata\", tag, "md"));
-clear tag
-
-% Set up directories
-[recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-
-% Set prh path to 50 Hz prh files
-settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
-
-% Load the existing prh file
-loadprh(metadata.tag);
-
-% Load in diving data
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
-
-% Load in movement data
-load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
-
-% Load in breathing information
-load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
-
-[time_sec, time_min, time_hour] =calc_time(metadata.fs, pitch); %Recalculate time
-
-% Load in breaths
-breath_idx = all_breath_locs.breath_idx;
-breath_times = time_sec(all_breath_locs.breath_idx);
-
-[breath_times, sortidx]  = sort(breath_times);
-breath_type = all_breath_locs.type(sortidx, :);
-
-%% Plot all locations where these three conditions are met
+    %% Step 6a: Load in tag data
+    tag = taglist{k};
+    
+    %Load in metadata
+    metadata = load(strcat(data_path, "\metadata\", tag, "md"));
+    clear tag
+    
+    % Set up directories
+    [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+       
+    % Load the existing prh file
+    loadprh(metadata.tag);
+    
+    % Load in diving data
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
+    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
+    
+    % Load in movement data
+    load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
+    
+    % Load in breathing information
+    load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
+    
+    [time_sec, time_min, time_hour] =calc_time(metadata.fs, pitch); %Recalculate time
+    
+    % Load in breaths
+    breath_idx = all_breath_locs.breath_idx;
+    breath_times = time_sec(all_breath_locs.breath_idx);
+    
+    [breath_times, sortidx]  = sort(breath_times);
+    breath_type = all_breath_locs.type(sortidx, :);
+    
+    %% Step 6b: Plot all breaths
     figure
     title(metadata.tag, 'Interpreter', 'none');
     ax(1)=subplot(4, 1, 1);
     plot(time_min, p_smooth, 'k', 'LineWidth', 1.5); hold on
-        set(gca,'Ydir','reverse')
-        ylabel('Depth (m)');
-
+    set(gca,'Ydir','reverse')
+    ylabel('Depth (m)');
+    
     hold on
     scatter(breath_times(breath_type == 'ss')/60, p_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log')/60, p_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-
+    
     legend('Depth', 'Single surface breaths', 'Log breaths');
-
+    
     ax(2)=subplot(4, 1, 2);
-    plot(time_min(2:end), surge_smooth, 'r', 'LineWidth', 1.5); hold on 
+    plot(time_min(2:end), surge_smooth, 'r', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss')/60, surge_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log')/60, surge_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Surge SE');
-
+    
     ax(3)=subplot(4, 1, 3);
     plot(time_min(2:end), jerk_smooth, 'b', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss')/60, jerk_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
@@ -839,21 +841,21 @@ breath_type = all_breath_locs.type(sortidx, :);
     ylabel('Smoothed Pitch SE');
     xlabel('Time (min)');
     
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\all_breaths\', metadata.tag, '_allbreaths.fig');
-savefig(figfile);
-
-%Calculate and plot fR
-[fR] = get_contfR(breath_times, breath_idx, p, time_min);
-title(taglist{k}, 'Interpreter', 'none');
-
-figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
-savefig(figfile);
-
-clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
-
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\all_breaths\', metadata.tag, '_allbreaths.fig');
+    savefig(figfile);
+    
+    %Calculate and plot fR
+    [fR] = get_contfR(breath_times, breath_idx, p, time_min);
+    title(taglist{k}, 'Interpreter', 'none');
+    
+    figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\resp_rate\', metadata.tag, '_resprate.fig');
+    savefig(figfile);
+    
+    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    
 end
 
-%% Save for R
+%% Step 7: Save all breath information for analysis in  R
 clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
 
 for k = 1:length(taglist);
@@ -900,7 +902,9 @@ end
 % Save data to bring into R
 save('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\data\all_breath_data.mat','dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
 
-%% Acoustic auditing - D2
+%% Step 8: Acoustic audits
+
+%% %% Step 8a: Acoustic auditing for D2s
 settagpath('audit', 'D:\gm\audit');
 settagpath('prh', 'D:\gm\prh\50 Hz');
 settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
@@ -915,7 +919,7 @@ R = loadaudit(tag);
 R = tagaudit(tag, tcue, R);
 saveaudit(tag, R);
 
-%% Acoustic auditing - D3
+%% %% Step 8a: Acoustic auditing for D3s
 settagpath('audit', 'D:\gm\audit');
 settagpath('prh', 'D:\gm\prh\50 Hz');
 settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
