@@ -4,29 +4,24 @@
 %%% Date: July 6, 2022
 %%% Duke University
 
-%% Step 0: Load tools
-
+%% Step 1: Set paths
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
-% Save tag names to variable
-taglist = {'gm08_143a',...
-    'gm08_143b'};
-
-%% Step 1: Set paths
-clearvars -except taglist; clc; close all
-
 % Add path to respdetect - EDIT THIS FOR YOUR MACHINE
-tools_path = 'C:\Users\Ashley\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\src';
+tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
 addpath(genpath(tools_path)); 
 
 % Add path to Matlab Tools - EDIT THIS FOR YOUR MACHINE
-mat_tools_path = 'C:\Users\Ashley\Dropbox\Ashley\Graduate\Toolboxes\dtagtools';
+mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\dtagtools';
 addpath(genpath(mat_tools_path)); 
 
 % Add path to DTAG data - EDIT THIS FOR YOUR MACHINE
-data_path = 'D:\gm';
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm';
 addpath(genpath(data_path)); 
+
+% Save tag names to variable
+taglist = {'gm08_143b'};
 
 %% Step 2: Make metadata file
 
@@ -48,15 +43,11 @@ for k = 1:length(taglist);
         str = input("Do you want to make a metadata file now? (y/n)\n",'s');
         if strcmp(str, "y") == 1
             
-            % Load the tag's prh file
-            loadprh(tag);
-                       
-            % Calculate time variables for easier workup
-            [time_sec, time_min, time_hour] =calc_time(fs, p);
-                       
-            % Load the tag's prh file
-            loadprh(tag);
+            settagpath('PRH', strcat(data_path,'\prh\'))
             
+            % Load the tag's prh file
+            loadprh(tag);
+                                  
             %Print out the fs so you can check it's what you expect
             fprintf('fs = %i Hz\n', fs);
             
@@ -85,8 +76,8 @@ for k = 1:length(taglist);
             [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path);
             
             % Make a metadata file
-            [metadata] = make_metadata(tag, recdir, prefix, fs, tag_ver, acousaud_filename, breathaud_filename, tag_on, tag_off);
-            save(strcat(data_path, "\metadata\", tag, "md"), 'tag', 'recdir', 'prefix', 'fs', 'tag_ver', 'tag_on', 'tag_off', 'tag_dur', 'acousaud_filename', 'breathaud_filename')
+            [metadata] = make_metadata(tag, recdir, prefix, fs, tag_ver, acousaud_filename, tag_on, tag_off);
+            save(strcat(data_path, "\metadata\", tag, "md"), 'tag', 'recdir', 'prefix', 'fs', 'tag_ver', 'tag_on', 'tag_off', 'tag_dur', 'acousaud_filename')
             fprintf("Made and saved a tag metadata file\n")
         end
         
@@ -94,7 +85,7 @@ for k = 1:length(taglist);
 end
 
 % Clear variables that are now saved in the metadata structure
-clear tag prefix recdir fs tag_ver acousaud_filename breathaud_filename tag_on tag_off tag_dur metadata_fname str
+clear tag prefix recdir fs tag_ver acousaud_filename tag_on tag_off tag_dur metadata_fname str
 
 %% Step 3: Find dives
 for k = 1:length(taglist);
@@ -116,7 +107,7 @@ for k = 1:length(taglist);
     [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
     
     % Make a diving file
-    diving_fname = strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat");
+    diving_fname = strcat(data_path, "\diving\", metadata.tag, "dives.mat");
     if isfile(diving_fname) == 1
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
@@ -168,13 +159,13 @@ for k = 1:length(taglist);
                 surf_dur(size(T, 1)) = NaN';
                 
                 % Save dive variables to mat file
-                save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
+                save(strcat(data_path, "\diving\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
                 
                 % Save dive variables as a table (analog to typical T
                 % variable)
                 Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
                 Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
-                save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"), 'Tab')
+                save(strcat(data_path, "\diving\", metadata.tag, "divetable"), 'Tab')
                 beep on; beep
                 
                 display('Dive detection complete!');
@@ -244,8 +235,8 @@ for k = 1:length(taglist)
     load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"));
     
     % Load in diving data
-    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
-    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
+    load(strcat(data_path, "\diving\", metadata.tag, "dives.mat"));
+    load(strcat(data_path, "\diving\", metadata.tag, "divetable.mat"));
     
     % Calculate time variables for full tag deployment
     [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
@@ -711,8 +702,8 @@ for k = 1:length(taglist)
     loadprh(metadata.tag);
     
     % Load in diving data
-    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives.mat"));
-    load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable.mat"));
+    load(strcat(data_path, "\diving\", metadata.tag, "dives.mat"));
+    load(strcat(data_path, "\diving\", metadata.tag, "divetable.mat"));
     
     % Load in movement data
     load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
@@ -788,17 +779,17 @@ metadata = load(strcat(data_path, "\metadata\", tag, "md"));
 clear tag
 
 % Load in dives
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"))
+load(strcat(data_path, "\diving\", metadata.tag, "dives"))
 
 % Load in dive table
-load(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"))
+load(strcat(data_path, "\diving\", metadata.tag, "divetable"))
 
 % Load in breathing information
 load(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat"));
 
 % Load full p from prh file - this will replace appended p from breathing
 % file
-load(strcat(data_path, "\prh\50 Hz\", metadata.tag, "prh.mat"),'p');
+load(strcat(data_path, "\prh\", metadata.tag, "prh.mat"),'p');
 
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
 
