@@ -1,6 +1,6 @@
 %%  Function to setup directories and such
 
-function [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path)
+function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path)
     % Define working directory and prefix of files
     recdir = strcat(data_path, '\', tag(1:4), '\', tag);
     
@@ -12,16 +12,16 @@ function [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(ta
     else
         prefix = strcat(tag(1:2), tag(6:9));
     end
-    
-    fprintf('TAG: %s\n', tag);
-    
-    % Use tag name to assign directories and filenames
+      
+    %% Use tag name to assign directories and filenames
     sp_year = tag(1:4);
-    recdir =            strcat(data_path, sp_year, '\', tag); %Set parent directory i.e. D:/MAPS19/Pm19_136a
-    deploy_name =       tag; %Set deployment name, probably the same as the parent folder
+    % Set parent directory
+    recdir = strcat(data_path, sp_year, '\', tag); 
+    % Set deployment name, probably the same as the parent folder
+    deploy_name = tag; 
     
-    acousaud_filename = strcat(data_path, '\audit\', tag, '_acousticaud.txt'); %Set name of acoustic audit file
-    breathaud_filename = strcat(data_path, '\audit\', tag, '_breathaud.txt'); %Set name of breath audit file
+    % Set name of acoustic audit file
+    acousaud_filename = strcat(data_path, '\audit\', tag, '_acousticaud.txt'); 
     
     if strcmp(tag_ver, 'D3') == 1
         addpath(genpath(strcat(mat_tools_path, '\DTAG3'))); %Add all of your tools to the path
@@ -30,7 +30,11 @@ function [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(ta
         settagpath('audio',data_path,'cal',strcat(data_path,'\cal'));
     end
     
-    settagpath('prh',strcat(data_path,'\prh')); %Set path for prh files
-    settagpath('audit',strcat(data_path,'\audit')); %Set path for audit files
+    %% Set other paths
+    %Set path for prh files
+    settagpath('prh',strcat(data_path,'\prh')); 
+    
+     %Set path for audit files
+    settagpath('audit',strcat(data_path,'\audit'));
     
 end

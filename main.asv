@@ -53,7 +53,10 @@ for k = 1:length(taglist);
                        
             % Calculate time variables for easier workup
             [time_sec, time_min, time_hour] =calc_time(fs, p);
-                       
+            
+            % Set prh path to 50 Hz prh files
+            settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
+            
             % Load the tag's prh file
             loadprh(tag);
             
@@ -109,9 +112,12 @@ for k = 1:length(taglist);
     % Setup directories
     [recdir, prefix, acousaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
     
+    % Set prh path to 50 Hz prh files
+    settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
+    
     % Load the existing prh file
     loadprh(metadata.tag);
-    
+
     % Calculate time for entire tag deployment
     [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
     
@@ -133,17 +139,17 @@ for k = 1:length(taglist);
             dive_thres = answer{1};
             clear prompt dlgtitle dims definput answer
             
-            [dive_thres, T] = get_dives(p, metadata.fs, dive_thres);
+            [dive_thres, T] = get_dives(p, metadata.fs, dive_thres); 
             
             if size(T, 1) <= 1
                 display('Only 1 deep dive! Not continuing analysis...')
                 
             else
                 
-                % Plot dives
-                plot_dives(T, time_sec, p);
+            % Plot dives
+            plot_dives(T, time_sec, p);
                 
-                % Extract dive information from T
+            % Extra
                 for i = 1:size(T, 1)
                     tag{i} = metadata.tag;
                     depth_thres(i) = dive_thres;
@@ -154,8 +160,6 @@ for k = 1:length(taglist);
                     time_maxdepth(i) = T(i, 4);
                     dive_dur(i) = dive_end(i) - dive_start(i);
                 end
-                
-                % Extract surface information from dive information
                 for i = 1:size(T, 1)-1
                     surf_num(i) = i';
                     surf_start(i) = dive_end(i)';
@@ -167,11 +171,8 @@ for k = 1:length(taglist);
                 surf_end(size(T, 1)) = NaN';
                 surf_dur(size(T, 1)) = NaN';
                 
-                % Save dive variables to mat file
-                save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
                 
-                % Save dive variables as a table (analog to typical T
-                % variable)
+                save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
                 Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
                 Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
                 save(strcat(data_path, "\diving\divethres_5m\", metadata.tag, "divetable"), 'Tab')
@@ -179,13 +180,117 @@ for k = 1:length(taglist);
                 
                 display('Dive detection complete!');
             end
-            
             clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
         end
-    end
+    %end
 end
 
-%% Step 4: Process movement data
+%% Load dives
+clear Tab dive_table
+dive_table = []; 
+
+diving_dir = strcat(data_path, '\diving\divethres_5m\'); 
+filesAndFolders = dir(diving_dir);   
+filesInDir = filesAndFolders(~([filesAndFolders.isdir]));  % Returns only the files in the directory                    
+temp = struct2cell(filesInDir);
+temp = temp(1, :)';
+
+tag_cols_starter = linspecer(length(taglist));
+
+for k = 1:length(taglist);
+    tag = taglist{k};
+    foundStr= strfind(temp, tag);
+    rel_files = find(~cellfun('isempty',foundStr));
+    load(strcat(diving_dir, cell2mat(temp(rel_files(2)))))
+    dive_table = [dive_table; Tab];
+    tag_cols_cell{k} = tag_cols_starter(k).*ones(height(Tab), 3);
+end
+
+tag_cols = cell2mat([tag_cols_cell']);
+
+clear diving_dir filesAndFolders filesInDir temp foundStr rel_files
+
+%% Plot dives and do some dive EDA
+
+f = figure;
+%sgtitle('Dive depth vs. duration for all dives', 'FontSize', 14);
+subplot(1, 3, 1)
+scatter(dive_table.dive_dur./60, dive_table.max_depth, [], 'k', 'o', 'MarkerEdgeAlpha',.5); box on;
+xlabel('Dive duration (min)'); ylabel('Max depth (m)');
+ax = gca; 
+ax.FontSize = 12;
+
+subplot(1, 3, 2)
+scatter(dive_table.dive_dur./60, dive_table.surf_dur./60, [], 'k', 'o', 'MarkerEdgeAlpha',.5); box on;
+xlabel('Dive duration (min)'); ylabel('Post-dive surface interval (min)');
+%set(gca, 'YScale', 'log')
+ax = gca; 
+ax.FontSize = 12;
+
+subplot(1, 3, 3)
+scatter(dive_table.dive_dur(2:end)./60, dive_table.surf_dur(1:end-1)./60, [], 'k', 'o', 'MarkerEdgeAlpha',.5); box on;
+xlabel('Dive duration (min)'); ylabel('Pre-dive surface interval (min)');
+%set(gca, 'YScale', 'log')
+ax = gca; 
+ax.FontSize = 12;
+f.Position = [10 700 1000 300];
+
+ax = gcf;
+exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\alltags_divesummary.pdf');
+
+% Plotting clustering of dives/depths
+f = figure;
+%sgtitle('Dbscan cluster analysis', 'FontSize', 14);
+% dbscan clustering
+idx = dbscan([dive_table.dive_dur./60, dive_table.max_depth], 10, round(length(dive_table.dive_dur)/10, 0));
+cluster_cols = linspecer(length(unique(idx)));
+g = gscatter(dive_table.dive_dur./60, dive_table.max_depth, idx, cluster_cols, 'os',6,'MarkerEdgeAlpha',.2)
+ xlabel('Dive duration (min)'); ylabel('Max depth (m)');
+ax = gca; 
+ax.FontSize = 12;
+legend('Cluster 1','Cluster 2',...
+       'Location','SE')
+
+f.Position = [1020 700 350 300];
+
+% Make new post pre dive interval figures with deeper/longer cluster
+deep_dive_dur = dive_table.dive_dur;
+deep_dive_dur(idx == 1) = [];
+
+deep_dive_surf_dur = dive_table.surf_dur;
+deep_dive_surf_dur(idx == 1) = [];
+
+deep_color = tag_cols;
+deep_color(idx == 1, :) = [];
+
+ax = gcf;
+exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\alltags_dbscanclustering.pdf');
+
+f = figure;
+%sgtitle("Dive duration vs. surface duration for deep cluster", 'FontSize', 14);
+subplot(1, 2, 1)
+scatter(deep_dive_dur./60, deep_dive_surf_dur./60, [], 'k',  'MarkerEdgeAlpha',.5); box on;
+xlabel('Dive duration (min)'); ylabel('Post-dive surface interval (min)');
+%set(gca, 'YScale', 'log')
+ax = gca; 
+ax.FontSize = 12;
+
+subplot(1, 2, 2)
+scatter(deep_dive_dur(2:end)./60, deep_dive_surf_dur(1:end-1)./60, [], 'k', 'MarkerEdgeAlpha',.5); box on;
+xlabel('Dive duration (min)'); ylabel('Pre-dive surface interval (min)');
+%set(gca, 'YScale', 'log')
+ax = gca; 
+ax.FontSize = 12;
+f.Position = [10 150 630 300];
+
+% Fit some basic linear models 
+mdl_post = fitlm(deep_dive_dur./60, deep_dive_surf_dur./60);
+mdl_pre = fitlm(deep_dive_dur(2:end)./60, deep_dive_surf_dur(1:end-1)./60)
+
+ax = gcf;
+exportgraphics(ax,'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\alltags_divevssurf_deepcluster.pdf');
+
+%% Process movement information if needed
 
 % Load in metadata and prh 
 for k = 1:length(taglist)
@@ -204,12 +309,15 @@ for k = 1:length(taglist)
         fprintf("A movement table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No movement table  exists for %s.\n", metadata.tag)
-        str = input("Do you want to make a movement table now? (y/n)\n",'s');
+        %str = input("Do you want to make a movement table now? (y/n)\n",'s');
         
-        if strcmp(str, "y") == 1
+        %if strcmp(str, "y") == 1
 
             % Setup directories
             [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+
+            % Set prh path to 50 Hz prh files
+            settagpath('PRH', strcat(data_path,'\prh\50 Hz'))
 
             % Load the existing prh file
             loadprh(metadata.tag);
@@ -223,8 +331,8 @@ for k = 1:length(taglist)
             sway = Aw(:, 2);
             heave = Aw(:, 3);
             
-            % Filter all three accel vectors, 5th order butterworth, with
-            % passband between 2 Hz and 15 Hz
+            % Filter all three accel vectors, 5th order butterworth, used 10 and 0.2
+            %as upper in saved movement files
             fny = metadata.fs/2;
             pass = [2, 15];
             [b,a]=butter(5,pass/fny,'bandpass');
@@ -232,29 +340,29 @@ for k = 1:length(taglist)
             surge_filt = filtfilt(b,a, surge);
             sway_filt = filtfilt(b,a, sway);
             heave_filt = filtfilt(b,a, heave);
-           
-            % Get surge diff
+            
+            %Calculate jerk using njerk
+            jerk_filt = njerk([surge_filt, sway_filt, heave_filt], metadata.fs);
+
+            %Get surge diff
             surge_diff = diff(surge_filt);
             sway_diff = diff(sway_filt);
             heave_diff = diff(heave_filt);
 
-            % Get Shannon entropy
+            %Get Shannon entropy
             surge_se = log(abs(surge_diff))*sum(abs(surge_diff));
             sway_se = log(abs(sway_diff))*sum(abs(sway_diff));
             heave_se = log(abs(heave_diff))*sum(abs(heave_diff));
 
-            % Get smoothed Shannon entropy - over 5 second window
+            %Get smoothed Shannon entropy - over 5 second window
             surge_smooth = movmean(surge_se, 5*fs);
             sway_smooth = movmean(sway_se, 5*fs);
             heave_smooth = movmean(heave_se, 5*fs);
             
-            % Calculate jerk using njerk
-            jerk_filt = njerk([surge_filt, sway_filt, heave_filt], metadata.fs);
-            
-            % Get Shannon entropy of jerk
+            %Get Shannon entropy of jerk
             jerk_se = log(abs(jerk_filt))*sum(abs(jerk_filt));
  
-            % Get smoothed Shannon entropy
+            %Get smoothed Shannon entropy
             jerk_smooth = movmean(jerk_se', 5*fs); 
             
             % Build filter for prh
@@ -282,7 +390,6 @@ for k = 1:length(taglist)
             head_smooth = movmean(head_se, 5*fs);
             roll_smooth = movmean(roll_se, 5*fs);
 
-            % Save all movement variables to mat file
             save(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
                 'surge_filt', 'sway_filt', 'heave_filt',...
                 'surge_diff', 'sway_diff', 'heave_diff',...
@@ -294,10 +401,12 @@ for k = 1:length(taglist)
                 'pitch_se', 'head_se', 'roll_se',...
                 'pitch_smooth', 'head_smooth', 'roll_smooth');
           
+            %beep on; beep
+
             display('Movement information calculation complete!');
        
             clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
-        end
+        %end
      end
 end
 

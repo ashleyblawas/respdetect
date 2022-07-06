@@ -1,6 +1,6 @@
 %plot_dives
 
-function [dive_durs, surf_durs]=plot_dives(T, time_sec, p)
+function plot_dives(T, time_sec, p)
     for k= 1:length(T(:, 1))
         dive_durs(k) = T(k, 2)- T(k, 1);
     end
