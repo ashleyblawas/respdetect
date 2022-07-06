@@ -4,7 +4,7 @@
 %%% Date: July 6, 2022
 %%% Duke University
 
-%% Load tools
+%% Step 0: Load tools
 
 % Clear workspace and command window and close all figures
 clear; clc; close all
@@ -304,6 +304,8 @@ end
 %% Step 5: Detect breaths
 
 for k = 1:length(taglist)
+    
+    %% Step 5a: Import tag data
     tag = taglist{k};
 
     % Load in metadata
@@ -325,20 +327,8 @@ for k = 1:length(taglist)
     
     % Calculate time variables for full tag deployment
     [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
-    
-    % Want pitch to be positive for peak detect, so adding min
-    pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
-    
-    % Remove underwater portions of movement data
-    for i = 1:length(jerk_smooth)
-        if p(i)>5 % The higher this threshold is the better for promience detections
-            jerk_smooth(i) = NaN;
-            surge_smooth(i) = NaN;
-            pitch_smooth(i) = NaN;
-        end
-    end
        
-    %% Define start and end of tag deployment using metadata tag on and off times
+    %% Step 5b: Subset deployment to tag on time only
     
     start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on)));
     end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
@@ -355,7 +345,7 @@ for k = 1:length(taglist)
     % Subset p to only when tag is on
     p_tag = p(start_idx:end_idx);
 
-    %% Identify minimia of pressure
+    %% Step 5c: Identify surface periods
     % Smooth depth signal
     p_smooth = smoothdata(p, 'movmean', fs);
     p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
@@ -427,7 +417,15 @@ for k = 1:length(taglist)
     single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
     logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
     
-    %% Add to plot logging vs single breath surfacings and start/end of surfacings
+    % Define logging starts and ends
+    logging_start_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 1));
+    logging_end_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 2));
+    
+    logging_start_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 1)));
+    logging_end_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 2)));
+    logging_ints_s = [logging_start_s', logging_end_s'];
+    
+    %% Step 5d: Start plot of surfacing periods
     % Plot logging surfacings in pink
     if length(logging_surf_rows)>0
         for r = 1:length(logging_surf_rows)
@@ -447,15 +445,12 @@ for k = 1:length(taglist)
     p4 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 1))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 1))), 'g*');
     p5 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(:, 2))-1), p_shallow(p_shallow_idx(p_shallow_ints(:, 2))), 'r*');
     
-    %% For single surfacings - determine depth minima and assign this as a breath
+    %% Step 5e: Detect breaths for single breath surfacings
     for r = length(single_breath_surf_rows):-1:1
         % Column four is the index of the minima
         p_shallow_ints(single_breath_surf_rows(r), 4) = p_shallow_ints(single_breath_surf_rows(r), 1) - 1 + find(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2))) == min(p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 1)):p_shallow_idx(p_shallow_ints(single_breath_surf_rows(r), 2)))), 1);
     end
     p_shallow_ints(logging_surf_rows, 4) = NaN;
-    
-    %% Plot breath detections for single breath surfacing
-    p6 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4)-1)), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))), 'k*');
     
     % Get the indicies of breaths assoicated with single surfacings from
     sbs_idxs = p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4));
@@ -463,216 +458,133 @@ for k = 1:length(taglist)
     all_breath_locs.breath_idx = sbs_idxs;
     all_breath_locs.type = repmat("ss", length(sbs_idxs), 1);
     
-    % Define logging starts and ends
-    logging_start_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 1));
-    logging_end_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 2));
-    
-    logging_start_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 1)));
-    logging_end_s = time_sec(start_idx+p_shallow_idx(p_shallow_ints(logging_surf_rows, 2)));
-    logging_ints_s = [logging_start_s', logging_end_s'];
+    %% Step 5f: Plot breath detections for single breath surfacing
+    p6 = plot(time_min(start_idx+p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4)-1)), p_shallow(p_shallow_idx(p_shallow_ints(single_breath_surf_rows, 4))), 'k*');
     
     legend([p1 p2 p3 p4 p5 p6],{'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
     
     % Save surface detections figure
     figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\surface_detections\', metadata.tag, '_surfacedetections.fig');
     savefig(figfile);
-
-%% Now only want to do pitch/jerk detections for the logging periods
-% Subset tag on to tag off of pressure 
-jerk_smooth=jerk_smooth(start_idx:end_idx);
-surge_smooth=surge_smooth(start_idx:end_idx);
-pitch_smooth=pitch_smooth(start_idx:end_idx);
-
-% Get idxes of p_smooth that are are logging with 5s window on each side
-idx_temp = zeros(length(p_smooth_tag), 1);
-for d = 1:length(logging_start_idxs);
-    idx_temp(logging_start_idxs(d)-5*metadata.fs:logging_end_idxs(d)+5*metadata.fs) = 1;
-end
-
-% Remove jerk measurements for non-logging surfacing periods
-jerk_smooth(idx_temp==0) = NaN;
-surge_smooth(idx_temp==0) = NaN;
-pitch_smooth(idx_temp==0) = NaN;
-
-%% Normalize pitch and jerk 
-% Divide signal into continue sections to rescale
-cont_sections_jerk = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelValues');
-cont_sections_surge = regionprops(~isnan(surge_smooth), surge_smooth, 'PixelValues');
-cont_sections_pitch = regionprops(~isnan(pitch_smooth), pitch_smooth, 'PixelValues');
-cont_sections_idx = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelList');
-
-for i = 1:length(cont_sections_idx)
-% Assign jerk for this section to variables and indexes of section 
-jerk_temp = cont_sections_jerk(i).PixelValues;
-surge_temp = cont_sections_surge(i).PixelValues;
-pitch_temp = cont_sections_pitch(i).PixelValues;
-
-temp_idx = cont_sections_idx(i).PixelList(:, 1); 
-
-% Rescale the jerk in this section 
-jerk_temp = rescale(jerk_temp);
-surge_temp = rescale(surge_temp);
-pitch_temp = rescale(pitch_temp);
-
-jerk_smooth(temp_idx) = jerk_temp;
-surge_smooth(temp_idx) = surge_temp;
-pitch_smooth(temp_idx) = pitch_temp;
-end
-
-%% Peak detection - JERK
-% Whichever one is second is the one getting audited
-figure('units','normalized','outerposition',[0 0 1 1]);
-ax(1) = subplot(3, 5, [1 2]);
-plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
-xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
-
-%Peak detect jerk, defining here that the max breath rate is 20 breaths/min
-%given 3 second separation
-% Could peak detect across smaller overlapping ranges
-[j_max_height, j_max_locs, jw, jp] = findpeaks(jerk_smooth, 'MinPeakDistance', 3*metadata.fs);
-jw = rescale(jw); jp = rescale(jp); j_max_height = rescale(j_max_height);
-
-if length(j_max_height)>1
-    dist = sqrt((max(j_max_height)-j_max_height).^2 +(max(jw)-jw).^2 + (max(jp)-jp).^2);
-    [f_d,xi_d] = ksdensity(dist);
-    thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
-    if isempty(thres_d) == 1
-        X = [j_max_height', jw', jp'];
-        Z = linkage(X, 'ward');
-        idx = cluster(Z,'MAXCLUST', 2);
-        g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
-    else
-        idx = [dist<thres_d];
-        idx = double(idx); idx(idx==0)=2;
-        g1_mean = mean(jw(idx==1)); g2_mean = mean(jw(idx==2));
-    end
-     
-    % Remove peaks that are too far from maxes
-    rm_idx = [];
-    if length(jw)>0
-        % Using this to find which group to remove
-        rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
-        for c = 1:length(j_max_locs)
-            if idx(c) == rm_group
-                rm_idx = [rm_idx, c];
-            end
-        end
-        j_max_locs(rm_idx) = [];
-    end
-
-    % Okay, so now we are saying breaths can only occur at these locations
-    scatter(time_min(j_max_locs+start_idx), jerk_smooth(j_max_locs), 'r*')
     
-    if length(jw)>0
+    %% Step 5g: Pre-process movement data for logging period breath detections
+    
+    % Want pitch to be positive for peak detect, so adding min
+    pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
+    
+    % Remove underwater portions of movement data
+    for i = 1:length(jerk_smooth)
+        if p(i)>5 % The higher this threshold is the better for promience detections
+            jerk_smooth(i) = NaN;
+            surge_smooth(i) = NaN;
+            pitch_smooth(i) = NaN;
+        end
+    end
+    
+    % Subset tag on to tag off of pressure
+    jerk_smooth=jerk_smooth(start_idx:end_idx);
+    surge_smooth=surge_smooth(start_idx:end_idx);
+    pitch_smooth=pitch_smooth(start_idx:end_idx);
+    
+    % Get indexes of p_smooth that are are logging with 5s window on each side
+    idx_temp = zeros(length(p_smooth_tag), 1);
+    for d = 1:length(logging_start_idxs);
+        idx_temp(logging_start_idxs(d)-5*metadata.fs:logging_end_idxs(d)+5*metadata.fs) = 1;
+    end
+    
+    % Remove jerk measurements for non-logging surfacing periods
+    jerk_smooth(idx_temp==0) = NaN;
+    surge_smooth(idx_temp==0) = NaN;
+    pitch_smooth(idx_temp==0) = NaN;
+    
+    % Normalize pitch and jerk section-by-section
+    % Divide signal into continue sections to rescale
+    cont_sections_jerk = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelValues');
+    cont_sections_surge = regionprops(~isnan(surge_smooth), surge_smooth, 'PixelValues');
+    cont_sections_pitch = regionprops(~isnan(pitch_smooth), pitch_smooth, 'PixelValues');
+    cont_sections_idx = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelList');
+    
+    for i = 1:length(cont_sections_idx)
+        % Assign jerk for this section to variables and indexes of section
+        jerk_temp = cont_sections_jerk(i).PixelValues;
+        surge_temp = cont_sections_surge(i).PixelValues;
+        pitch_temp = cont_sections_pitch(i).PixelValues;
+        
+        temp_idx = cont_sections_idx(i).PixelList(:, 1);
+        
+        % Rescale the jerk in this section
+        jerk_temp = rescale(jerk_temp);
+        surge_temp = rescale(surge_temp);
+        pitch_temp = rescale(pitch_temp);
+        
+        jerk_smooth(temp_idx) = jerk_temp;
+        surge_smooth(temp_idx) = surge_temp;
+        pitch_smooth(temp_idx) = pitch_temp;
+    end
+    
+    %% Step 5h: Peak detection of movement signals
+    
+    %% %% Peak detection: Jerk
+    % Plot jerk signal
+    figure('units','normalized','outerposition',[0 0 1 1]);
+    ax(1) = subplot(3, 5, [1 2]);
+    plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
+    xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
+    
+    % Peak detection
+    [j_locs, j_width, j_prom] = detect_peaks(metadata.fs, jerk_smooth);
+    
+    % Plot jerk peaks
+    scatter(time_min(j_locs+start_idx), jerk_smooth(j_locs), 'r*')
+    
+    % Plot keep/remove groups
+    if isempty(j_locs)==0
         subplot(3, 5, 3)
-        plot(jw(idx==rm_group), jp(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
+        plot(j_width(idx==rm_group), j_prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
         hold on
-        plot(jw(idx~=rm_group), jp(idx~=rm_group), 'k.', 'MarkerSize', 12)
-        xlabel('Peak Width'); ylabel('Peak Prominence'); %legend('Cluster 1', 'Cluster 2')
+        plot(j_width(idx~=rm_group), j_prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
+        xlabel('Peak Width'); ylabel('Peak Prominence'); 
     end
+
+    %% %% Peak detection: Surge
+    ax(2) = subplot(3, 5, [6 7]);
+    plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
+    xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
     
-end
-%% Peak detection - SURGE JERK
-ax(2) = subplot(3, 5, [6 7]);
-plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
-xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
-
-%Peak detect surge peaks, defining here that the max breath rate is 20 breaths/min
-%given 2 second separation
-[s_max_height, s_max_locs, sw, sp] = findpeaks(surge_smooth, 'MinPeakDistance', 3*metadata.fs);
-sw = rescale(sw); sp = rescale(sp); s_max_height = rescale(s_max_height);
-
-if length(s_max_height)>0
-    dist = sqrt((max(s_max_height)-s_max_height).^2 +(max(sw)-sw).^2 + (max(sp)-sp).^2);
-    [f_d,xi_d] = ksdensity(dist);
-    thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
-    if isempty(thres_d) == 1
-        %sw = rescale(sw); sp = rescale(sp); s_max_height = rescale(s_max_height);
-        X = [sw, sp];
-        Z = linkage(X, 'ward');
-        idx = cluster(Z,'MAXCLUST', 2);
-        g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
-    else
-        idx = [dist>thres_d];
-        idx = double(idx); idx(idx==0)=2;
-        g1_mean = mean(sw(idx==1)); g2_mean = mean(sw(idx==2));
+    % Peak detection
+    [s_locs, s_width, s_prom] = detect_peaks(metadata.fs, surge_smooth);
+    
+    % Plot surge peaks
+    scatter(time_min(s_locs+start_idx), surge_smooth(s_locs), 'b*')
+    
+    % Plot keep/remove groups
+    if isempty(s_locs)==0
+        subplot(3, 5, 8)
+        plot(s_width(idx==rm_group), s_prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
+        hold on
+        plot(s_width(idx~=rm_group), s_prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
+        xlabel('Peak Width'); ylabel('Peak Prominence');
     end
+
+    %% %% Peak detection: Pitch
+    ax(3) = subplot(3, 5, [11 12]);
+    plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
+    xlabel('Time (min)'); ylabel('Pitch SE Smooth');
     
+    % Peak detection
+    [p_locs, p_width, p_prom] = detect_peaks(metadata.fs, pitch_smooth);
     
-    % Remove peaks that are too far from maxes
-    rm_idx = [];
-    if length(sw)>0
-        rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
-        for c = 1:length(s_max_locs)
-            if idx(c) == rm_group
-                rm_idx = [rm_idx, c];
-            end
-        end
+    % Plot surge peaks
+    scatter(time_min(p_locs+start_idx), pitch_smooth(p_locs), 'g*')
+    
+    % Plot keep/remove groups
+    if isempty(p_locs)==0
+        subplot(3, 5, 13)
+        plot(p_width(idx==rm_group), p_prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
+        hold on
+        plot(p_width(idx~=rm_group), p_prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
+        xlabel('Peak Width'); ylabel('Peak Prominence');
     end
-    s_max_locs(rm_idx) = [];
-end
-
-% Okay, so now we are saying breaths can only occur at these locations
-scatter(time_min(s_max_locs+start_idx), surge_smooth(s_max_locs), 'b*')
-
-if length(sw)>0
-    subplot(3, 5, 8)
-    plot(sw(idx==rm_group), sp(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
-    hold on
-    plot(sw(idx~=rm_group), sp(idx~=rm_group), 'k.', 'MarkerSize', 12)
-    xlabel('Peak Width'); ylabel('Peak Prominence'); %legend('Cluster 1', 'Cluster 2')
-end
-
-%% Peak detection - PITCH
-ax(3) = subplot(3, 5, [11 12]);
-plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
-xlabel('Time (min)'); ylabel('Pitch SE Smooth');
-
-%Peak detect pitch peaks, defining here that the max breath rate is 20 breaths/min
-%given 2 second separation
-[p_max_height, p_max_locs, pw, pp] =findpeaks(pitch_smooth, 'MinPeakDistance', 3*metadata.fs);
-pw = rescale(pw); pp = rescale(pp); p_max_height = rescale(p_max_height);
-
-if length(p_max_height)>0
-    dist = sqrt((max(p_max_height)-p_max_height).^2 + (max(pw)-pw).^2 + (max(pp)-pp).^2);
-    [f_d,xi_d] = ksdensity(dist);
-    thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
-    if isempty(thres_d) ==1
-        X = [pw, pp];
-        Z = linkage(X, 'ward');
-        idx = cluster(Z,'MAXCLUST', 2);
-        g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
-    else
-        idx = [dist>thres_d];
-        idx = double(idx); idx(idx==0)=2;
-        g1_mean = mean(pw(idx==1)); g2_mean = mean(pw(idx==2));
-    end
-    
-    % Remove peaks that are too far from maxes
-    rm_idx = [];
-    if length(pw)>0
-        rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
-        for c = 1:length(p_max_locs)
-            if idx(c) == rm_group
-                rm_idx = [rm_idx, c];
-            end
-        end
-    end
-    
-    p_max_locs(rm_idx) = [];
-end
-% Okay, so now we are saying breaths can only occur at these locations
-scatter(time_min(p_max_locs+start_idx), pitch_smooth(p_max_locs), 'g*')
-
-if length(pw)>0
-    subplot(3, 5, 13)
-    plot(pw(idx==rm_group), pp(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
-    hold on
-    plot(pw(idx~=rm_group), pp(idx~=rm_group), 'k.', 'MarkerSize', 12)
-    xlabel('Peak Width'); ylabel('Peak Prominence'); %legend('Cluster 1', 'Cluster 2')
-end
-%figfile = strcat('C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\Gm_BreathingPatterns\doc\figs\logging_breath_detections\', metadata.tag, '_movementdetections.fig');
-%savefig(figfile);
 
 %% Find indexes where all conditions are met 
 
@@ -680,20 +592,20 @@ end
 % 5 second window - 2.5 seconds on each side of max
 
 j_max_wins = [];
-for a = 1:length(j_max_locs)
-    j_max_win = j_max_locs(a)-2.5*metadata.fs:1:j_max_locs(a)+2.5*metadata.fs;
+for a = 1:length(j_locs)
+    j_max_win = j_locs(a)-2.5*metadata.fs:1:j_locs(a)+2.5*metadata.fs;
     j_max_wins = [j_max_wins, j_max_win];
 end
 
 s_max_wins = [];
-for b = 1:length(s_max_locs)
-    s_max_win = s_max_locs(b)-2.5*metadata.fs:1:s_max_locs(b)+2.5*metadata.fs;
+for b = 1:length(s_locs)
+    s_max_win = s_locs(b)-2.5*metadata.fs:1:s_locs(b)+2.5*metadata.fs;
     s_max_wins = [s_max_wins, s_max_win];
 end
 
 p_max_wins = [];
-for c = 1:length(p_max_locs)
-    p_max_win = p_max_locs(c)-2.5*metadata.fs:1:p_max_locs(c)+2.5*metadata.fs;
+for c = 1:length(p_locs)
+    p_max_win = p_locs(c)-2.5*metadata.fs:1:p_locs(c)+2.5*metadata.fs;
     p_max_wins = [p_max_wins, p_max_win];
 end
 
@@ -711,7 +623,7 @@ end
 % Places where all three conditions are met
 [val3] = intersect(intersect(intersect(p_shallow_idx, p_max_wins), j_max_wins), s_max_wins);
 
-% Places where only two conditions (jerk and surge jerk) are met - NEXT THING TO DO!
+% Places where only two conditions (jerk and surge jerk) are met 
 [val2_js] = intersect(intersect(p_shallow_idx, j_max_wins), s_max_wins);
 [val2_jp] = intersect(intersect(p_shallow_idx, j_max_wins), p_max_wins);
 [val2_sp] = intersect(intersect(p_shallow_idx, s_max_wins), p_max_wins);
