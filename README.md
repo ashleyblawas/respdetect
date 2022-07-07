@@ -1,7 +1,8 @@
 # respdetect
+## A Matlab toolkit to detect respirations in whale DTAG records
 
-A Matlab toolkit to detect respirations in DTAG records.
-
+### Summary
+***
 These files are intended to work alongside the D3 Matlab Toolboxes by Mark Johnson.
 
 The D3 Matlab toolbox is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
@@ -10,25 +11,27 @@ This software is distributed in the hope that it will be useful, but WITHOUT ANY
 
 You should have received a copy of the GNU General Public License along with D3. If not, see <http://www.gnu.org/licenses/>.
 
-## Installation
+### Installation
+***
+#### System Requirements
+Respdetect was developed and tested on 64-bit Windows 10 and has not yet been tested on other platforms.
 
-Download the folder "resp_detect" into the directory of your choice. Then within MATLAB, open ``main.m``. 
+#### MATLAB
+Respdetect was developed on MATLAB versions R2020a and has not yet been tested with other versions.
 
-Change the ``tool_path`` and ``data_path`` to reflect where these tools and your data are stored locally. 
-Run the ``%% Load tools`` block to add the tools and data to your path.
+MATLAB toolbox dependencies:
 
-```matlab
-%% Load tools
-tools_path = 'C:\Users\me\Dropbox\Graduate\Toolboxes\resp_detect';
-data_path = 'D:\pilot_whales';
+Audio Toolbox
+Signal Processing Toolbox
+Image Processing Toolbox
+Statistics and Machine Learning Toolbox
 
-addpath(genpath(tools_path)); %Add all of your tools to the path
-addpath(genpath(data_path)); %Add all of your data to the path
-```
+#### Installation Instructions
+You may either directly download this repository and add it to your MATLAB path or clone it using: git clone https://github.com/ashleyblawas/respdetect.git.
 
-## Usage
-
-The ``main.m`` script will guide you through the use of these tools. A .pdf file describing their use is coming soon!
+### Usage
+***
+Check out the instruction manual for detailed instructions. The ``main.m`` script will guide you through the use of the tools.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
