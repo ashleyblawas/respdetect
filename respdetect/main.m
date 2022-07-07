@@ -13,7 +13,7 @@ taglist = {'mn17_310a'};
 
 % Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
 tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
-mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\dtagtools';
+mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools';
 data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\mn';
 
 % Add folders to path
@@ -49,11 +49,12 @@ for k = 1:length(taglist);
         str = input("Do you want to make a metadata file now? (y/n)\n",'s');
         if strcmp(str, "y") == 1
             
-            settagpath('PRH', strcat(data_path,'\prh\'))
+            %Set path for prh files
+            settagpath('prh',strcat(data_path,'\prh'));
             
             % Load the tag's prh file
             loadprh(tag);
-                                  
+            
             %Print out the fs so you can check it's what you expect
             fprintf('fs = %i Hz\n', fs);
             
@@ -107,9 +108,9 @@ for k = 1:length(taglist);
     metadata = load(strcat(data_path, "\metadata\", tag, "md"));
     clear tag
     
-    % Setup directories
-    [recdir, prefix, acousaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-    
+    %Set path for prh files
+    settagpath('prh',strcat(data_path,'\prh'));
+            
     % Load the existing prh file
     loadprh(metadata.tag);
     
@@ -238,9 +239,9 @@ for k = 1:length(taglist)
     metadata = load(strcat(data_path, "\metadata\", tag, "md"));
     clear tag
     
-    % Set up directories
-    [recdir, prefix, acousaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-       
+    %Set path for prh files
+    settagpath('prh',strcat(data_path,'\prh'));  
+            
     % Load the existing prh file
     loadprh(metadata.tag);
     
@@ -708,16 +709,12 @@ for k = 1:length(taglist)
     metadata = load(strcat(data_path, "\metadata\", tag, "md"));
     clear tag
     
-    % Set up directories
-    [recdir, prefix, acousaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
-       
+    %Set path for prh files
+    settagpath('prh',strcat(data_path,'\prh'));
+    
     % Load the existing prh file
     loadprh(metadata.tag);
-    
-    % Load in diving data
-    load(strcat(data_path, "\diving\", metadata.tag, "dives.mat"));
-    load(strcat(data_path, "\diving\", metadata.tag, "divetable.mat"));
-    
+       
     % Load in movement data
     load(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
     

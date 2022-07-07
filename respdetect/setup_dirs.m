@@ -1,25 +1,13 @@
 %%  Function to setup directories and such
 
 function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path)
-    % Define working directory and prefix of files
-    recdir = strcat(data_path, '\', tag(1:4), '\', tag);
-    prefix = tag;
-    
-%     folderpath = strcat(data_path, '\', tag(1:4),'\', tag);
-%     foldername = dir(folderpath);
-%     fname = foldername(3).name;
-%     if contains(fname, "_");
-%         prefix = tag;
-%     else
-%         prefix = strcat(tag(1:2), tag(6:9));
-%     end
-      
     %% Use tag name to assign directories and filenames
     sp_year = tag(1:4);
     % Set parent directory
     recdir = strcat(data_path, sp_year, '\', tag); 
     % Set deployment name, probably the same as the parent folder
     deploy_name = tag; 
+    prefix = tag;
     
     % Set name of acoustic audit file
     acousaud_filename = strcat(data_path, '\audit\', tag, '_acousticaud.txt'); 
