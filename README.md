@@ -14,10 +14,10 @@ Respdetect was developed on MATLAB versions R2020a and has not yet been tested w
 
 MATLAB toolbox dependencies:
 
-Audio Toolbox
-Signal Processing Toolbox
-Image Processing Toolbox
-Statistics and Machine Learning Toolbox
+1. Audio Toolbox
+2. Signal Processing Toolbox
+3. Image Processing Toolbox
+4. Statistics and Machine Learning Toolbox
 
 ### Installation Instructions
 You may either directly download this repository and add it to your MATLAB path or clone it using: git clone https://github.com/ashleyblawas/respdetect.git.
