@@ -4,24 +4,30 @@
 %%% Date: July 6, 2022
 %%% Duke University
 
-%% Step 1: Set paths
+%% Step 1: Set paths and tag variables
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
-% Add path to respdetect - EDIT THIS FOR YOUR MACHINE
-tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
-addpath(genpath(tools_path)); 
-
-% Add path to Matlab Tools - EDIT THIS FOR YOUR MACHINE
-mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\dtagtools';
-addpath(genpath(mat_tools_path)); 
-
-% Add path to DTAG data - EDIT THIS FOR YOUR MACHINE
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm';
-addpath(genpath(data_path)); 
-
 % Save tag names to variable
 taglist = {'gm08_143b'};
+
+% Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
+tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
+mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\dtagtools';
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm';
+
+% Add folders to path
+addpath(genpath(tools_path)); 
+addpath(genpath(mat_tools_path)); 
+addpath(genpath(data_path)); 
+
+% Make new folders in data path if they don't already exist
+flds = ["metadata", "diving", "movement", "breaths", "figs"];
+for i = 1:length(flds)
+    if not(isfolder(strcat(data_path, '\', flds(i))))
+        mkdir(strcat(data_path, '\', flds(i)))
+    end
+end
 
 %% Step 2: Make metadata file
 
@@ -53,6 +59,10 @@ for k = 1:length(taglist);
             
             % Calculate time variables from full duration of tag deployment
             [time_sec, time_min, time_hour] =calc_time(fs, p);
+            
+            % Print out duration of tag
+            fprintf('The full tag record is %i hours, %i minutes, %2.0f seconds\n', floor(max(time_hour)),...
+            floor(max(time_min)-floor(max(time_hour))*60), floor(max(time_sec))-floor(max(time_hour))*60*60-60*(floor(max(time_min)-floor(max(time_hour))*60)));
             
             % Designate tag on and off time
             [time_tagon] = get_tag_on(time_sec, p);
@@ -108,7 +118,7 @@ for k = 1:length(taglist);
     
     % Make a diving file
     diving_fname = strcat(data_path, "\diving\", metadata.tag, "dives.mat");
-    if isfile(diving_fname) == 1
+    if isfile(diving_fname) == 0
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)
@@ -121,10 +131,10 @@ for k = 1:length(taglist);
             dims = [1 35];
             definput = {'5'};
             answer = inputdlg(prompt,dlgtitle,dims,definput);
-            dive_thres = answer{1};
+            dive_thres = str2num(answer{1});
             clear prompt dlgtitle dims definput answer
             
-            [dive_thres, T] = get_dives(p, metadata.fs, dive_thres);
+            T = finddives(p,fs, [dive_thres, 1, 0]);
             
             if size(T, 1) <= 1
                 display('Only 1 deep dive! Not continuing analysis...')
@@ -171,6 +181,9 @@ for k = 1:length(taglist);
                 display('Dive detection complete!');
             end
             
+            figfile = strcat(data_path, '/figs/', metadata.tag, '_dives.fig');
+            savefig(figfile);
+            
             clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
         end
     end
@@ -200,7 +213,7 @@ for k = 1:length(taglist)
         if strcmp(str, "y") == 1
 
             % Setup directories
-            [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+            [recdir, prefix, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
 
             % Load the existing prh file
             loadprh(metadata.tag);
@@ -209,7 +222,7 @@ for k = 1:length(taglist)
             [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
 
             % Calculate and save movement data
-            calc_mov(metadata.fs, Aw, data_path, metadata.tag, pitch, roll, head)
+            calc_move(metadata.fs, Aw, p, data_path, metadata.tag, pitch, roll, head)
         end
      end
 end
@@ -445,7 +458,7 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [j_locs, j_width, j_prom] = detect_peaks(metadata.fs, jerk_smooth);
+    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth);
     
     % Plot jerk peaks
     scatter(time_min(j_locs+start_idx), jerk_smooth(j_locs), 'r*')
@@ -465,7 +478,7 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [s_locs, s_width, s_prom] = detect_peaks(metadata.fs, surge_smooth);
+    [s_locs, s_width, s_prom, idx, rm_group] = detect_peaks(metadata.fs, surge_smooth);
     
     % Plot surge peaks
     scatter(time_min(s_locs+start_idx), surge_smooth(s_locs), 'b*')
@@ -485,7 +498,7 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Pitch SE Smooth');
     
     % Peak detection
-    [p_locs, p_width, p_prom] = detect_peaks(metadata.fs, pitch_smooth);
+    [p_locs, p_width, p_prom, idx, rm_group] = detect_peaks(metadata.fs, pitch_smooth);
     
     % Plot surge peaks
     scatter(time_min(p_locs+start_idx), pitch_smooth(p_locs), 'g*')
@@ -504,19 +517,19 @@ for k = 1:length(taglist)
     % Identify 5 second windows around peaks
     j_wins = [];
     for a = 1:length(j_locs)
-        j_temp_win = j_locs(a)-2.5*metadata.fs:1:j_locs(a)+2.5*metadata.fs;
+        j_temp_win = (j_locs(a)-floor(2.5*metadata.fs)):1:(j_locs(a)+ceil(2.5*metadata.fs));
         j_wins = [j_wins, j_temp_win];
     end
     
     s_wins = [];
     for b = 1:length(s_locs)
-        s_temp_win = s_locs(b)-2.5*metadata.fs:1:s_locs(b)+2.5*metadata.fs;
+        s_temp_win = (s_locs(b)-floor(2.5*metadata.fs)):1:(s_locs(b)+ceil(2.5*metadata.fs));
         s_wins = [s_wins, s_temp_win];
     end
     
     p_wins = [];
     for c = 1:length(p_locs)
-        p_temp_win = p_locs(c)-2.5*metadata.fs:1:p_locs(c)+2.5*metadata.fs;
+        p_temp_win = (p_locs(c)-floor(2.5*metadata.fs)):1:(p_locs(c)+ceil(2.5*metadata.fs));
         p_wins = [p_wins, p_temp_win];
     end
     
@@ -696,7 +709,7 @@ for k = 1:length(taglist)
     clear tag
     
     % Set up directories
-    [recdir, prefix, acousaud_filename, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
+    [recdir, prefix, acousaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, data_path, mat_tools_path);
        
     % Load the existing prh file
     loadprh(metadata.tag);

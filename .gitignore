@@ -32,6 +32,9 @@ vignettes/*.pdf
 *_cache/
 /cache/
 
+# DTAG files
+*.wav
+*.swv
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
@@ -65,3 +68,9 @@ octave-workspace
 
 # Simulink autosave extension
 .autosave
+
+# Matlab figures
+*.fig
+
+# Matlab data
+*.mat

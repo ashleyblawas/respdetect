@@ -1,6 +1,6 @@
 % Calculate movement metrics
 
-function calc_move(fs, Aw, data_path, tag, pitch, roll, head)
+function calc_move(fs, Aw, p, data_path, tag, pitch, roll, head)
  %Calculate filtered acceleration
             %Rename Aw vector
             surge = Aw(:, 1);
@@ -9,10 +9,14 @@ function calc_move(fs, Aw, data_path, tag, pitch, roll, head)
             
             % Filter all three accel vectors, 5th order butterworth, with
             % passband between 2 Hz and 15 Hz
-            fny = metadata.fs/2;
-            pass = [2, 15];
-            [b,a]=butter(5,pass/fny,'bandpass');
-            
+            fny = fs/2;
+            if fs/2 < 15
+                pass = 2;
+                [b,a]=butter(5,pass/fny,'high');
+            else
+                pass = [2, 15];
+                [b,a]=butter(5,pass/fny,'bandpass');
+            end           
             surge_filt = filtfilt(b,a, surge);
             sway_filt = filtfilt(b,a, sway);
             heave_filt = filtfilt(b,a, heave);
@@ -33,7 +37,7 @@ function calc_move(fs, Aw, data_path, tag, pitch, roll, head)
             heave_smooth = movmean(heave_se, 5*fs);
             
             % Calculate jerk using njerk
-            jerk_filt = njerk([surge_filt, sway_filt, heave_filt], metadata.fs);
+            jerk_filt = njerk([surge_filt, sway_filt, heave_filt], fs);
             
             % Get Shannon entropy of jerk
             jerk_se = log(abs(jerk_filt))*sum(abs(jerk_filt));
@@ -42,9 +46,7 @@ function calc_move(fs, Aw, data_path, tag, pitch, roll, head)
             jerk_smooth = movmean(jerk_se', 5*fs); 
             
             % Build filter for prh
-            fny = metadata.fs/2;
-            pass = [2, 15]; % Change to [1 5] on 5/3/2022
-            [b,a]=butter(5,pass/fny,'bandpass');
+            fny = fs/2;
 
             % Calculate filtered prh signals
             pitch_filt = filtfilt(b, a, pitch);
@@ -67,7 +69,7 @@ function calc_move(fs, Aw, data_path, tag, pitch, roll, head)
             roll_smooth = movmean(roll_se, 5*fs);
 
             % Save all movement variables to mat file
-            save(strcat(data_path, "\movement\", metadata.tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
+            save(strcat(data_path, "\movement\", tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
                 'surge_filt', 'sway_filt', 'heave_filt',...
                 'surge_diff', 'sway_diff', 'heave_diff',...
                 'surge_se', 'sway_se', 'heave_se',...

@@ -1,6 +1,6 @@
 %% Find peaks in movement data for breath detections
 
-function [locs, width, prom] = detect_peaks(fs, move_sig)
+function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
     % Peak detect jerk, defining here that the max breath rate is 20 breaths/min
     % given 3 second separation
     [height, locs, width, prom] = findpeaks(move_sig, 'MinPeakDistance', 3*fs);
@@ -10,7 +10,7 @@ function [locs, width, prom] = detect_peaks(fs, move_sig)
     
     if length(locs)>1
         % Calculate distance for max peaks
-        dist = sqrt((max(width)-width).^2 + (max(prom)-prom).^2);
+        dist = sqrt((max(height)-height).^2 + (max(width)-width).^2 + (max(prom)-prom).^2);
         [f_d,xi_d] = ksdensity(dist);
         thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
         % If there is not a clear multimodal distribution, use clustering
