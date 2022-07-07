@@ -9,12 +9,12 @@
 clear; clc; close all
 
 % Save tag names to variable
-taglist = {'gm08_143b'};
+taglist = {'mn17_310a'};
 
 % Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
 tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
 mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\dtagtools';
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm';
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\mn';
 
 % Add folders to path
 addpath(genpath(tools_path)); 
@@ -118,7 +118,7 @@ for k = 1:length(taglist);
     
     % Make a diving file
     diving_fname = strcat(data_path, "\diving\", metadata.tag, "dives.mat");
-    if isfile(diving_fname) == 0
+    if isfile(diving_fname) == 1
         fprintf("A diving table exists for %s - go the next section!\n", metadata.tag)
     else
         fprintf("No diving table  exists for %s.\n", metadata.tag)

@@ -73,4 +73,9 @@ octave-workspace
 *.fig
 
 # Matlab data
-*.mat
+*mat
+!*prh.mat
+
+# Word documents
+*.doc
+*.docx

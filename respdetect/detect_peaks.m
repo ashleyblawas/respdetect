@@ -40,4 +40,11 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
             end
             locs(rm_idx) = [];
         end
-end
+    else
+        locs = [];
+        width = []; 
+        prom = []; 
+        idx = [];
+        rm_group = [];
+    end
+    
