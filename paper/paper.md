@@ -25,19 +25,17 @@ Physiological investigations of free-swimming cetaceans have, historically, been
 
 Here, we present ``resp_detect``, a set of Matlab tools to detect breathing events from high-resolution movement data recorded by digital acoustic recording tags (DTAGs). This novel method takes advantage of the high flow rates and large tidal volumes that are typical of cetacean breaths and detects the movement artifacts resulting from a breathing event. The library of functions associated with ``resp_detect`` allow a user to identify breaths across the tag record and export the timing of each breath. ``Resp_detect`` also provids users with tools to visualize breath detections with other dive parameters and validate breath detections with acoustic records. 
 
-``Resp_detect`` is intended to be used with the existing DTAG processing tools developed by Mark Johnson. Theses tools require the same folder structure necessary for DTAG processing. A DTAG record should be processed through the step of exporting the ``prh.m`` file which contains the accelerometer and magentometer data transformed into the whale frame as well as the animal's pitch, roll, and heading. To use ``resp_detect`` tools, the user is first prompted to input the tag name (the prefix of the ``prh.mat`` file, i.e. gm08_143b). After identifying dives and calculating movement parameters, the user can run the breath detector which will identify all breaths taken in the tag record. Following detection, the tools allow the user to visualize the respiratory rate time series before exporting the timing of each breath, in addition to several other relevant dive parameters, in a `.mat` file. Additionally, the user can take advantage of several plotting tools to visualize the respiration data as it relates to other dive parameters. 
+``Resp_detect`` is intended to be used with the existing DTAG processing tools developed by Mark Johnson. Theses tools require the same folder structure necessary for DTAG processing. A DTAG record should be processed through the step of exporting the ``prh.m`` file which contains the accelerometer and magentometer data transformed into the whale frame as well as the animal's pitch, roll, and heading. To use ``resp_detect`` tools, the user is first prompted to input the tag name (the prefix of the ``prh.mat`` file, i.e. gm08_143b). After identifying dives and calculating movement parameters, the user can run the breath detector which will identify all breaths taken in the tag record. 
+
+![An example of respdetect breath detections from a short-finned pilot whale DTAG2 record.](../images/gm08_143b_allbreaths_ex.jpg)
+
+Following detection, the tools allow the user to visualize the respiratory rate time series before exporting the timing of each breath, in addition to several other relevant dive parameters, in a `.mat` file. Additionally, the user can take advantage of several plotting tools to visualize the respiration data as it relates to other dive parameters. 
+
+<img align="right" src="../images/gm08_143b_resprate_ex.jpg" alt="Continuous respiratory rate from breath detections by respdetect for a short-finned pilot whale before and after deep dives." width="500"/>
 
 The ``resp_detect`` workflow also allows users to incorporate acoustic data into their analysis. Using the acoustic auditing tools made available in the existing DTAG Matlab tools users can mark acoustic breath detections and compare the timing of the breath detections from the movement sensors against the acoustic detections. This may be helpful in cases of uncertainty or to determine other respiratory variables when possible (i.e. duration of a breath or amplitude/dB of a breath). 
 
 Currently, these tools are being used to detect breaths from DTAGs deployed on short-finned pilot whales, but there is the potential for these tools to be useful for any DTAG record. The best use cases for ``resp_detect`` are for DTAGs that were deployed proximal to the blowhole. If the tag is too far from the blowhole the movement of the breath may be dampened at the location of the tag.
-
-# Figures
-
-![An example of respdetect breath detections from a short-finned pilot whale DTAG2 record.](../images/gm08_143b_allbreaths_ex.jpg)
-
-![Continuous respiratory rate from breath detections by respdetect for a short-finned pilot whale before and after deep dives.](../images/gm08_143b_resprate_ex.jpg)
-
-
 
 # Acknowledgements
 
