@@ -33,6 +33,9 @@ Currently, these tools are being used to detect breaths from DTAGs deployed on s
 
 # Figures
 
+![An example of respdetect breath detections from a short-finned pilot whale DTAG2 record.](../images/gm08_143b_allbreaths_ex.tif)
+
+
 # Acknowledgements
 
 I would like to acknowledge Dr. Douglas Nowacek and the Duke Superpod for project feedback and recommendations, Jeanne Shearer for pre-processing of the tag data used for beta testing.. This work was supported by the Duke University Marine Laboratory.
