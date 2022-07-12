@@ -133,7 +133,6 @@ var1 <- readline("Do you want to generate logging periods to audit for acoustic 
 ```{r}
 if (var1 == "y"){
 
-
 log_times = data.frame()
 
 # Go tag by tag
@@ -358,15 +357,26 @@ dive_dur = data.frame(dive_depth = dives$dive_depth,
                       dive_dur_m = dives$dive_dur_m)
 
 # Do dbscan clustering analysis
-dive_dur.dbscan_cl <-
-  dbscan::dbscan(dive_dur, eps = 10 , minPts = round(dim(dive_dur)[1] / 10, 0))
+#dive_dur.dbscan_cl <-
+  #dbscan::dbscan(dive_dur, eps = 5 , minPts = round(dim(dive_dur)[1] / 10, 0))
+
+
+xx = cbind(dives$dive_dur_m, dives$dive_depth)
+
+# hierarchical
+clustering <- hclust(dist(xx,
+                          method = "euclidian"),
+                          method = "ward.D")
+
+h.cl <- cutree(clustering, k=2)
+
 
 # Add cluster to dives dataframe
 dives = dives %>%
-  mutate(cluster = dive_dur.dbscan_cl$cluster)
+  mutate(cluster = h.cl)
 
 # Remove variables that have been added to dataframe
-rm(dive_dur, dive_dur.dbscan_cl)
+#rm(dive_dur, dive_dur.dbscan_cl)
 ```
 
 ## Create dataframe with information about dives + pre-dive surfacings
@@ -444,7 +454,7 @@ dives %>% group_by(cluster) %>% dplyr::summarize(
 ### Dive duration versus surface duration preceeding dive and following dive for all dives
 ```{r, echo = FALSE, fig.height = 6, fig.width = 6}
 # Edit psi_guess based on break point analysis (i.e. where does relationship between surface interval and dive duration change)
-psi_guess = 2 
+psi_guess = 2.5
 
 # Plot dive duration vs. pre-dive surface duration for all dives
 p1 = ggplot(data = pre_dive_surfs, aes(y = surf_dur_m, x = dive_dur_m)) +
@@ -553,11 +563,13 @@ rm(p1, p2, p3, p4, psi_guess)
 
 
 
-### Dive duration versus surface duration preceeding dive and following dive for deep+long dives
+### Dive duration versus surface duration preceeding dive and following dive for deep/long dives
 ```{r, echo = FALSE, fig.height = 6, fig.width = 6}
+
+
 # Filter dataframe to include only long dives
-pre_dive_surfs_longdives = pre_dive_surfs %>% filter(cluster == 1)
-post_dive_surfs_longdives = post_dive_surfs %>% filter(cluster == 1)
+pre_dive_surfs_longdives = pre_dive_surfs %>% filter(cluster == 2)
+post_dive_surfs_longdives = post_dive_surfs %>% filter(cluster == 2)
 
 if (dim(pre_dive_surfs_longdives)[1]>0){
 # Plot dive duration vs. pre-dive surface duration for all dives
@@ -775,7 +787,7 @@ rm(pre_dive_surfs, post_dive_surfs)
 ```{r, echo = FALSE, fig.height = 3, fig.width = 6.5}
 # Filter breath/surf/dive information to only look at deep dives
 post_longdives_temp = post_dive_breaths_by_surf %>%
-  filter(cluster == 1) %>%
+  filter(cluster == 2) %>%
   filter(surf_breath_tot>1)
 
 fr_tots_long = unlist(post_longdives_temp$surf_breath_tot)-1
@@ -790,7 +802,7 @@ p1 = ggplot(data = post_longdives_breaths, aes(x = breath_surf_idx, y = fr, colo
   scale_color_viridis(limits = c(0 , max(post_longdives_breaths$dive_dur_m)))
 
 post_shortdives_temp = post_dive_breaths_by_surf %>%
-  filter(cluster == 2) %>%
+  filter(cluster == 1) %>%
   filter(surf_breath_tot>1)
 
 fr_tots_short = unlist(post_shortdives_temp$surf_breath_tot)-1
@@ -813,7 +825,7 @@ rm(p1, p2, fr_tots_short, fr_tots_long, post_longdives_temp, post_shortdives_tem
 ```{r, echo = FALSE, fig.height = 3, fig.width = 6.5}
 # Filter breath/surf/dive information to only look at deep dives
 pre_longdives_temp = pre_dive_breaths_by_surf %>%
-  filter(cluster == 1) %>%
+  filter(cluster == 2) %>%
   filter(surf_breath_tot>1)
 
 fr_tots_long = unlist(pre_longdives_temp$surf_breath_tot)-1
@@ -822,13 +834,13 @@ pre_longdives_breaths = data.frame(breath_surf_idx= unlist(pre_longdives_temp$br
 
 
 p1 = ggplot(data = pre_longdives_breaths, aes(x = breath_surf_idx, y = fr, color = dive_dur_m))+
-  geom_point(alpha = 0.5, size = 1, position=position_jitter(height=.5, width=.5))+
+  geom_point(alpha = 0.5, size = 1)+
   ylab(expression(f[R]~(breaths/min))) + xlab('Breath # of surface interval') + ggtitle(bquote(paste('Pre long dive '* 'f'['R'])))+
   theme_bw()+ theme(legend.position = "none") +
   scale_color_viridis(limits = c(0 , max(pre_longdives_breaths$dive_dur_m)))
 
 pre_shortdives_temp = pre_dive_breaths_by_surf %>%
-  filter(cluster == 2) %>%
+  filter(cluster == 1) %>%
   filter(surf_breath_tot>1)
 
 fr_tots_short = unlist(pre_shortdives_temp$surf_breath_tot)-1
@@ -836,7 +848,7 @@ fr_tots_short = unlist(pre_shortdives_temp$surf_breath_tot)-1
 pre_shortdives_breaths = data.frame(breath_surf_idx = unlist(pre_shortdives_temp$breath_surf_idx_r), fr = unlist(pre_shortdives_temp$fr), dive_dur_m  = rep(pre_shortdives_temp$dive_dur_m, fr_tots_short))
 
 p2 = ggplot(data = pre_shortdives_breaths, aes(x = breath_surf_idx, y = fr, color = dive_dur_m))+
-  geom_point(alpha = 0.5, size = 1, position=position_jitter(height=.5, width=.5)) + xlab('Breath # of surface interval')  + ggtitle(bquote(paste('Pre short dive '* 'f'['R'])))+  ylab('')+
+  geom_point(alpha = 0.5, size = 1) + xlab('Breath # of surface interval')  + ggtitle(bquote(paste('Pre short dive '* 'f'['R'])))+  ylab('')+
   theme_bw() +
  scale_color_viridis(limits = c(0 , max(pre_shortdives_breaths$dive_dur_m)), name = "Dive Duration (min)")
 
