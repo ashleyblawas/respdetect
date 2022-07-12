@@ -828,12 +828,12 @@ save(strcat(data_path, '\all_breath_data.mat'),'dive_start_s', 'dive_end_s', 'ta
 %% Step 8: Acoustic audits
 
 %% %% Step 8a: Acoustic auditing for D2s
-settagpath('audit', 'D:\gm\audit');
-settagpath('prh', 'D:\gm\prh\50 Hz');
-settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
+settagpath('audit', strcat(data_path, '\audit\'));
+settagpath('prh', strcat(data_path, '\prh\'));
+settagpath('audio', data_path, 'cal', strcat(data_path, '\cal\'));
 
 tag = 'gm18_157b';
-tcue = 623.4;
+tcue = 0;
 
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
@@ -843,13 +843,13 @@ R = tagaudit(tag, tcue, R);
 saveaudit(tag, R);
 
 %% %% Step 8a: Acoustic auditing for D3s
-settagpath('audit', 'D:\gm\audit');
-settagpath('prh', 'D:\gm\prh\50 Hz');
-settagpath('audio', 'D:\gm', 'cal', 'D:\gm\cal');
+settagpath('audit', strcat(data_path, '\audit\'));
+settagpath('prh', strcat(data_path, '\prh\'));
+settagpath('audio', data_path, 'cal', strcat(data_path, '\cal\'));
 
 tag = 'gm15_153a';
-recdir = 'D:\gm\gm15\gm15_153a';
-tcue = 6185.94;
+recdir = stracat(data_path, '\gm15\gm15_153a');
+tcue = 0;
 
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
