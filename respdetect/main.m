@@ -9,12 +9,12 @@
 clear; clc; close all
 
 % Save tag names to variable
-taglist = {'gm08_143b'};
+taglist = {'pm19_136a'};
 
 % Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
 tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
 mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools';
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm';
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\pm';
 
 % Add folders to path
 addpath(genpath(tools_path)); 
@@ -459,7 +459,7 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth);
+    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth');
     
     % Plot jerk peaks
     scatter(time_min(j_locs+start_idx), jerk_smooth(j_locs), 'r*')
