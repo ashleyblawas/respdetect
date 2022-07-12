@@ -376,7 +376,7 @@ dives = dives %>%
   mutate(cluster = h.cl)
 
 # Remove variables that have been added to dataframe
-#rm(dive_dur, dive_dur.dbscan_cl)
+rm(dive_dur, xx, clustering, h.cl)
 ```
 
 ## Create dataframe with information about dives + pre-dive surfacings
@@ -454,7 +454,7 @@ dives %>% group_by(cluster) %>% dplyr::summarize(
 ### Dive duration versus surface duration preceeding dive and following dive for all dives
 ```{r, echo = FALSE, fig.height = 6, fig.width = 6}
 # Edit psi_guess based on break point analysis (i.e. where does relationship between surface interval and dive duration change)
-psi_guess = 2.5
+psi_guess = 5
 
 # Plot dive duration vs. pre-dive surface duration for all dives
 p1 = ggplot(data = pre_dive_surfs, aes(y = surf_dur_m, x = dive_dur_m)) +

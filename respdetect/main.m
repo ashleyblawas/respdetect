@@ -9,12 +9,12 @@
 clear; clc; close all
 
 % Save tag names to variable
-taglist = {'pm19_136a'};
+taglist = {'zc17_234a'};
 
 % Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
 tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
 mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools';
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\pm';
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\zc';
 
 % Add folders to path
 addpath(genpath(tools_path)); 

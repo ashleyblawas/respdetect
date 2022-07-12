@@ -1,1 +1,0 @@
-This tag was deployed as part of the MAPS 2019 effort from the R/V Song of the Whale.
