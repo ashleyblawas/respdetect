@@ -33,7 +33,10 @@ Currently, these tools are being used to detect breaths from DTAGs deployed on s
 
 # Figures
 
-![An example of respdetect breath detections from a short-finned pilot whale DTAG2 record.](../images/gm08_143b_allbreaths_ex.tif)
+![An example of respdetect breath detections from a short-finned pilot whale DTAG2 record.](../images/gm08_143b_allbreaths_ex.jpg)
+
+![Continuous respiratory rate from breath detections by respdetect for a short-finned pilot whale before and after deep dives.](../images/gm08_143b_resprate_ex.jpg)
+
 
 
 # Acknowledgements
