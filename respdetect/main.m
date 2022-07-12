@@ -823,7 +823,7 @@ breath_type{k} = str2double(breath_type{k});
 end
 
 % Save data to bring into R
-save(strcat(data_path, 'all_breath_data.mat'),'dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
+save(strcat(data_path, '\all_breath_data.mat'),'dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
 
 %% Step 8: Acoustic audits
 
