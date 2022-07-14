@@ -23,7 +23,7 @@ MATLAB toolbox dependencies:
 You may either directly download this repository and add it to your MATLAB path or clone it using: git clone https://github.com/ashleyblawas/respdetect.git.
 
 ## Usage
-Check out the instruction manual for detailed instructions. The ``main.m`` script will guide you through the use of the tools.
+Check out the wiki for detailed instructions. The ``main.m`` script will guide you through the use of the tools.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
