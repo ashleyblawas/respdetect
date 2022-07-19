@@ -51,6 +51,9 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
+# R knit html files
+*.html
+
  Windows default autosave extension
 *.asv
 
