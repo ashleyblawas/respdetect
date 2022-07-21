@@ -8,6 +8,8 @@
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
+lines = readlines("badpoem.txt")
+
 % Save tag names to variable
 taglist = {'mn17_310a'};
 
