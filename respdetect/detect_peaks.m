@@ -15,13 +15,15 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
         [pks_temp] = findpeaks(f_d, 'MinPeakProminence', 1);
         if length(pks_temp)>1
             thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
+            display('Using heuristic peak finding method...');
         else
             thres_d =[];
         end
         % If there is not a clear multimodal distribution, use clustering
         % instead
         if isempty(thres_d) == 1
-            X = [height, width, prom];
+            display('Using clustering peak finding method...');
+            X = [width, prom];
             Z = linkage(X, 'ward');
             idx = cluster(Z,'MAXCLUST', 2);
             g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);

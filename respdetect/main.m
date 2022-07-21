@@ -9,12 +9,12 @@
 clear; clc; close all
 
 % Save tag names to variable
-taglist = {'gm08_143b'};
+taglist = {'mn17_310a'};
 
 % Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
 tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
 mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools';
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm';
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\mn';
 
 % Add folders to path
 addpath(genpath(tools_path)); 
@@ -643,7 +643,6 @@ for k = 1:length(taglist)
         end
     end
     
-    
     % If a breath detection from a single surfacing is closer than 3 seconds
     % (e.g. 20 breaths/min) to a breath detection from
     % logging, then the ss breath trumps and we remove the logging breath
@@ -655,7 +654,7 @@ for k = 1:length(taglist)
     
     sim_breaths = find(diff(temp_all_breaths_s)<3*fs);
     rm_rows = [];
-    if isnan(sim_breaths) == 0
+    if isempty(sim_breaths) == 0
         for i = 1:length(sim_breaths)
             temp_row = find(temp_all_breaths_type_s(sim_breaths(i):sim_breaths(i)+1) == "log");
             rm_rows = [rm_rows; sim_breaths(i)+temp_row-1];
