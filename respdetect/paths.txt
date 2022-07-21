@@ -5,4 +5,4 @@ C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect
 C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools
 
 ## data path (i.e. path to species level folder, likely ending in two letter species name)
-C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\mn
+C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm

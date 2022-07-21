@@ -34,6 +34,7 @@ data_path = txt{hdrlines(3)+1};
 clear strtemp hdrlines txt i
 
 % Add folders to path
+cd(tools_path)
 addpath(genpath(tools_path)); 
 addpath(genpath(mat_tools_path)); 
 addpath(genpath(data_path)); 
@@ -43,13 +44,19 @@ addpath(genpath(data_path));
    'Select one or more prh files for tags to analyze', ...
    'MultiSelect', 'on');
 
-for i = 1:length(file)
-taglist{i} = file{i}(1:9);
-end 
-clear i file
+if iscell(file)==1
+    for i = 1:length(file)
+        taglist{i} = file{i}(1:9);
+    end
+    clear i file
+else
+    taglist = {file(1:9)};
+end
+
 
 display('You have selected:')
 display(cell2mat(taglist'))
+
 
 % Make new folders in data path if they don't already exist
 flds = ["metadata", "diving", "movement", "breaths", "figs"];
@@ -485,65 +492,41 @@ for k = 1:length(taglist)
     
     %% %% Peak detection: Jerk
     % Plot jerk signal
-    figure('units','normalized','outerposition',[0 0 1 1]);
+    fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
     ax(1) = subplot(3, 5, [1 2]);
     plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
     xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth');
+    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth', 3);
     
     % Plot jerk peaks
+    subplot(3, 5, [1 2]);
     scatter(time_min(j_locs+start_idx), jerk_smooth(j_locs), 'r*')
     
-    % Plot keep/remove groups
-    if isempty(j_locs)==0
-        subplot(3, 5, 3)
-        plot(j_width(idx==rm_group), j_prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
-        hold on
-        plot(j_width(idx~=rm_group), j_prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
-        xlabel('Peak Width'); ylabel('Peak Prominence'); 
-    end
-
     %% %% Peak detection: Surge
     ax(2) = subplot(3, 5, [6 7]);
     plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
     xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [s_locs, s_width, s_prom, idx, rm_group] = detect_peaks(metadata.fs, surge_smooth);
+    [s_locs, s_width, s_prom, idx, rm_group] = detect_peaks(metadata.fs, surge_smooth, 8);
     
     % Plot surge peaks
+    subplot(3, 5, [6 7]);
     scatter(time_min(s_locs+start_idx), surge_smooth(s_locs), 'b*')
     
-    % Plot keep/remove groups
-    if isempty(s_locs)==0
-        subplot(3, 5, 8)
-        plot(s_width(idx==rm_group), s_prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
-        hold on
-        plot(s_width(idx~=rm_group), s_prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
-        xlabel('Peak Width'); ylabel('Peak Prominence');
-    end
-
-    %% %% Peak detection: Pitch
+        %% %% Peak detection: Pitch
     ax(3) = subplot(3, 5, [11 12]);
     plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
     xlabel('Time (min)'); ylabel('Pitch SE Smooth');
     
     % Peak detection
-    [p_locs, p_width, p_prom, idx, rm_group] = detect_peaks(metadata.fs, pitch_smooth);
+    [p_locs, p_width, p_prom, idx, rm_group] = detect_peaks(metadata.fs, pitch_smooth, 13);
     
     % Plot surge peaks
+    subplot(3, 5, [11 12]);
     scatter(time_min(p_locs+start_idx), pitch_smooth(p_locs), 'g*')
-    
-    % Plot keep/remove groups
-    if isempty(p_locs)==0
-        subplot(3, 5, 13)
-        plot(p_width(idx==rm_group), p_prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
-        hold on
-        plot(p_width(idx~=rm_group), p_prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
-        xlabel('Peak Width'); ylabel('Peak Prominence');
-    end
 
     %% Step 5i: Detect windows for breaths during logging periods
     

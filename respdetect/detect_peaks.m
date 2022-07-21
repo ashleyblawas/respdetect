@@ -1,6 +1,6 @@
 %% Find peaks in movement data for breath detections
 
-function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
+function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
     % Peak detect jerk, defining here that the max breath rate is 20 breaths/min
     % given 3 second separation
     [height, locs, width, prom] = findpeaks(move_sig, 'MinPeakDistance', 3*fs);
@@ -12,10 +12,9 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
         % Calculate distance for max peaks
         dist = sqrt((max(height)-height).^2 + (max(width)-width).^2 + (max(prom)-prom).^2);
         [f_d,xi_d] = ksdensity(dist);
-        [pks_temp] = findpeaks(f_d, 'MinPeakProminence', 1);
+        [pks_temp] = findpeaks(f_d, 'MinPeakProminence', 0.25);
         if length(pks_temp)>1
             thres_d = max(xi_d(find(islocalmin(f_d,2)>0)));
-            display('Using heuristic peak finding method...');
         else
             thres_d =[];
         end
@@ -23,13 +22,14 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
         % instead
         if isempty(thres_d) == 1
             display('Using clustering peak finding method...');
+            type = "c";
             X = [width, prom];
             Z = linkage(X, 'ward');
             idx = cluster(Z,'MAXCLUST', 2);
             g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
-        % Otherwise label groups of points that are on both sides of
-        % distribution
         else
+            display('Using heuristic peak finding method...');
+            type = "h";
             idx = [dist<thres_d];
             idx = double(idx); idx(idx==0)=2;
             g1_mean = mean(width(idx==1)); g2_mean = mean(width(idx==2));
@@ -47,11 +47,25 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig)
             end
             locs(rm_idx) = [];
         end
+        
+        % Plotting
+        if type == "c"
+            subplot(3, 5, val)
+            plot(width(idx==rm_group), prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
+            hold on
+            plot(ax, width(idx~=rm_group), prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
+            xlabel('Peak Width'); ylabel('Peak Prominence');
+        elseif type == "h"
+            subplot(3, 5, val)
+            plot(xi_d, f_d); xline(thres_d, '--');
+            xlabel('Distance'); ylabel('Density');
+        end
+        
     else
         locs = [];
-        width = []; 
-        prom = []; 
+        width = [];
+        prom = [];
         idx = [];
-        rm_group = [];
+        rm_group = [];  
     end
     
