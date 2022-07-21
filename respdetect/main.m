@@ -782,8 +782,7 @@ for k = 1:length(taglist)
     savefig(figfile);
     
     %Calculate and plot fR
-    [fR] = get_contfR(breath_times, breath_idx, p, time_min);
-    title(taglist{k}, 'Interpreter', 'none');
+    [fR] = get_contfR(breath_times, breath_idx, p, time_min, metadata.tag);
     
     figfile = strcat(data_path, '/figs/', metadata.tag, '_resprate.fig');
     savefig(figfile);
