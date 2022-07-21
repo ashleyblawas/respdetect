@@ -8,28 +8,57 @@
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
-lines = readlines("badpoem.txt")
+% Have user direct to paths.txt
+[file, path] = uigetfile('*.txt', 'Select the paths.txt file from respdetect');
 
-% Save tag names to variable
-taglist = {'mn17_310a'};
+% Import information from paths.txt
+fileID = fopen(strcat(path, file));
+formatSpec = '%s';
+txt = textscan(fileID,'%s','delimiter','\n'); txt = txt{1};
+fclose(fileID);
+
+clear fileID formatSpec file path
+
+hdrlines = [];
+strtemp = strfind(txt, "##");
+for i = 1:length(strtemp)
+    if strtemp{i} == 1
+        hdrlines = [hdrlines, i];
+    end
+end
 
 % Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
-tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect';
-mat_tools_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools';
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\mn';
+tools_path = txt{hdrlines(1)+1};
+mat_tools_path = txt{hdrlines(2)+1};
+data_path = txt{hdrlines(3)+1};
+clear strtemp hdrlines txt i
 
 % Add folders to path
 addpath(genpath(tools_path)); 
 addpath(genpath(mat_tools_path)); 
 addpath(genpath(data_path)); 
 
+% Save tag names to variable
+[file] = uigetfile(strcat(data_path, '\prh\*.mat'),...
+   'Select one or more prh files for tags to analyze', ...
+   'MultiSelect', 'on');
+
+for i = 1:length(file)
+taglist{i} = file{i}(1:9);
+end 
+clear i file
+
+display('You have selected:')
+display(cell2mat(taglist'))
+
 % Make new folders in data path if they don't already exist
 flds = ["metadata", "diving", "movement", "breaths", "figs"];
 for i = 1:length(flds)
     if not(isfolder(strcat(data_path, '\', flds(i))))
-        mkdir(strcat(data_path, '\', flds(i)))
+        mkdir(strcat(data_path, '\', flds(i)));
     end
 end
+clear flds i
 
 %% Step 2: Make metadata file
 
@@ -263,12 +292,13 @@ for k = 1:length(taglist)
     end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
     
     % If the tag on time is when the tag is near the surface, we are going to
-    % redefine the start idx as the first time the tag hits 5 m, the reason for
-    % this being that the tag on result in a big jerk spike that will interfere with
-    % peak detection for breaths
+    % redefine the start idx as 10 seconds after the time the person
+    % inputted to be safe  the reason for this being that the tag on 
+    % result in a big jerk spike that will interfere with peak detection 
+    % for breaths
     
     if p(start_idx)<5
-        start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
+        start_idx = start_idx + 10*metadata.fs;
     end
     
     % Subset p to only when tag is on
