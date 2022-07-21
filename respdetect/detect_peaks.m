@@ -4,6 +4,7 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
     % Peak detect jerk, defining here that the max breath rate is 20 breaths/min
     % given 3 second separation
     [height, locs, width, prom] = findpeaks(move_sig, 'MinPeakDistance', 3*fs);
+    display('Detecting peaks at least 3 seconds apart...');
     
     % Rescale to between (0, 1)
     height = rescale(height); width = rescale(width); prom = rescale(prom);
@@ -53,7 +54,7 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
             subplot(3, 5, val)
             plot(width(idx==rm_group), prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
             hold on
-            plot(ax, width(idx~=rm_group), prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
+            plot(width(idx~=rm_group), prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
             xlabel('Peak Width'); ylabel('Peak Prominence');
         elseif type == "h"
             subplot(3, 5, val)

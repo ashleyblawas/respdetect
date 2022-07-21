@@ -57,7 +57,6 @@ end
 display('You have selected:')
 display(cell2mat(taglist'))
 
-
 % Make new folders in data path if they don't already exist
 flds = ["metadata", "diving", "movement", "breaths", "figs"];
 for i = 1:length(flds)
@@ -703,11 +702,26 @@ for k = 1:length(taglist)
     
     % Save figure
     figfile = strcat(data_path, '/figs/', metadata.tag, '_loggingdetections.fig');
-    savefig(figfile);
-    
+    if isfile(filename) == 1
+        txt = input("A figure with this name already exists - do you want to append a custom suffix? (y/n) \n","s")
+        if strcmp(txt, "y") == 1
+            txt = input("What suffix? do you want to append (e.g. _examplesection) \n","s")
+            savefig(strcat(data_path, '/figs/', metadata.tag, '_loggingdetections', txt, '.fig'));
+        else
+            savefig(figfile);
+        end
+    end   
     %% Step 5l: Write breaths to audit
     
-    save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
+    if isfile(strcat(data_path, "\breaths\", metadata.tag, "breaths")) == 1
+        txt = input("A breath detections file already exists - do you want to append a custom suffix? (y/n) \n","s")
+        if strcmp(txt, "y") == 1
+            txt = input("What suffix? do you want to append (e.g. _examplesection) \n","s")
+            save(strcat(data_path, "\breaths\", metadata.tag, "breaths", txt), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
+        else
+            save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s');
+        end
+    end    
     
     clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
     
