@@ -723,9 +723,9 @@ for k = 1:length(taglist)
         if strcmp(txt, "y") == 1
             txt = input("What suffix? do you want to append (e.g. _examplesection) \n","s");
             save(strcat(data_path, "\breaths\", metadata.tag, "breaths", txt), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
-        else
-            save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
         end
+     else
+            save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
     end    
     
     clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
