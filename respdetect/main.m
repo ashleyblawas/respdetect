@@ -304,7 +304,7 @@ for k = 1:length(taglist)
     % for breaths
     
     if p(start_idx)<5
-        start_idx = start_idx + 10*metadata.fs;
+        start_idx = find(p(start_idx:end_idx)>=5, 1)+start_idx;
     end
     
     % Subset p to only when tag is on
