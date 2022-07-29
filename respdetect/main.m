@@ -297,6 +297,10 @@ for k = 1:length(taglist)
     start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on)));
     end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
     
+    if end_idx == length(time_sec)
+        end_idx = end_idx-1;
+    end
+    
     % If the tag on time is when the tag is near the surface, we are going to
     % redefine the start idx as 10 seconds after the time the person
     % inputted to be safe  the reason for this being that the tag on 
