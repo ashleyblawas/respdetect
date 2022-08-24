@@ -154,6 +154,18 @@ for k = 1:length(taglist);
     % Calculate time for entire tag deployment
     [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
     
+    % Subset p to tag on and off times
+    start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on)));
+    end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
+    
+    if end_idx == length(time_sec)
+        end_idx = end_idx-1;
+    end
+    p_tag = p(start_idx:end_idx);
+    
+    % Calculate time for entire tag deployment
+    [time_sec, time_min, time_hour] =calc_time(metadata.fs, p_tag);
+    
     % Make a diving file
     diving_fname = strcat(data_path, "\diving\", metadata.tag, "dives.mat");
     if isfile(diving_fname) == 1
@@ -172,7 +184,7 @@ for k = 1:length(taglist);
             dive_thres = str2num(answer{1});
             clear prompt dlgtitle dims definput answer
             
-            T = finddives(p,fs, [dive_thres, 1, 0]);
+            T = finddives(p_tag,fs, [dive_thres, 1, 0]);
             
             if size(T, 1) <= 1
                 display('Only 1 deep dive! Not continuing analysis...')
@@ -180,7 +192,12 @@ for k = 1:length(taglist);
             else
                 
                 % Plot dives
-                plot_dives(T, time_sec, p);
+                plot_dives(T, time_sec, p_tag);
+                
+                % Add back start index if needed to time variables
+                if metadata.tag_on ~=0
+                    T(:, [1:2, 4]) = T(:, [1:2, 4]) + metadata.tag_on;
+                end
                 
                 % Extract dive information from T
                 for i = 1:size(T, 1)
