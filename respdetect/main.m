@@ -58,7 +58,7 @@ display('You have selected:')
 display(cell2mat(taglist'))
 
 % Make new folders in data path if they don't already exist
-flds = ["metadata", "diving", "movement", "breaths", "figs"];
+flds = ["metadata", "diving", "movement", "breaths", "figs", "audit"];
 for i = 1:length(flds)
     if not(isfolder(strcat(data_path, '\', flds(i))))
         mkdir(strcat(data_path, '\', flds(i)));
@@ -136,7 +136,7 @@ end
 clear tag prefix recdir fs tag_ver acousaud_filename tag_on tag_off tag_dur metadata_fname str
 
 %% Step 3: Find dives
-for k = 1:length(taglist);
+for k = 5:length(taglist);
     
     % Load in tag
     tag = taglist{k};
@@ -199,8 +199,12 @@ for k = 1:length(taglist);
                     T(:, [1:2, 4]) = T(:, [1:2, 4]) + metadata.tag_on;
                 end
                 
+                % Calculate time for entire tag deployment
+                [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
+                               
                 % Extract dive information from T
                 for i = 1:size(T, 1)
+                    
                     tag{i} = metadata.tag;
                     depth_thres(i) = dive_thres;
                     dive_num(i) = i;
@@ -209,6 +213,19 @@ for k = 1:length(taglist);
                     max_depth(i) = T(i, 3);
                     time_maxdepth(i) = T(i, 4);
                     dive_dur(i) = dive_end(i) - dive_start(i);
+                    
+                    % Get dive start and end in indices
+                    start_idx_dive = find(abs(time_sec-dive_start(i))==min(abs(time_sec-dive_start(i))));
+                    end_idx_dive = find(abs(time_sec-dive_end(i))==min(abs(time_sec-dive_end(i))));
+                    
+                    % Calculate ODBA for each dive
+                    if length(Aw(start_idx_dive:end_idx_dive, :)) > 5*round(fs/fh)
+                        [e,w,Ah] = obda(Aw(start_idx_dive:end_idx_dive, :), metadata.fs, 0.25);
+                    else
+                        w = NaN;
+                    end
+                
+                    dive_odba(i) = mean(w);
                 end
                 
                 % Extract surface information from dive information
@@ -224,12 +241,12 @@ for k = 1:length(taglist);
                 surf_dur(size(T, 1)) = NaN';
                 
                 % Save dive variables to mat file
-                save(strcat(data_path, "\diving\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
+                save(strcat(data_path, "\diving\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'dive_odba', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
                 
                 % Save dive variables as a table (analog to typical T
                 % variable)
-                Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
-                Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
+                Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', dive_odba', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
+                Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'dive_odba', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
                 save(strcat(data_path, "\diving\", metadata.tag, "divetable"), 'Tab')
                 beep on; beep
                 
@@ -239,8 +256,8 @@ for k = 1:length(taglist);
             figfile = strcat(data_path, '/figs/', metadata.tag, '_dives.fig');
             savefig(figfile);
             
-            clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
-        end
+            clear tag depth_thres dive_num dive_start dive_end dive_odba w max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
+        %end
     end
 end
 
@@ -878,9 +895,10 @@ load(strcat(data_path, "\prh\", metadata.tag, "prh.mat"),'p');
 [time_sec, time_min, time_hour] =calc_time(metadata.fs, p); %Recalculate time
 
 depth{k} = p;
-fs{k} = metadata.fs;
+fs_temp{k} = metadata.fs;
 dive_start_s{k} = dive_start;
 dive_end_s{k} = dive_end;
+odba{k} = dive_odba;
 logging_intervals_s{k} = logging_ints_s;
 
 % Load in breaths
@@ -896,18 +914,22 @@ breath_type{k} = str2double(breath_type{k});
 
 end
 
+fs = fs_temp;
+
 % Save data to bring into R
-save(strcat(data_path, '\all_breath_data.mat'),'dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'logging_intervals_s')
+save(strcat(data_path, '\all_breath_data.mat'),'dive_start_s', 'dive_end_s', 'taglist', 'breath_idx', 'breath_type', 'depth', 'fs', 'odba', 'logging_intervals_s')
 
 %% Step S2: Acoustic audits
 
 %% %% Step S2a: Acoustic auditing for D2s
 settagpath('audit', strcat(data_path, '\audit\'));
 settagpath('prh', strcat(data_path, '\prh\'));
-settagpath('audio', data_path, 'cal', strcat(data_path, '\cal\'));
+settagpath('audio', 'D:\gm', 'cal', strcat('D:\gm', '\cal\'));
 
-tag = 'gm18_157b';
-tcue = 0;
+tag = 'gm08_143a';
+tcue = 192
+
+
 
 %Load in metadata
 metadata = load(strcat(data_path, "\metadata\", tag, "md"));
