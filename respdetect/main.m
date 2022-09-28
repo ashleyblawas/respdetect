@@ -257,7 +257,7 @@ for k = 5:length(taglist);
             savefig(figfile);
             
             clear tag depth_thres dive_num dive_start dive_end dive_odba w max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
-        %end
+        end
     end
 end
 
