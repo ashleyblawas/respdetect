@@ -1,3 +1,8 @@
+# Ignore things specific to the GitHub remote repo
+images/
+paper/
+tests/
+
 # History files
 .Rhistory
 .Rapp.history
