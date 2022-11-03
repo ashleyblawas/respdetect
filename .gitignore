@@ -77,9 +77,13 @@ octave-workspace
 *.fig
 
 # Matlab data
-*mat
+*.mat
 !*prh.mat
 
 # Word documents
 *.doc
 *.docx
+
+# Acoustic audits
+*gm08_143a_acousticaud.txt
+*gm08_143b_acousticaud.txt
