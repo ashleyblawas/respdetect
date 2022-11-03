@@ -19,6 +19,9 @@ library(segmented) # For piecewise linear regression
 library(DescTools)
 library(viridis) # For viridis color palette
 library(vroom)
+
+dir = "C:/Users/ashle/Dropbox/Ashley/Graduate/Manuscripts/respdetect/tests/gm"
+
 ```
 
 # Import data
@@ -123,15 +126,9 @@ rm(
 
 ```
 
-# Acoustic validation
-```{r}
-var1 <- readline("Do you want to generate logging periods to audit for acoustic validation (y/n)?: "); var2 <-  readline("Do you want to validate your acoustic aduit against detected breaths (y/n)?: ")
-
-```
 
 ## Randomly sample log intervals for acoustic auditing
 ```{r}
-if (var1 == "y"){
 
 log_times = data.frame()
 
@@ -165,8 +162,11 @@ total_log_time_h = total_log_time_m/60
 
 rm(tag, log_times_temp, logs_temp)
 
-# Randomly pull rows and add their duration until you get to a total of 5% of total logging time
-n = floor(0.10*total_log_time_s)
+# Randomly pull rows and add their duration until you get to a total of X% of total logging time
+
+# Edit this to be the percentage of logging time you want to audit for audible breaths (a decimal from 0-1)
+percent_to_pull = 0.50
+n = floor(total_log_time_s)
 paste("The duration of logging periods to audit is:", n, "seconds")
 
 total_sampled_dur = 0 
@@ -175,20 +175,17 @@ logs_to_audit = data.frame()
 set.seed(2022)
 while(total_sampled_dur <= n){
   sample_temp = sample_n(log_times, 1)
-  if(dim(match_df(sample_temp, logs_to_audit))[1]==0){
+  if(dim(plyr::match_df(sample_temp, logs_to_audit))[1]==0){
     logs_to_audit = rbind(logs_to_audit, sample_temp)
     total_sampled_dur = total_sampled_dur + sample_temp$log_dur
   }
 }
-}
-rm(var1)
+
 ```
 
 ## Import acoustic audits
 ```{r}
-if (var2 == "y"){
-  
-list_of_files = list.files(path = "D:/gm/audit",
+list_of_files = list.files(path = paste(dir, '/audit', sep = ""),
                             pattern = "acousticaud.txt$", 
                             full.names = TRUE)
 
@@ -200,7 +197,7 @@ names(audited_breaths)[2] <- "breath_start"
 names(audited_breaths)[3] <- "breath_dur"
 names(audited_breaths)[4] <- "comment"
 
-audited_breaths = audited_breaths %>% mutate(tag = substr(FileName,13,21))
+audited_breaths = audited_breaths %>% mutate(tag = str_sub(str_sub(FileName,-25),1,9))
 
 matched_breaths = data.frame()
 
@@ -222,6 +219,8 @@ names(matched_breaths)[4] <- "detected_breath"
 
 matched_breaths = matched_breaths %>% mutate(diff_start = audited_breath_start-detected_breath, diff_end = audited_breath_start+audited_breath_dur-detected_breath)
 
+closest_point = vector()
+
 for (k in 1:dim(matched_breaths)[1]){
 closest_point[k] = min(abs(matched_breaths$diff_start[k]), abs(matched_breaths$diff_end[k]))}
 
@@ -229,13 +228,11 @@ matched_breaths = matched_breaths%>% mutate(diff = ifelse(diff_start*diff_end<0,
 
 ggplot() +  
   geom_point(data=matched_breaths, aes(x = seq(1, length(audited_breath_start)), y =diff, color = tag)) + 
-  xlab('Index') + ylab('Difference between audited breath and detected breath (s)') + theme_bw() +
-  xlim(-2, 131)
+  xlab('Index') + ylab('Difference between audited breath and detected breath (s)') + theme_bw() 
 
 model <- lm(detected_breath~audited_breath_start, data=matched_breaths)
 summary(model)
-rm(var2)
-}
+
 ```
 
 # Continue building useful dataframes
