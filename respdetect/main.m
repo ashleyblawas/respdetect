@@ -136,7 +136,7 @@ end
 clear tag prefix recdir fs tag_ver acousaud_filename tag_on tag_off tag_dur metadata_fname str
 
 %% Step 3: Find dives
-for k = 5:length(taglist);
+for k = 1:length(taglist);
     
     % Load in tag
     tag = taglist{k};
