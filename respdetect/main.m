@@ -729,12 +729,12 @@ for k = 1:length(taglist)
     p_smooth_p2 = p_smooth_tag;
     idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
     p_smooth_p2(~idx_temp) = NaN;
-    p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'k-', 'LineWidth', 2);
-    p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth_tag(log_breath_locs), 80, 'm*', 'LineWidth', 2);
+    p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'm-', 'LineWidth', 2);
+    p3 = scatter(time_min(start_idx+log_breath_locs-1), p_smooth_tag(log_breath_locs), 80, 'k*', 'LineWidth', 1);
     title('Breath IDs during logging')
     ylabel('Depth (m)'); xlabel('Time (min)');
     
-    legend([p1 p2],{'Dive depth' , 'Breath IDs - all three conditions'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
+    legend([p1 p2, p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breaths'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
     
     linkaxes(ax, 'x')
     
