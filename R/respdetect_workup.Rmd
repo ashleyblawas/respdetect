@@ -165,7 +165,7 @@ rm(tag, log_times_temp, logs_temp)
 # Randomly pull rows and add their duration until you get to a total of X% of total logging time
 
 # Edit this to be the percentage of logging time you want to audit for audible breaths (a decimal from 0-1)
-percent_to_pull = 0.50
+percent_to_pull = 0.10
 n = floor(total_log_time_s)
 paste("The duration of logging periods to audit is:", n, "seconds")
 
@@ -227,11 +227,21 @@ closest_point[k] = min(abs(matched_breaths$diff_start[k]), abs(matched_breaths$d
 matched_breaths = matched_breaths%>% mutate(diff = ifelse(diff_start*diff_end<0, 0, closest_point)) 
 
 ggplot() +  
-  geom_point(data=matched_breaths, aes(x = seq(1, length(audited_breath_start)), y =diff, color = tag)) + 
-  xlab('Index') + ylab('Difference between audited breath and detected breath (s)') + theme_bw() 
+  geom_point(data=matched_breaths, aes(x = seq(1, length(audited_breath_start)), y = diff), color = "black", size = 2) + 
+  xlab('Index') + 
+  ylab(expression('Difference between audited \n breath and detected breath (s)')) + 
+  theme_bw() + 
+  ylim(0, 5.2) + 
+  geom_hline(yintercept  = 5, linetype = 2) +
+  scale_x_continuous(limits=c(0, 55), breaks=seq(0,55,5)) + 
+  theme(axis.title.y = element_text(vjust=2)) + 
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 20)))
 
-model <- lm(detected_breath~audited_breath_start, data=matched_breaths)
-summary(model)
+
+ggsave(paste(dir, "acousticval.jpg"), dpi = 300, width = 5, height = 3)
+
+#model <- lm(detected_breath~audited_breath_start, data=matched_breaths)
+#summary(model)
 
 ```
 
