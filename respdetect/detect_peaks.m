@@ -11,7 +11,7 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
     
     if length(locs)>1
         % Calculate distance for max peaks
-        dist = sqrt((max(height)-height).^2 + (max(width)-width).^2 + (max(prom)-prom).^2);
+        dist = sqrt((max(height)-height).^2 + (max(width)-width).^2);
         [f_d,xi_d] = ksdensity(dist);
         [pks_temp] = findpeaks(f_d, 'MinPeakProminence', 0.25);
         if length(pks_temp)>1
@@ -24,7 +24,7 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
         if isempty(thres_d) == 1
             display('Using clustering peak finding method...');
             type = "c";
-            X = [width, prom];
+            X = [width; height];
             Z = linkage(X, 'ward');
             idx = cluster(Z,'MAXCLUST', 2);
             g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
@@ -52,10 +52,10 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
         % Plotting
         if type == "c"
             subplot(3, 5, val)
-            plot(width(idx==rm_group), prom(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
+            plot(width(idx==rm_group), height(idx==rm_group), '.', 'MarkerSize', 12, 'Color', [0.7 0.7 0.7])
             hold on
-            plot(width(idx~=rm_group), prom(idx~=rm_group), 'k.', 'MarkerSize', 12)
-            xlabel('Peak Width'); ylabel('Peak Prominence');
+            plot(width(idx~=rm_group), height(idx~=rm_group), 'k.', 'MarkerSize', 12)
+            xlabel('Peak Width'); ylabel('Peak Height');
         elseif type == "h"
             subplot(3, 5, val)
             plot(xi_d, f_d); xline(thres_d, '--');
