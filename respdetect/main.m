@@ -4,26 +4,49 @@
 %%% Last Updated: 1/23/2024
 %%% Duke University
 
-
 % Getting started:
 
 % 1. You will need to change the paths in the paths.txt file according to
 % where your directories live
 
-% 2. Make sure your prh fiels are in a folder called "prh"
+% 2. Make sure your prh files are in a folder called "prh"
 
 % Variables you may consider changing:
 
-% 1. The dive threshold - in Step 3, dive_thres. You will get prompted to
+% 1. dive_thres, the dive threshold - in Step 3, dive_thres. You will get prompted to
 % set this. If you want it to be the same value for your analysis and save
 % yourself some time, you can comment out the lines under "Set dive
 % threshold and find dives" and instead set dive_thres = 5; or whatever
 % value you want it to be. FYI, these dives are not currently used, but if
 % you want to do further analysis in Matlab they are helpful to have
 
-%
+% 2. n_sec, The # of seconds to distinguish between single-breath surfacing and
+% logging surfacing. At the start, this is set to 10 seconds. This is set in
+% the Step 5c: Identify surface periods section and the variable is called
+% n_sec. If you suspect that your animal may be taking breaths more
+% frequently during a surfacing interval, you may want to set this lower. 
 
+% 3. min_sec_apart, The minimum # of seconds between peaks detected in
+% movement signals during logging period. This can be found in section Step
+% 5h: Peak detection of movement signals and is currently set to 3 seconds.
+% This allows for a maximum breathing rate during logging of 20
+% breaths/min. This is obviously quite high and therefore will tend to
+% overdetect breaths. If this is a porblem with you dataset, you could
+% consider increasing this number to say 6 seconds, which would allow for
+% a maximum breathing rate of 12 breaths/min. 
 
+% 4. win_sec, The window size for finding aligning peaks in jerk, surge, and pitch.
+% In section Step 5i: Detect windows for breaths during logging periods
+% there is a variable called win_sec. This specifies how close in time a
+% peak in each of these three signal needs to be to be counted as
+% co-occuring. Currently this is set to 5 seconds which should be plenty to
+% capture all potential peaks (e.g., this errs on the side of
+% overdetecting) 
+
+% 5. samp_per, this is the percentage of breaths that we want to randomly
+% sample for auditing. This can be found under Step 8: Pull breaths to
+% audit in video and is currently set to 5%. Depending on the size of your
+% dataset you may be able to sample a greater percentage than this. 
 
 
 %% Step 1: Set paths and tag variables
@@ -451,8 +474,9 @@ for k = 1:length(taglist)
     
     % If these periods are less than 10 seconds then we say they are a "single
     % breath surfacing" otherwise they are a "logging surfacings"
-    single_breath_surf_rows = find(p_shallow_ints(:, 3) <= 10*metadata.fs);
-    logging_surf_rows = find(p_shallow_ints(:, 3) > 10*metadata.fs);
+    n_sec = 10;
+    single_breath_surf_rows = find(p_shallow_ints(:, 3) <= n_sec*metadata.fs);
+    logging_surf_rows = find(p_shallow_ints(:, 3) > n_sec*metadata.fs);
     
     % Define logging starts and ends
     logging_start_idxs = p_shallow_idx(p_shallow_ints(logging_surf_rows, 1));
@@ -561,7 +585,10 @@ for k = 1:length(taglist)
     
     %% Step 5h: Peak detection of movement signals
     
+    min_sec_apart = 3;
+    
     %% %% Peak detection: Jerk
+        
     % Plot jerk signal
     fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
     ax(1) = subplot(3, 5, [1 2]);
@@ -569,7 +596,7 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth', 3);
+    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth', 3, min_sec_apart);
     
     % Plot jerk peaks
     subplot(3, 5, [1 2]);
@@ -581,19 +608,19 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [s_locs, s_width, s_prom, idx, rm_group] = detect_peaks(metadata.fs, surge_smooth, 8);
+    [s_locs, s_width, s_prom, idx, rm_group] = detect_peaks(metadata.fs, surge_smooth, 8, min_sec_apart);
     
     % Plot surge peaks
     subplot(3, 5, [6 7]);
     scatter(time_min(s_locs+start_idx), surge_smooth(s_locs), 'b*')
     
-        %% %% Peak detection: Pitch
+    %% %% Peak detection: Pitch
     ax(3) = subplot(3, 5, [11 12]);
     plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
     xlabel('Time (min)'); ylabel('Pitch SE Smooth');
     
     % Peak detection
-    [p_locs, p_width, p_prom, idx, rm_group] = detect_peaks(metadata.fs, pitch_smooth, 13);
+    [p_locs, p_width, p_prom, idx, rm_group] = detect_peaks(metadata.fs, pitch_smooth, 13, min_sec_apart);
     
     % Plot surge peaks
     subplot(3, 5, [11 12]);
@@ -602,21 +629,23 @@ for k = 1:length(taglist)
     %% Step 5i: Detect windows for breaths during logging periods
     
     % Identify 5 second windows around peaks
+    win_sec = 5;
+    
     j_wins = [];
     for a = 1:length(j_locs)
-        j_temp_win = (j_locs(a)-floor(2.5*metadata.fs)):1:(j_locs(a)+ceil(2.5*metadata.fs));
+        j_temp_win = (j_locs(a)-floor((win_sec/2)*metadata.fs)):1:(j_locs(a)+ceil((win_sec/2)*metadata.fs));
         j_wins = [j_wins, j_temp_win];
     end
     
     s_wins = [];
     for b = 1:length(s_locs)
-        s_temp_win = (s_locs(b)-floor(2.5*metadata.fs)):1:(s_locs(b)+ceil(2.5*metadata.fs));
+        s_temp_win = (s_locs(b)-floor((win_sec/2)*metadata.fs)):1:(s_locs(b)+ceil((win_sec/2)*metadata.fs));
         s_wins = [s_wins, s_temp_win];
     end
     
     p_wins = [];
     for c = 1:length(p_locs)
-        p_temp_win = (p_locs(c)-floor(2.5*metadata.fs)):1:(p_locs(c)+ceil(2.5*metadata.fs));
+        p_temp_win = (p_locs(c)-floor((win_sec/2)*metadata.fs)):1:(p_locs(c)+ceil((win_sec/2)*metadata.fs));
         p_wins = [p_wins, p_temp_win];
     end
     
@@ -733,7 +762,7 @@ for k = 1:length(taglist)
     % (e.g. 20 breaths/min) to a breath detection from
     % logging, then the ss breath trumps and we remove the logging breath
     temp_all_breaths= [all_breath_locs.breath_idx; log_breath_locs];
-    temp_all_breaths_type = [repmat("ss", length(all_breath_locs.breath_idx), 1); repmat("log", length(log_breath_locs), 1)];%; diff_vals_ps]), 1)];
+    temp_all_breaths_type = [repmat("ss", length(all_breath_locs.breath_idx), 1); repmat("log", length(log_breath_locs), 1)];
     
     [temp_all_breaths_s, sortidx] = sort(temp_all_breaths);
     temp_all_breaths_type_s = temp_all_breaths_type(sortidx, :);
@@ -914,8 +943,8 @@ if end_idx == length(time_sec)
     end_idx = end_idx-1;
 end
 
-if p(start_idx)<1 %5 , changing to 1 for gray whales
-    start_idx = find(p(start_idx:end_idx)>=1, 1)+start_idx; %Changed from 5 to 1
+if p(start_idx)<1 % Start audit on first dive to > 1 m
+    start_idx = find(p(start_idx:end_idx)>=1, 1)+start_idx; 
 end
 
 % Subset p to only when tag is on
