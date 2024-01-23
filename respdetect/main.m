@@ -1,8 +1,30 @@
 %%% The main script for running respdetect
 
 %%% Author: Ashley Blawas
-%%% Date: July 6, 2022
+%%% Last Updated: 1/23/2024
 %%% Duke University
+
+
+% Getting started:
+
+% 1. You will need to change the paths in the paths.txt file according to
+% where your directories live
+
+% 2. Make sure your prh fiels are in a folder called "prh"
+
+% Variables you may consider changing:
+
+% 1. The dive threshold - in Step 3, dive_thres. You will get prompted to
+% set this. If you want it to be the same value for your analysis and save
+% yourself some time, you can comment out the lines under "Set dive
+% threshold and find dives" and instead set dive_thres = 5; or whatever
+% value you want it to be. FYI, these dives are not currently used, but if
+% you want to do further analysis in Matlab they are helpful to have
+
+%
+
+
+
 
 %% Step 1: Set paths and tag variables
 % Clear workspace and command window and close all figures
@@ -119,10 +141,10 @@ for k = 1:length(taglist);
             tag_off = str2num(cell2mat(time_tagoff));
             
             % Designate the tag version
-            prompt = {'Enter DTAG version (D2 or D3):'};
+            prompt = {'Enter DTAG version (D2 or D3 or CATS):'};
             dlgtitle = 'Input';
             dims = [1 35];
-            definput = {'D2'};
+            definput = {'CATS'};
             answer = inputdlg(prompt,dlgtitle,dims,definput);
             tag_ver = answer{1};
             clear prompt dlgtitle dims definput answer
@@ -230,7 +252,7 @@ for k = 1:length(taglist);
                     
                     % Calculate ODBA for each dive
                     if length(Aw(start_idx_dive:end_idx_dive, :)) > 5*round(fs/fh)
-                        [e,w,Ah] = obda(Aw(start_idx_dive:end_idx_dive, :), metadata.fs, 0.25);
+                        [e,w,Ah] = obda(Aw(start_idx_dive:end_idx_dive, :), metadata.fs);
                     else
                         w = NaN;
                     end
