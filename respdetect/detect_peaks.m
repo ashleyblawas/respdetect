@@ -1,10 +1,10 @@
 %% Find peaks in movement data for breath detections
 
-function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val)
+function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, min_sec_apart)
     % Peak detect jerk, defining here that the max breath rate is 20 breaths/min
     % given 3 second separation
-    [height, locs, width, prom] = findpeaks(move_sig, 'MinPeakDistance', 3*fs);
-    display('Detecting peaks at least 3 seconds apart...');
+    [height, locs, width, prom] = findpeaks(move_sig, 'MinPeakDistance', min_sec_apart*fs);
+    fprintf('Detecting peaks at least %0.1f seconds apart...\n', min_sec_apart);
     
     % Rescale to between (0, 1)
     height = rescale(height); width = rescale(width); prom = rescale(prom);
