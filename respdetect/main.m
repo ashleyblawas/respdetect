@@ -190,6 +190,8 @@ end
 % Clear variables that are now saved in the metadata structure
 clear tag prefix recdir fs tag_ver acousaud_filename tag_on tag_off tag_dur metadata_fname str
 
+clearvars -except tools_path data_path mat_tools_path taglist
+
 %% Step 3: Find dives
 for k = 1:length(taglist);
     
@@ -272,15 +274,7 @@ for k = 1:length(taglist);
                     % Get dive start and end in indices
                     start_idx_dive = find(abs(time_sec-dive_start(i))==min(abs(time_sec-dive_start(i))));
                     end_idx_dive = find(abs(time_sec-dive_end(i))==min(abs(time_sec-dive_end(i))));
-                    
-                    % Calculate ODBA for each dive
-                    if length(Aw(start_idx_dive:end_idx_dive, :)) > 5*round(fs/fh)
-                        [e,w,Ah] = obda(Aw(start_idx_dive:end_idx_dive, :), metadata.fs);
-                    else
-                        w = NaN;
-                    end
-                
-                    dive_odba(i) = mean(w);
+
                 end
                 
                 % Extract surface information from dive information
@@ -296,12 +290,12 @@ for k = 1:length(taglist);
                 surf_dur(size(T, 1)) = NaN';
                 
                 % Save dive variables to mat file
-                save(strcat(data_path, "\diving\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'dive_odba', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
+                save(strcat(data_path, "\diving\", metadata.tag, "dives"), 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
                 
                 % Save dive variables as a table (analog to typical T
                 % variable)
-                Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', dive_odba', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
-                Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'dive_odba', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
+                Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
+                Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
                 save(strcat(data_path, "\diving\", metadata.tag, "divetable"), 'Tab')
                 beep on; beep
                 
@@ -311,10 +305,12 @@ for k = 1:length(taglist);
             figfile = strcat(data_path, '/figs/', metadata.tag, '_dives.fig');
             savefig(figfile);
             
-            clear tag depth_thres dive_num dive_start dive_end dive_odba w max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
+            clear tag depth_thres dive_num dive_start dive_end max_depth time_maxdepth dive_dur surf_num surf_start surf_end surf_dur
         end
     end
 end
+
+clearvars -except tools_path data_path mat_tools_path taglist
 
 %% Step 4: Process movement data
 
@@ -353,6 +349,8 @@ for k = 1:length(taglist)
         end
      end
 end
+
+clearvars -except tools_path data_path mat_tools_path taglist
 
 %% Step 5: Detect breaths
 
@@ -531,7 +529,7 @@ for k = 1:length(taglist)
     %% Step 5g: Pre-process movement data for logging period breath detections
     
     % Want pitch to be positive for peak detect, so adding min
-    pitch_smooth = pitch_smooth + abs(min(pitch_smooth));
+    pitch_smooth = pitch_smooth + abs(min(pitch_smooth(~isinf(pitch_smooth))));
     
     % Remove underwater portions of movement data
     for i = 1:length(jerk_smooth)
@@ -558,6 +556,8 @@ for k = 1:length(taglist)
     surge_smooth(idx_temp==0) = NaN;
     pitch_smooth(idx_temp==0) = NaN;
     
+    % Pitch good until here
+    
     % Normalize pitch and jerk section-by-section
     % Divide signal into continue sections to rescale
     cont_sections_jerk = regionprops(~isnan(jerk_smooth), jerk_smooth, 'PixelValues');
@@ -571,7 +571,7 @@ for k = 1:length(taglist)
         surge_temp = cont_sections_surge(i).PixelValues;
         pitch_temp = cont_sections_pitch(i).PixelValues;
         
-        temp_idx = cont_sections_idx(i).PixelList(:, 1);
+        temp_idx = cont_sections_idx(i).PixelList(:, 2);
         
         % Rescale the jerk in this section
         jerk_temp = rescale(jerk_temp);
@@ -585,6 +585,9 @@ for k = 1:length(taglist)
     
     %% Step 5h: Peak detection of movement signals
     
+    % Add this path to make sure using the right ksdensity
+    addpath('C:\Program Files\MATLAB\R2020a\toolbox\stats\stats')
+    
     min_sec_apart = 3;
     
     %% %% Peak detection: Jerk
@@ -596,7 +599,7 @@ for k = 1:length(taglist)
     xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
     
     % Peak detection
-    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth', 3, min_sec_apart);
+    [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth, 3, min_sec_apart);
     
     % Plot jerk peaks
     subplot(3, 5, [1 2]);
@@ -815,15 +818,17 @@ for k = 1:length(taglist)
     
     %% Step 5l: Write breaths to audit
     
-    if isfile(strcat(data_path, "\breaths\", metadata.tag, "breaths.mat")) == 1
-        txt = input("A breath detections file already exists - do you want to append a custom suffix? (y/n) \n","s");
-        if strcmp(txt, "y") == 1
-            txt = input("What suffix? do you want to append (e.g. _examplesection) \n","s");
-            save(strcat(data_path, "\breaths\", metadata.tag, "breaths", txt), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
-        end
-     else
-            save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
-    end    
+    % Write to mat file
+    save(strcat(data_path, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag', 'p_smooth', 'p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
+
+    % Write to text file
+    date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
+    breath_datetime = date(all_breath_locs.breath_idx);
+    writematrix(breath_datetime, strcat(data_path, '/breaths/', INFO.whaleName, 'breaths.txt'),'Delimiter',',')  
+    
+    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    
+    
     
     clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
     
@@ -855,50 +860,70 @@ for k = 1:length(taglist)
     
     % Load in breaths
     breath_idx = all_breath_locs.breath_idx;
-    breath_times = time_sec(all_breath_locs.breath_idx);
+    breath_times =  datetime(DN(all_breath_locs.breath_idx), 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
     
     [breath_times, sortidx]  = sort(breath_times);
     breath_type = all_breath_locs.type(sortidx, :);
     
+    % Create datetime variable
+    date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
+    
     %% Step 6b: Plot all breaths
+    
+    % Filter signals to tag on time for plotting
+    start_idx = find(abs(time_sec-metadata.tag_on)==min(abs(time_sec-metadata.tag_on)));
+    end_idx = find(abs(time_sec-metadata.tag_off)==min(abs(time_sec-metadata.tag_off)));
+    
+    p_smooth(1:start_idx) = NaN;
+    p_smooth(end_idx:length(p_smooth)) = NaN;
+    
+    jerk_smooth(1:start_idx) = NaN;
+    jerk_smooth(end_idx:length(jerk_smooth)) = NaN;
+    
+    surge_smooth(1:start_idx) = NaN;
+    surge_smooth(end_idx:length(surge_smooth)) = NaN;
+    
+    pitch_smooth(1:start_idx) = NaN;
+    pitch_smooth(end_idx:length(pitch_smooth)) = NaN;
+    
     figure
     title(metadata.tag, 'Interpreter', 'none');
     ax(1)=subplot(4, 1, 1);
-    plot(time_min, p_smooth, 'k', 'LineWidth', 1.5); hold on
+    plot(date, p_smooth, 'k', 'LineWidth', 1.5); hold on
     set(gca,'Ydir','reverse')
     ylabel('Depth (m)');
     
     hold on
-    scatter(breath_times(breath_type == 'ss')/60, p_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, p_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'ss'), p_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log'), p_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     
     legend('Depth', 'Single surface breaths', 'Log breaths');
     
     ax(2)=subplot(4, 1, 2);
-    plot(time_min(2:end), surge_smooth, 'r', 'LineWidth', 1.5); hold on
-    scatter(breath_times(breath_type == 'ss')/60, surge_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, surge_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    plot(date, surge_smooth, 'r', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss'), surge_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log'), surge_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Surge SE');
     
     ax(3)=subplot(4, 1, 3);
-    plot(time_min(2:end), jerk_smooth, 'b', 'LineWidth', 1.5); hold on
-    scatter(breath_times(breath_type == 'ss')/60, jerk_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, jerk_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    plot(date, jerk_smooth, 'b', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss'), jerk_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log'), jerk_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Jerk SE');
     
     ax(4)=subplot(4, 1, 4);
-    plot(time_min(2:end), pitch_smooth, 'g', 'LineWidth', 1.5); hold on
-    scatter(breath_times(breath_type == 'ss')/60, pitch_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
-    scatter(breath_times(breath_type == 'log')/60, pitch_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    plot(date, pitch_smooth, 'g', 'LineWidth', 1.5); hold on
+    scatter(breath_times(breath_type == 'ss'), pitch_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
+    scatter(breath_times(breath_type == 'log'), pitch_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     linkaxes(ax, 'x');
     ylabel('Smoothed Pitch SE');
-    xlabel('Time (min)');
+    xlabel('Date Time');
     
     figfile = strcat(data_path, '/figs/', metadata.tag, '_allbreaths.fig');
     savefig(figfile);
     
     %Calculate and plot fR
-    [fR] = get_contfR(breath_times, breath_idx, p, time_min, metadata.tag);
+    [fR] = get_contfR(breath_times, breath_idx, p, date, metadata.tag);
     
     figfile = strcat(data_path, '/figs/', metadata.tag, '_resprate.fig');
     savefig(figfile);
@@ -963,11 +988,14 @@ breath_saveaudit(strcat(data_path, '\breaths\', INFO.whaleName, 'breaths'), Rnew
 
 %% Step 7c: Quick plot to look at breathing rates
 
+% Load in breath audit
+R = breath_loadaudit(strcat(data_path, '\breaths\', INFO.whaleName, 'breaths')); % Load an audit if one exists
+
 figure;
 
 date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
 bx(1) = subplot(211);
-scatter(Rnew.cue(2:end, 1), 1./minutes(diff(Rnew.cue(:, 1)))); hold on
+scatter(R.cue(2:end, 1), 1./minutes(diff(R.cue(:, 1)))); hold on
 ylabel("Breathing Rate (breaths/min)");
 
 bx(2) = subplot(212);
@@ -979,7 +1007,11 @@ xlabel("Date Time"); ylabel("Depth (m)");
 linkaxes(bx,'x');
  
 %% Step 7d: When done with audit, remove breaths within first hour of tagging
-breaths.cue = Rnew.cue;
+
+% Load in breath audit
+R = breath_loadaudit(strcat(data_path, '\breaths\', INFO.whaleName, 'breaths')); % Load an audit if one exists
+
+breaths.cue = R.cue;
 
 tagon_datetime = date(find(tagon ==1, 1, 'first'));
 
@@ -1001,8 +1033,13 @@ date_analyzed = datetime("today");
 
 T = table(tag, num_breaths, tag_duration, fr_overall, date_analyzed);
 
-writetable(T,strcat(data_path, '\breaths\', 'breathdata.csv'),'WriteMode','Append',...
-    'WriteVariableNames',false)  
+if isfile(strcat(data_path, '\breaths\', 'breathdata.csv')) == 1
+    writetable(T,strcat(data_path, '\breaths\', 'breathdata.csv'),'WriteMode','Append',...
+        'WriteVariableNames', false)
+else
+    writetable(T,strcat(data_path, '\breaths\', 'breathdata.csv'),'WriteMode','Append',...
+        'WriteVariableNames', true)
+end
 
 %% Step 8: Pull breaths to audit in video
 % We want to pull the video on times and randomly subset some percent of breaths from each tag
