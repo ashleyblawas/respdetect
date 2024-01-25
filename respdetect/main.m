@@ -936,6 +936,8 @@ end
 clearvars -except tools_path data_path mat_tools_path taglist
 
 %% Step 7a: Load in information for a tag
+
+% YOU HAVE TO MANUALLY CHANGE THIS K VALUE!
 k = 1;
 
 tag = taglist{k};
@@ -975,6 +977,9 @@ end
 % Subset p to only when tag is on
 p_tag = p(start_idx:end_idx);
 
+% Create date variable
+date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
+
 %% Step 7b: Audit breath detections
 
 date_on = datetime(DN(start_idx:end_idx), 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
@@ -993,7 +998,6 @@ R = breath_loadaudit(strcat(data_path, '\breaths\', INFO.whaleName, 'breaths'));
 
 figure;
 
-date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
 bx(1) = subplot(211);
 scatter(R.cue(2:end, 1), 1./minutes(diff(R.cue(:, 1)))); hold on
 ylabel("Breathing Rate (breaths/min)");
