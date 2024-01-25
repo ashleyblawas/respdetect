@@ -2,14 +2,15 @@
 
 %%% Author: Ashley Blawas
 %%% Last Updated: 1/23/2024
-%%% Duke University
+%%% Duke University, Stanford University
 
 % Getting started:
 
 % 1. You will need to change the paths in the paths.txt file according to
 % where your directories live
 
-% 2. Make sure your prh files are in a folder called "prh"
+% 2. Make sure your prh files are in a folder called "prh" that is in your
+% data folder per the paths,txt file
 
 % Variables you may consider changing:
 

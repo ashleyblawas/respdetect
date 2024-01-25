@@ -8,7 +8,7 @@ function calc_move(fs, Aw, p, data_path, tag, pitch, roll, head)
             sway = Aw(:, 2);
             heave = Aw(:, 3);
             
-            % Make temp variables to work with and then add back to full
+            % Make temp variables without NaNs to work with and then add back to full
             % variables
             surge_temp = surge(~isnan(surge));
             sway_temp = sway(~isnan(sway));
@@ -93,7 +93,8 @@ function calc_move(fs, Aw, p, data_path, tag, pitch, roll, head)
             roll_smooth_temp = NaN(length(roll), 1);
             
             % But smoothed variables back in, append last value again to
-            % make same size
+            % make same size. You could append a zero but it makes the
+            % normalizing later a little wacky
             surge_smooth_temp(~isnan(surge)) = [surge_smooth; surge_smooth(end)];
             sway_smooth_temp(~isnan(sway)) = [sway_smooth; sway_smooth(end)];
             heave_smooth_temp(~isnan(heave)) = [heave_smooth; heave_smooth(end)];
