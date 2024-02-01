@@ -831,7 +831,7 @@ for k = 1:length(taglist)
     
     
     
-    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    clearvars -except taglist tools_path mat_tools_path data_path; clc;
     
 end
 
@@ -929,7 +929,7 @@ for k = 1:length(taglist)
     figfile = strcat(data_path, '/figs/', metadata.tag, '_resprate.fig');
     savefig(figfile);
     
-    clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+    clearvars -except taglist tools_path mat_tools_path data_path; clc; 
     
 end
 
@@ -937,6 +937,8 @@ end
 clearvars -except tools_path data_path mat_tools_path taglist
 
 %% Step 7a: Load in information for a tag
+
+clearvars -except tools_path data_path mat_tools_path taglist
 
 % YOU HAVE TO MANUALLY CHANGE THIS K VALUE!
 k = 1;
@@ -1167,7 +1169,6 @@ depth{k} = p;
 fs_temp{k} = metadata.fs;
 dive_start_s{k} = dive_start;
 dive_end_s{k} = dive_end;
-odba{k} = dive_odba;
 logging_intervals_s{k} = logging_ints_s;
 
 % Load in breaths
