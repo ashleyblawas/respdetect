@@ -1,5 +1,5 @@
 ---
-title: 'resp_detect: A Matlab tool for detecting breath events from whale biolgger data'
+title: 'respdetect: A Matlab tool for detecting breath events from whale biolgger data'
 tags:
   - Matlab
   - DTAGs
