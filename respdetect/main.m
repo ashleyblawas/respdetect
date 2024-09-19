@@ -861,13 +861,20 @@ for k = 1:length(taglist)
     
     % Load in breaths
     breath_idx = all_breath_locs.breath_idx;
-    breath_times =  datetime(DN(all_breath_locs.breath_idx), 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
     
-    [breath_times, sortidx]  = sort(breath_times);
-    breath_type = all_breath_locs.type(sortidx, :);
+    if strcmp(metadata.tag_ver, "CATS") == 1
+        breath_times =  datetime(DN(all_breath_locs.breath_idx), 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
+        
+        % Create datetime variable
+        date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
+        xval = date;
+    else
+        breath_times = time_min(all_breath_locs.breath_idx);
+        xval = time_min;
+    end
     
-    % Create datetime variable
-    date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
+   [breath_times, sortidx]  = sort(breath_times);
+   breath_type = all_breath_locs.type(sortidx, :); 
     
     %% Step 6b: Plot all breaths
     
@@ -890,7 +897,7 @@ for k = 1:length(taglist)
     figure
     title(metadata.tag, 'Interpreter', 'none');
     ax(1)=subplot(4, 1, 1);
-    plot(date, p_smooth, 'k', 'LineWidth', 1.5); hold on
+    plot(xval, p_smooth, 'k', 'LineWidth', 1.5); hold on
     set(gca,'Ydir','reverse')
     ylabel('Depth (m)');
     
@@ -901,19 +908,19 @@ for k = 1:length(taglist)
     legend('Depth', 'Single surface breaths', 'Log breaths');
     
     ax(2)=subplot(4, 1, 2);
-    plot(date, surge_smooth, 'r', 'LineWidth', 1.5); hold on
+    plot(xval, surge_smooth, 'r', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss'), surge_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log'), surge_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Surge SE');
     
     ax(3)=subplot(4, 1, 3);
-    plot(date, jerk_smooth, 'b', 'LineWidth', 1.5); hold on
+    plot(xval, jerk_smooth, 'b', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss'), jerk_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log'), jerk_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     ylabel('Smoothed Jerk SE');
     
     ax(4)=subplot(4, 1, 4);
-    plot(date, pitch_smooth, 'g', 'LineWidth', 1.5); hold on
+    plot(xval, pitch_smooth, 'g', 'LineWidth', 1.5); hold on
     scatter(breath_times(breath_type == 'ss'), pitch_smooth(breath_idx(breath_type == 'ss')), 60, 'cs', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     scatter(breath_times(breath_type == 'log'), pitch_smooth(breath_idx(breath_type == 'log')), 60, 'ms', 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceAlpha', .75, 'MarkerEdgeAlpha', .75)
     linkaxes(ax, 'x');
@@ -924,7 +931,7 @@ for k = 1:length(taglist)
     savefig(figfile);
     
     %Calculate and plot fR
-    [fR] = get_contfR(breath_times, breath_idx, p, date, metadata.tag);
+    [fR] = get_contfR(breath_times, breath_idx, p, xval, metadata);
     
     figfile = strcat(data_path, '/figs/', metadata.tag, '_resprate.fig');
     savefig(figfile);

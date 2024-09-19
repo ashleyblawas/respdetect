@@ -1,9 +1,13 @@
 %get_contfR
 
-function [fR] = get_contfR(breath_times, breath_idx, p, date, tag)
-fR = 60./seconds(diff(breath_times)); % Take diff of all breath times
-
-% If there is a 5 m dive between two breaths... remove that fR
+function [fR] = get_contfR(breath_times, breath_idx, p, date, metadata)
+    if strcmp(metadata.tag_ver, "CATS") == 1
+        fR = 1./minutes(diff(breath_times)); % Take diff of all breath time
+    else
+        fR = 1./diff(breath_times); % Take diff of all breath time
+    end
+    
+    % If there is a 5 m dive between two breaths... remove that fR
 % for k = 1:length(breath_times)-1;
 %     if any(p(breath_idx(k):breath_idx(k+1))>5)
 %         fR(k) = NaN;
@@ -19,7 +23,7 @@ ylabel('{\it f}_R (breaths min^{-1})');
 POS1 = get(ax(1), 'Position');
 POS1(2) = POS1(2)+0.05;
 set(ax(1), 'Position', POS1);
-title(tag, 'Interpreter', 'none');
+title(metadata.tag, 'Interpreter', 'none');
 
 hold on; 
 ax(2) = subplot(3, 1, [2 3]);
