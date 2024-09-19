@@ -9,11 +9,12 @@ tags:
 authors:
   - name: Ashley M. Blawas
     orcid: 0000-0003-4109-9003
-    affiliation: 1
-affiliations:
+    affiliation: "1, 2"
  - name: Nicholas School of the Environment, Duke University Marine Laboratory
    index: 1
-date: 11 November 2020
+ - name: Oceans Department, Stanford University
+   index: 2
+date: 19 Septmerb 2024
 bibliography: paper.bib
 
 ---
