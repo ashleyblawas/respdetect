@@ -14,7 +14,7 @@ authors:
    index: 1
  - name: Oceans Department, Stanford University
    index: 2
-date: 19 Septmerb 2024
+date: 19 September 2024
 bibliography: paper.bib
 
 ---
