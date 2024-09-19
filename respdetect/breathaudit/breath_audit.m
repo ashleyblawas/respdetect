@@ -131,6 +131,8 @@ while 1,
 %    [B F T] = specgram(x(:,CH),BL,afs,hamming(BL),BL/2) ;
 %    xx = filter(pp,[1 -(1-pp)],abs(filter(bh,ah,x(:,CH)))) ;
 
+   tcue = floor(tcue); % Needed to add this for when fs is not 10 or 5, 3/7/24
+
    kk = 1:NS*fs; % does not need to be by 5, changed to by 1 on 5/2/21   
    % Plot depth information
    %ks = kb + round(tcue*fs) ;
@@ -174,7 +176,7 @@ while 1,
 
    done = 0 ;
    while done == 0,
-      axes(AXm) ; pause(0) ;
+      axes(AXs) ; pause(0) ;
       [gx gy button] = ginput(1);
       ax = get(gca);
       gx = datetime(num2ruler(gx ,ax.XAxis), 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
@@ -209,12 +211,12 @@ while 1,
               display('Too close to end, zoom in or stop here')
               tcue = tcue;
           else
-              tcue = tcue+floor(NS)-0.5 ;
+              tcue = tcue+NS-0.5 ;
           end
           done = 1 ;          
           
       elseif button=='b',
-          tcue = max([0 tcue-NS+0.5]) ;
+          tcue = max([0 floor(tcue-NS+0.5)]) ;
           done = 1 ;
           
       elseif button=='i', %Zooming in
@@ -249,7 +251,24 @@ while 1,
           else
               tcue = next_surf/fs;
           end
-          done = 1 ;          
+          done = 1 ;   
+          
+        elseif button=='t', %Set a threshold for the ptich signal and find peaks 
+            if gx<tt(tcue*fs+kk(1)) | gx>tt(tcue*fs + kk(end))
+                fprintf('Click inside the plot to select a threshold\n') ;
+            else
+                disp('Attempting threshold')
+                % Adding 1 to time because lose one data point for
+                % diff, this is consistent with findbreaths
+                [pks, locs] = findpeaks(jerk(tcue*fs+kk), 'MinPeakDistance', 5*fs, 'MinPeakHeight', gy);
+                for i = 1:length(locs)
+                    tt_temp =  tt(tcue*fs+kk);
+                    RES.cue = [RES.cue;[tt_temp(locs(i))]] ;  
+                    RES.stype{size(RES.cue,1)} = 'b' ;
+                    %save labchartaudit_RECOVER RES
+                    plotRES(AXc,RES,[tt(tcue*fs+kk(1)) tt(tcue*fs + kk(end))],AXs) ;
+                end
+            end
           
       elseif button==1,
           if gy<0 | gx<tt(tcue*fs+kk(1)) | gx>tt(tcue*fs + kk(end))
