@@ -31,13 +31,11 @@ Here, I present `respdetect`, a set of Matlab tools to detect breathing events f
 
 ![An example of respdetect breath detections from a short-finned pilot whale DTAG2 record.](../images/gm08_143b_allbreaths_ex.jpg)
 
-Following detection, the tools allow the user to visualize the respiratory rate time series before exporting the timing of each breath, in addition to several other relevant dive parameters, in a .mat file. An .Rmd file is available with code for plotting the respiration data as it relates to other dive parameters.
+Following detection, the tools allow the user to visualize the respiratory rate time series before exporting the timing of each breath, in addition to several other relevant dive parameters, in a .mat file. 
 
 <img align="right" src="../images/gm08_143b_resprate_ex.jpg" alt="Continuous respiratory rate from breath detections by respdetect for a short-finned pilot whale before and after deep dives." width="500"/>
 
-The resp_detect workflow also allows users to incorporate acoustic data into their analysis. Using the acoustic auditing tools made available in the existing DTAG Matlab tools users can mark acoustic breath detections and compare the timing of the breath detections from the movement sensors against the acoustic detections. This may be helpful in cases of uncertainty or to determine other respiratory variables when possible (i.e., duration of a breath or amplitude/dB of a breath).
-
-Currently, these tools are being used to detect breaths from DTAGs deployed on short-finned pilot whales, but the tools should be useful for any DTAG record. The best use cases for resp_detect are for DTAGs that were deployed close to the blowhole. 
+These tools are were intially developed to detect breaths from DTAGs deployed on short-finned pilot whales, but  should be useful for any DTAG or CATS tag record. The best use cases for resp_detect are for tags that were deployed close to the blowhole. 
 
 # Acknowledgements
 
