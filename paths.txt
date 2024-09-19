@@ -1,10 +1,8 @@
-## respdetect path (i.e. path to full repo, likely ending in respdetect or respdetect-main)
+"## respdetect path (i.e. path to full repo, likely ending in respdetect or respdetect-main)"
 C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect
 
-## dtag tools path (i.e. path to full repo, likely ending in dtagtools)
+"## dtag tools path (i.e. path to full repo, likely ending in dtagtools)"
 C:\Users\ashle\Dropbox\Ashley\Graduate\Tools\dtagtools
 
-## data path (i.e. path to species level folder, likely ending in two letter species name)
-C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\gm
-
-
+"## data path (i.e. path to species level folder, likely ending in two letter species name)"
+C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\mn
