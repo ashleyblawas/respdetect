@@ -41,6 +41,6 @@ Currently, these tools are being used to detect breaths from DTAGs deployed on s
 
 # Acknowledgements
 
-I would like to acknowledge Drs. Doug Nowacek and Andy Read for their support of this tool development, the Duke Superpod for project feedback and recommendations, and Jeanne Shearer for pre-processing of the tag data used for testing. This work was supported by the Duke University Marine Laboratory.
+I would like to acknowledge Drs. Doug Nowacek and Andy Read for their support of this tool development, the Duke Superpod for project feedback and recommendations, Dr. Jeanne Shearer for pre-processing the short-finned pilot whale record used for testing, and Dr. Dave Haas, PMC-BS, and Socioambiental Aonsultores Ltd. for sharing and pre-processing the humpbaack whales record used for testing. This work was supported by the Duke University Marine Laboratory.
 
 # References
