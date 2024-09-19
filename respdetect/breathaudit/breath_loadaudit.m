@@ -1,6 +1,6 @@
 %% FUNCTION: loadaudit
 
-function    R=loadaudit(tag)
+function    R=loadaudit(tag, metadata)
 %
 %    R=loadaudit(tag)
 %     read an audit text file with name fname into an audit structure.
@@ -27,7 +27,12 @@ function    R=loadaudit(tag)
 %     added note preservation
 
 %R.cue = datetime("2023-01-01 00:00:00.00", 'Format', 'yyyy-MM-dd HH:mm:ss.SS'); % Cue needs to be initialized as a datetime array
-R.cue = datetime([],[],[], 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
+
+if strcmp(metadata.tag_ver, "CATS") == 1
+    R.cue = datetime([],[],[], 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
+else
+    R.cue = [];
+end
 R.stype = [] ;
 R.comment = [] ;
 R.commentcue = [] ;
@@ -72,26 +77,35 @@ while ~done,
       note = [] ;
    end
 
-   if ~isempty(s),
-      %[cs s] = strtok(s) ;
-      %c = str2double(cs) ;
-      %[ds s] = strtok(s) ;
-      if contains(s, 'b')
-          [cs s] = strtok(s) ;
-          c = str2double(cs) ;
-          [ds t] = strtok(s) ;
-          s = strcat(cs, " ", ds);
-          t = regexprep(t, '\t', '');
-      else 
-          t = "";
-      end
-      d = datetime(s, 'Format',  'yyyy/MM/dd HH:mm:ss.SSS'); % Get date of first line
-      %d = str2double(ds) ;
-      if all(~isnat([d d])),
-         knext = size(R.cue,1)+1 ;
-         R.cue(knext,1) = d;
-         R.stype{knext} = [t] ;  % strip leading white space from remainder
-      end
+   if ~isempty(s),    
+       if strcmp(metadata.tag_ver, "CATS") == 1
+           d = datetime(s, 'Format',  'yyyy/MM/dd HH:mm:ss.SSS'); % Get date of first line
+           if all(~isnat([d d])),
+               knext = size(R.cue,1)+1 ;
+               R.cue(knext,1) = d;
+               R.stype{knext} = [t] ;  % strip leading white space from remainder
+           end
+           if contains(s, 'b')
+               [cs s] = strtok(s) ;
+               c = str2double(cs) ;
+               [ds t] = strtok(s) ;
+               s = strcat(cs, " ", ds);
+               t = regexprep(t, '\t', '');
+           else
+               t = "";
+           end
+       else
+           [cs s] = strtok(s) ;
+           c = str2double(cs) ;
+           [ds s] = strtok(s) ;
+           %d = str2double(ds) ;
+           if all(~isnan(c)),
+               knext = size(R.cue,1)+1 ;
+               R.cue(knext,:) = c ;
+               %[ss s] = strtok(s) ;
+               R.stype{knext} = [ds] ;  % strip leading white space from remainder
+           end
+       end  
    end
 
    if ~isempty(note),

@@ -1,5 +1,5 @@
 %% FUNCTION: d3audit
-function     RES = breath_audit(prefix,tcue, RES, date_tagon, p, jerk, roll)
+function     RES = breath_audit(prefix,tcue, RES, xval, p, jerk, roll, metadata)
 %
 %     R = d3audit(recdir,prefix,tcue,R)
 %     Audit tool for dtag 3.
@@ -18,21 +18,17 @@ function     RES = breath_audit(prefix,tcue, RES, date_tagon, p, jerk, roll)
 %       and frequency of an event. Time-to-last is the elapsed time 
 %       between the current click point and the point last clicked. 
 %       Results display in the matlab command window.
-%     - type 's' to select the current segment and add it to the audit.
-%       You will be prompted to enter a sound type on the matlab command
-%       window. Enter a single word and type return when complete.
-%     - type 'l' to select the currect cursor position and add it to the 
-%       audit as a 0-length event. You will be prompted to enter a sound 
-%       type on the matlab command window. Enter a single word and type 
+%     - type 's' to go to the next surfacing.
+%     - type 'd' to go to the next dive.
+%     - type 'c' to select the current cursor position and add it to the 
+%       audit as a 0-length event. You will be prompted to enter a comment
+%       on the matlab command window. Enter a 'b' for breath and type 
 %       return when complete.
 %     - type 'x' to delete the audit entry at the cursor position.
 %       If there is no audit entry at the cursor, nothing happens.
 %       If there is more than one audit entry overlapping the cursor, one
 %       will be deleted (the first one encountered in the audit structure).
-%     - type 'p' to play the displayed sound segment 
-%       through the computer speaker/headphone jack.
 %     - type 'q' or press the right hand mouse button to finish auditing.
-%     - type 'a' to report the angle of arrival of the selected segment
 %
 %     mark johnson, WHOI
 %     majohnson@whoi.edu
@@ -75,37 +71,21 @@ switch prefix(1:2),
 end
 
 if nargin<4 | isempty(RES),
-   RES.cue = datetime([],[],[], 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
+    if strcmp(metadata.tag_ver, "CATS") == 1
+        R.cue = datetime([],[],[], 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
+    else
+        R.cue = [];
+    end
    RES.comment = [] ;
 end
 
-tt = date_tagon;
+tt=xval;
+if strcmp(metadata.tag_ver, "CATS") == 1
+   fs = round(1/(seconds(xval(2) - xval(1))));
+else
+   fs = round(1/(xval(2) - xval(1)));
+end
 
-fs = round(1/(seconds(date_tagon(2) - date_tagon(1))));
-
-% k = loadprh(prefix, 0,'p','fs') ;           % read p and fs from the sensor file
-% if k==0,
-%    fprintf('Unable to find a PRH file - continuing without\n') ;
-%    p = [] ; fs = [] ;
-% end
-
-% % check sampling rate
-% [x,afs] = d3wavread(tcue+[0 0.01],recdir,prefix) ;
-% if SOUND_FH > 0,
-%    [bs as] = butter(6,SOUND_FH/(afs/2),'high') ;
-% elseif SOUND_FL > 0,
-%    [bs as] = butter(6,SOUND_FL/(afs/2)) ;
-% else
-%    bs = [] ;
-% end
-% 
-% % high pass filter for envelope
-% [bh ah] = cheby1(6,0.5,FH/afs*2,'high') ;
-% % envelope smoothing filter
-% pp = 1/TC/afs ;
-% 
-% % angle-of-arrival filter
-% [baoa aaoa] = butter(4,AOA_FH/(afs/2),'high') ;
 
 current = [tt(tcue*fs+1) tt(tcue*fs+1)] ;
 figure(1),clf
@@ -125,11 +105,6 @@ set(AXc,'Box','off','XTick',[],'YTick',[],'XColor',bc,'YColor',bc,'Color',bc) ;
 cleanh = [] ;
 
 while 1,
-%    [x,afs] = d3wavread(tcue+[0 NS],recdir,prefix) ;
-%    if isempty(x), return, end    
-%    x = x-repmat(mean(x),size(x,1),1) ;
-%    [B F T] = specgram(x(:,CH),BL,afs,hamming(BL),BL/2) ;
-%    xx = filter(pp,[1 -(1-pp)],abs(filter(bh,ah,x(:,CH)))) ;
 
    tcue = floor(tcue); % Needed to add this for when fs is not 10 or 5, 3/7/24
 
@@ -159,14 +134,14 @@ while 1,
    %plot(tt(tcue*fs+kk),pitch(tcue*fs+kk), '-o');
    yl = get(gca,'YLim') ;
    yline(0);
-   fx = [tt(tcue*fs+kk(1)) tt(tcue*fs + kk(end)) tt(tcue*fs + kk(end)) tt(tcue*fs+kk(1)) tt(tcue*fs+kk(1))];
-   fy = [-45 -45 45 45 -45];
-   fill( fx, fy, [0 0 0], 'FaceAlpha', 0.15); hold off
+   %fx = [tt(tcue*fs+kk(1)) tt(tcue*fs + kk(end)) tt(tcue*fs + kk(end)) tt(tcue*fs+kk(1)) tt(tcue*fs+kk(1))];
+   %fy = [-45 -45 45 45 -45];
+   %fill( fx, fy, [0 0 0], 'FaceAlpha', 0.15); hold off
    xlim([tt(tcue*fs+kk(1)) tt(tcue*fs + kk(end))])
-   ylabel('Roll/Pitch (deg)') 
+   ylabel('Roll (deg)') 
    xlabel('Date Time')
-   legend('Roll', 'Pitch');
-%    
+   %legend('Roll', 'Pitch');
+    
    % Plot comments
    plotRES(AXc,RES,[tt(tcue*fs+kk(1)) tt(tcue*fs + kk(end))],AXs); hold on
 
@@ -179,8 +154,12 @@ while 1,
       axes(AXs) ; pause(0) ;
       [gx gy button] = ginput(1);
       ax = get(gca);
-      gx = datetime(num2ruler(gx ,ax.XAxis), 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
-      gy = num2ruler(gy, ax.YAxis);
+      if strcmp(metadata.tag_ver, "CATS") == 1
+          gx = datetime(num2ruler(gx ,ax.XAxis), 'Format', 'yyyy-MM-dd HH:mm:ss.SS');
+          gy = num2ruler(gy, ax.YAxis);
+      else
+      end
+      
       if button>='A',
          button = lower(setstr(button)) ;
       end
@@ -278,10 +257,19 @@ while 1,
               current = [current(2) gx] ;
               gx
               set(hhh,'XData',current) ; % This builds a lines from last x to current x
-              if ~isempty(p),
-                  fprintf(' -> Start of segement is: %0.2f seconds \n' , seconds(tt(tcue*fs+kk(1))-tt(1)));
+              if strcmp(metadata.tag_ver, "CATS") == 1
+                  if ~isempty(p),
+                      fprintf(' -> Start of segement is: %0.2f seconds \n' , seconds(tt(tcue*fs+kk(1))-tt(1)));
+                  else
+                      fprintf(' -> Start of segement is: %0.2f seconds \n' , seconds(tt(tcue*fs+kk(1))-tt(1)));
+                  end
               else
-                  fprintf(' -> Start of segement is: %0.2f seconds \n' , seconds(tt(tcue*fs+kk(1))-tt(1)));
+                  if ~isempty(p),
+                      fprintf(' -> Start of segement is: %0.2f seconds \n' , tt(tcue*fs+kk(1))-tt(1));
+                      
+                  else
+                      fprintf(' -> Start of segement is: %0.2f seconds \n' , tt(tcue*fs+kk(1))-tt(1));
+                  end
               end
           end
       end
