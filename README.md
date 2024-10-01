@@ -27,7 +27,7 @@ When you open the `main.m` file you will see that the first step steps up your d
 ## [Usage](https://github.com/ashleyblawas/respdetect/wiki)
 Check out the repository [Wiki](https://github.com/ashleyblawas/respdetect/wiki) (also linked above) for detailed instructions on how to use these tools. The ``main.m`` script will guide you through the use of the tools.
 
-![The home page of the repository Wiki.](../images/wiki_screenshot.png)
+![The home page of the repository Wiki.](images/wiki_screenshot.png)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
