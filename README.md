@@ -25,7 +25,7 @@ You may either directly download this repository and add it to your MATLAB path 
 When you open the `main.m` file you will see that the first step steps up your directories. This setup is detailed in the repository Wiki [here](https://github.com/ashleyblawas/respdetect/wiki/3.-Setup). You will need to edit a `paths.txt` file which you will be prompted to select to designate the path of your tools and your data. After running the first step of `main/.m,` the `respdetect` tools will be on your path and no further installation is needed.
 
 ## Usage
-Check out the wiki for detailed instructions. The ``main.m`` script will guide you through the use of the tools.
+Check out the repository [Wiki](https://github.com/ashleyblawas/respdetect/wiki) for detailed instructions on how to use these tools. The ``main.m`` script will guide you through the use of the tools.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
