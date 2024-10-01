@@ -3,6 +3,8 @@
 ### Summary
 Respdetect is a MATLAB toolkit to detect respirations in whale DTAG or CATS tag records. The tools are especially useful for detecting respiration events using movement signatures in logging whales, in addition to single-breath surfacings. Respdetect exports the locations and type (single-breath surfacing or logging) of all detected breaths.
 
+<img src="images/gm_image.png" alt="drawing" width="200"/>
+
 These files are intended to work alongside the D3 Matlab Toolboxes by Mark Johnson which can be found [here](https://github.com/stacyderuiter/dtagtools.git). The D3 Matlab toolbox is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version. This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with D3. If not, see <http://www.gnu.org/licenses/>.
 
 ## Installation
