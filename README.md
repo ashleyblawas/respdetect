@@ -27,7 +27,7 @@ You may either 1) directly download this repository or 2) clone it using: git cl
 
 When you open the `main.m` file you will see that the first step steps up your directories. This setup is detailed in the repository Wiki [here](https://github.com/ashleyblawas/respdetect/wiki/3.-Setup). You will need to edit a `paths.txt` file which you will be prompted to select to designate the path of your tools and your data. After running the first step of `main/.m,` the `respdetect` tools will be on your path and no further installation is needed. 
 
-**Keep in mind that you will need to have the DTAG Tools installed to work with the `respdetect` scripts.**
+**Keep in mind that you will need to have the [DTAG Tools](https://github.com/stacyderuiter/dtagtools.git) installed to work with the `respdetect` scripts.**
 
 ## [Usage](https://github.com/ashleyblawas/respdetect/wiki)
 Check out the repository Wiki (linked above and to screenshot below) for detailed instructions on how to use these tools. The ``main.m`` script will guide you through the use of the tools.
