@@ -10,7 +10,7 @@
 % where your directories live
 
 % 2. Make sure your prh files are in a folder called "prh" that is in your
-% data folder per the paths,txt file
+% data folder per the paths.txt file
 
 % Variables you may consider changing:
 
