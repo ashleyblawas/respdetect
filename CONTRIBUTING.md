@@ -4,7 +4,7 @@ Pull requests, bug reports, and all other forms of contribution are welcomed and
 
 ## Code of Conduct
 
-Before contributing, please read the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) and be sure to adhere to these expectations when making a contribution to the repository. Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at [ashleyblawas@gmail.com]. 
+Before contributing, please read the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) and be sure to adhere to these expectations when making a contribution to the repository. Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at ashleyblawas@gmail.com. 
 
 ## Before You Start
 
