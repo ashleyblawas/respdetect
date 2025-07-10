@@ -4,13 +4,13 @@ Pull requests, bug reports, and all other forms of contribution are welcomed and
 
 ## Code of Conduct
 
-Before contributing, please read the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) and be sure to adhere to these expectations when making a contribution to the repository. 
+Before contributing, please read the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) and be sure to adhere to these expectations when making a contribution to the repository. Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at [ashleyblawas@gmail.com]. 
 
 ## Before You Start
 
 Before you start contributing, ensure the following:
 
-* Please do not debug your specific project in GitHub issues (instead use it for filing bugs and feature requests). If you have a question specific to your application, please contact me via email at ashleyblawas@gmail.com.
+* Please do not debug your specific project in GitHub issues (instead use it for filing bugs and feature requests). If you have a question specific to your application, please contact a project maintainer via email.
 * Check that you are using the latest version of the project as not to work on outdated code.
 * Search through existing issues to see if your issue has previously been reported. If so, comment with any additional information you have and/or indicate that you have this problem too which will make it higher priority to fix.
 
