@@ -42,6 +42,6 @@ There are two test datasets avaiable for users to validate nominal function of `
 
 # Acknowledgements
 
-I would like to acknowledge Drs. Doug Nowacek and Andy Read for their support of this tool development, the Duke Superpod for project feedback and recommendations, Dr. Jeanne Shearer for pre-processing the short-finned pilot whale record used for testing, and Dr. Dave Haas, PMC-BS, and Socioambiental Consultores Ltd. for sharing and pre-processing the humpback whales record used for testing. This work was supported by the Duke University Marine Laboratory. Data was collected under NOAA Permits 14241 and 14809 and approved by the Institutional Animal Care and Use Committee of Duke University.
+I would like to acknowledge Drs. Doug Nowacek and Andy Read for their support of this tool development, the Duke Superpod for project feedback and recommendations, Dr. Jeanne Shearer for pre-processing the short-finned pilot whale record used for testing, and Dr. Dave Haas, PMC-BS, and Socioambiental Consultores Ltd. for sharing and pre-processing the humpback whales record used for testing. This work was supported by the Duke University Marine Laboratory. Data was collected under NOAA Permits 14241 and 14809 and IBAMA Permits and approved by the Institutional Animal Care and Use Committee of Duke University.
 
 # References
