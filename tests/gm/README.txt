@@ -1,1 +1,1 @@
-gm08_143b was collected by the Duke Univeristy Marine Lab.
+gm08_143b was collected by the Duke Univeristy Marine Lab under NOAA Permits 14241 and 14809 and approved by the Institutional Animal Care and Use Committee of Duke University. It was collected in May of 2008 off Cape Hatteras, North Carolina, USA.
