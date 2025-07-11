@@ -5,12 +5,16 @@ function make_metadata(taglist, dataPath)
     end
     % Loops over taglist and creates metadata files if not present.
     %
-    % Syntax:
-    %   process_tag_metadata(taglist, dataPath)
-    %
     % Inputs:
     %   taglist  - Cell array of tag names
     %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %
+    % Outputs:
+    %   Saves a file in the data path under the species of interest in the "metadata" folder. 
+    %   This function saves no variables to the workspace. 
+    %
+    % Usage:
+    %   make_metadata(taglist, dataPath)
     %
     % Author: Ashley Blawas
     % Last Updated: 7/11/2025
@@ -86,8 +90,18 @@ function make_metadata(taglist, dataPath)
                 % Setup directories
                 [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath);
                 
+                metadata.tag = tag;
+                metadata.recdir = recdir;
+                metadata.prefix = prefix;
+                metadata.fs = fs; 
+                metadata.tag_ver = tag_ver; 
+                metadata.tag_on = tag_on;
+                metadata.tag_off = tag_off;
+                metadata.tag_dur = tag_dur;
+                metadata.acousaud_filename = acousaud_filename;
+                
                 % Make a metadata file
-                save(strcat(dataPath, speciesCode, "\metadata\", tag, "md"), 'tag', 'recdir', 'prefix', 'fs', 'tag_ver', 'tag_on', 'tag_off', 'tag_dur', 'acousaud_filename')
+                save(strcat(dataPath, speciesCode, "\metadata\", tag, "md"), "metadata")
                 fprintf("Made and saved a tag metadata file\n")
             end
         end
