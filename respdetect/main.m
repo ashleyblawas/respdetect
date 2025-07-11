@@ -65,74 +65,7 @@ taglist = load_data(data_path, 'mn');
 
 %% Step 2: Make metadata file
 
-for k = 1:length(taglist);
-    
-    % Save tag name
-    if exist('k','var') == 1
-        tag = taglist{k};
-    else
-        tag = taglist{1};
-    end
-    
-    % Make metadata file
-    metadata_fname = strcat(data_path, "\metadata\", tag, "md.mat");
-    if isfile(metadata_fname) == 1
-        fprintf("A metadatafile exists for %s - go the next section!\n", tag)
-    else
-        fprintf("No metadata file exists for %s.\n", tag)
-        str = input("Do you want to make a metadata file now? (y/n)\n",'s');
-        if strcmp(str, "y") == 1
-            
-            %Set path for prh files
-            settagpath('prh',strcat(data_path,'\prh'));
-            
-            % Load the tag's prh file
-            loadprh(tag);
-            
-            %Print out the fs so you can check it's what you expect
-            fprintf('fs = %i Hz\n', fs);
-            
-            % Calculate time variables from full duration of tag deployment
-            [time_sec, time_min, time_hour] =calc_time(fs, p);
-            
-            % Print out duration of tag
-            fprintf('The full tag record is %i hours, %i minutes, %2.0f seconds\n', floor(max(time_hour)),...
-            floor(max(time_min)-floor(max(time_hour))*60), floor(max(time_sec))-floor(max(time_hour))*60*60-60*(floor(max(time_min)-floor(max(time_hour))*60)));
-            
-            % Designate tag on and off time
-            [time_tagon] = get_tag_on(time_sec, p);
-            [time_tagoff] = get_tag_off(time_sec, p);
-            tag_on = str2num(cell2mat(time_tagon));
-            tag_off = str2num(cell2mat(time_tagoff));
-            
-            % Designate the tag version
-            prompt = {'Enter DTAG version (D2 or D3 or CATS):'};
-            dlgtitle = 'Input';
-            dims = [1 35];
-            definput = {'CATS'};
-            answer = inputdlg(prompt,dlgtitle,dims,definput);
-            tag_ver = answer{1};
-            clear prompt dlgtitle dims definput answer
-            
-            % Calculate tag on duration
-            tag_dur = datestr(seconds(tag_off-tag_on),'HH:MM:SS');
-            
-            % Setup directories
-            [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_path, mat_tools_path);
-            
-            % Make a metadata file
-            [metadata] = make_metadata(tag, recdir, prefix, fs, tag_ver, acousaud_filename, tag_on, tag_off);
-            save(strcat(data_path, "\metadata\", tag, "md"), 'tag', 'recdir', 'prefix', 'fs', 'tag_ver', 'tag_on', 'tag_off', 'tag_dur', 'acousaud_filename')
-            fprintf("Made and saved a tag metadata file\n")
-        end
-        
-    end
-end
-
-% Clear variables that are now saved in the metadata structure
-clear tag prefix recdir fs tag_ver acousaud_filename tag_on tag_off tag_dur metadata_fname str
-
-clearvars -except tools_path data_path mat_tools_path taglist
+make_metadata(taglist, data_path);
 
 %% Step 3: Find dives
 for k = 1:length(taglist);
