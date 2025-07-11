@@ -53,7 +53,7 @@
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
-% Manually enter the path where your data files are stored
+% Manually enter the path where your data files are stored...
 data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\';
 
 % Set the data and tool paths
@@ -61,7 +61,7 @@ set_paths(data_path);
 
 % Allow the user to select the prh files to analyze from a given species
 % folder
-load_data(data_path, "gm");
+taglist = load_data(data_path, 'mn');
 
 %% Step 2: Make metadata file
 
