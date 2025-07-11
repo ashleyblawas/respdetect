@@ -53,73 +53,15 @@
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
-% Have user direct to paths.txt
-[file, path] = uigetfile('*.txt', 'Select the paths.txt file from respdetect');
+% Manually enter the path where your data files are stored
+data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\';
 
-% Import information from paths.txt
-fileID = fopen(strcat(path, file));
-formatSpec = '%s';
-txt = textscan(fileID,'%s','delimiter','\n'); txt = txt{1};
-fclose(fileID);
+% Set the data and tool paths
+set_paths(data_path);
 
-clear fileID formatSpec file path
-
-hdrlines = [];
-strtemp = strfind(txt, "##");
-for i = 1:length(strtemp)
-    if strtemp{i} >= 1
-        hdrlines = [hdrlines, i];
-    end
-end
-
-% Identify paths to tools and data - EDIT THIS FOR YOUR MACHINE
-tools_path = txt{hdrlines(1)+1};
-mat_tools_path = txt{hdrlines(2)+1};
-data_path = txt{hdrlines(3)+1};
-clear strtemp hdrlines txt i
-
-% Add folders to path
-cd(tools_path)
-addpath(genpath(tools_path)); 
-addpath(genpath(mat_tools_path)); 
-addpath(genpath(data_path)); 
-
-% Find .mat files
-filePattern = fullfile(data_path, '\prh\*.mat'); 
-
-% Get info about .mat files in data_path
-theFiles = dir(filePattern);
-
-% Convert structure to cell
-file = struct2cell(theFiles);
-file = file(1, :);
-
-clear theFiles filePattern
-
-if iscell(file)==1
-    for i = 1:length(file)
-        taglist{i} = file{i};
-    end
-    clear i file
-else
-    taglist = {file};
-end
-
-% If prh files have prh.mat on the end, drop it
-taglist = erase(taglist, "prh.mat");
-
-% Print out folders you've selected
-disp('You have selected:')
-disp(string(taglist'))
-
-% Make new folders in data path if they don't already exist
-flds = ["metadata", "diving", "movement", "breaths", "figs", "audit"];
-for i = 1:length(flds)
-    if not(isfolder(strcat(data_path, '\', flds(i))))
-        mkdir(strcat(data_path, '\', flds(i)));
-    end
-end
-clear flds i
+% Allow the user to select the prh files to analyze from a given species
+% folder
+load_data(data_path, "gm");
 
 %% Step 2: Make metadata file
 
