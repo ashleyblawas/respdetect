@@ -7,16 +7,17 @@ function taglist = load_data(dataPath, speciesCode)
     %
     % Inputs:
     %   speciesCode  - Two-letter species code (e.g., 'gm', 'mn', 'tt')
+    %   dataPath - Base path to data (e.g., 'C:\my_data\')
     %
     % Usage:
-    %   select_data('gm')
+    %   load_data('C:\my_data\','gm')
     %
     % Assumptions:
     %   - This function is located somewhere inside the respdetect directory.
     %   - SpeciesCode is a two letter code that exists as a subfolder within
     %   the datapath and within this folder is a prh folder with your records
     %   of interest
-    
+    %
     % Author: Ashley Blawas
     % Last Updated: 7/11/2025
     % Stanford University

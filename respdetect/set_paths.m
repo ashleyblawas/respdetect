@@ -5,6 +5,9 @@ function set_paths(dataPath)
     % Adds respdetect, dtagtools, and user-defined data path by taking in only
     % data path.
     %
+    % Inputs:
+    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %
     % Usage:
     %   set_paths('C:/Users/YourName/Documents/data')
     %

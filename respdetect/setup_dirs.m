@@ -1,8 +1,27 @@
-%%  Function to setup directories and such
-
-function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_path)
+function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath)
+    arguments
+        tag (1, :) char
+        tag_ver (1, :) char
+        dataPath (1,:) char
+    end
+    % Sets up the typical Matlab directories for a given record including
+    % audit, cal, and prh
+    %
+    % Inputs:
+    %   tag - In the usual tag form "gm08_143b"
+    %   tag_ver - Either D2, D3, or other to know which Matlab tools to use
+    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %
+    % Usage:
+    %  [recdir, prefix, acousaud_filename] = setup_dirs('gm08_143b', 'D2', 'C:\my_data\'))
+    %
+    % Assumptions:
+    %   - This function is located somewhere inside the respdetect directory.
+    %
+    % Author: Ashley Blawas
+    % Last Updated: 7/11/2025
+    % Stanford University
     
-    % Get the full path of this setup_dirs.m file
     currentFile = mfilename('fullpath');
     [currentDir, ~, ~] = fileparts(currentFile);
     
@@ -18,14 +37,14 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_pat
     %% Use tag name to assign directories and filenames
     sp_year = tag(1:4);
     % Set parent directory
-    recdir = strcat(data_path, sp_year, '\', tag); 
+    recdir = strcat(data_path, sp_year, '\', tag);
     % Set deployment name, probably the same as the parent folder
-    deploy_name = tag; 
+    deploy_name = tag;
     prefix = tag;
     speciesCode = tag(1:2);
     
     % Set name of acoustic audit file
-    acousaud_filename = strcat(data_path, speciesCode, '\audit\', tag, '_acousticaud.txt'); 
+    acousaud_filename = strcat(data_path, speciesCode, '\audit\', tag, '_acousticaud.txt');
     
     if strcmp(tag_ver, 'D3') == 1
         addpath(genpath(strcat(mat_tools_path, '\d3'))); %Add all of your tools to the path
@@ -36,9 +55,9 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, data_pat
     
     %% Set other paths
     %Set path for prh files
-    settagpath('prh',strcat(data_path, speciesCode, '\prh')); 
+    settagpath('prh',strcat(data_path, speciesCode, '\prh'));
     
-     %Set path for audit files
+    %Set path for audit files
     settagpath('audit',strcat(data_path, speciesCode,'\audit'));
     
 end

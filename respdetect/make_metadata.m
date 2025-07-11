@@ -11,7 +11,7 @@ function make_metadata(taglist, dataPath)
     % Inputs:
     %   taglist  - Cell array of tag names
     %   dataPath - Base path to data (e.g., 'C:\my_data\')
-    
+    %
     % Author: Ashley Blawas
     % Last Updated: 7/11/2025
     % Stanford University
