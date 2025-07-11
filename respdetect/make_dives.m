@@ -1,7 +1,8 @@
-function make_dives(taglist, dataPath)
+function make_dives(taglist, dataPath, dive_thres)
     arguments
         taglist (1, :) cell
         dataPath (1,:) char
+        dive_thres (1,:) double
     end
     % Identifies all dives in the record and saves this information to dive
     % table and to individual variables that will be useful for breath
@@ -10,13 +11,15 @@ function make_dives(taglist, dataPath)
     % Inputs:
     %   taglist  - Cell array of tag names
     %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   dive_thres - The minimum depth a dive must reach to be recorded as
+    %   a dive
     %
     % Outputs:
     %   Saves a file in the data path under the species of interest in the "diving" folder. 
     %   This function saves no variables to the workspace. 
     %
     % Usage:
-    %   make_dives(taglist, dataPath)
+    %   make_dives(taglist, dataPath, dive_thres)
     %
     % Author: Ashley Blawas
     % Last Updated: 7/11/2025
@@ -66,15 +69,7 @@ for k = 1:length(taglist);
         str = input("Do you want to make a diving table now? (y/n)\n",'s');
         if strcmp(str, "y") == 1
             
-            % Set dive threshold and find dives
-            prompt = {'Enter a dive threshold in meters:'};
-            dlgtitle = 'Input';
-            dims = [1 35];
-            definput = {'5'};
-            answer = inputdlg(prompt,dlgtitle,dims,definput);
-            dive_thres = str2num(answer{1});
-            clear prompt dlgtitle dims definput answer
-            
+            % Find dives
             T = finddives(p_tag,fs, [dive_thres, 1, 0]);
             
             if size(T, 1) <= 1

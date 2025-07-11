@@ -69,7 +69,10 @@ make_metadata(taglist, data_path);
 
 %% Step 3: Find dives
 
-make_dives(taglist, data_path);
+% Set the minimum depth of a dive
+dive_thres = 5;
+
+make_dives(taglist, data_path, dive_thres);
 
 %% Step 4: Process movement data
 
