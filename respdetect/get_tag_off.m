@@ -23,10 +23,12 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
     % Last Updated: 7/11/2025
     % Stanford University
     
+    figure(11) 
+    
     % Plot dive profile
     plot(time_sec, p, 'b'); grid on; hold on;
     set(gca, 'YDir', 'reverse')
-    title('Dive Profile')
+    title('Zoom in on detected tag off time... if incorrect hit "y" too choose.')
     xlabel('Time (s)'); ylabel('Depth (m)');
     ax = gca;
     ax.XRuler.Exponent = 0;
@@ -35,7 +37,7 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
     clear est_time_tagoff
     
     % Threshold settings
-    depthThreshold = 0.2;        % Assuming tag is safely at surface within 0.2 m of 0 m
+    depthThreshold = 0.5;        % Assuming tag is safely at surface within 0.2 m of 0 m
     consecSamples = fs*300;      % Number of consecutive points within threshold to count as reliable tag off (for at least 5 minutes)
     underwaterThreshold = 2 ;    % Asumming tag is safely underwater iif reading is 2 m
    
@@ -46,31 +48,36 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
     runLength = conv(double(atSurface), ones(consecSamples, 1), 'valid');
     idx = find(runLength == consecSamples, 1, 'first');  % First long flat sequence
     
-    if p(end) > underwaterThreshold
-        % Tag still on at end of record
-        est_time_tagoff = time_sec(end);
-        fprintf('Tag off assumed at end of recording as last depth measurement is %.2f m.\n', p(end));
-    else
-        
-        if ~isempty(idx)
-            est_time_tagoff = time_sec(idx);
-            fprintf('Estimated tag off time based on flat depth: %.2f seconds\n', est_time_tagoff);
-        else
-            % Ask user to select tag-off manually
-            disp('Unable to determine tag-off time automatically.');
-            disp('Please click the estimated tag off point on the plot...');
-            
-            [x, ~] = ginput(1);
-            est_time_tagoff = x;
-            
-            fprintf('User-selected tag off time: %.2f seconds\n', est_time_tagoff);
-        end
-        
-        % Plot the tag-off time
-        xline(est_time_tagoff, 'g--', 'Tag Off', 'LabelVerticalAlignment', 'bottom');
-    end
     
-    % Optional: plot estimated tag-on point
+    % Case 1: Still underwater at end of record
+    if p(end) > underwaterThreshold
+        est_time_tagoff = time_sec(end);
+        fprintf('[AUTO] Tag appears to still be on. Using end of recording (%.2f sec).\n', est_time_tagoff);
+    % Case 2: Detected long period near surface
+    elseif ~isempty(idx)
+        est_time_tagoff = time_sec(idx);
+        fprintf('[AUTO] Detected long surface period. Estimated tag off at %.2f sec.\n', est_time_tagoff);
+    % Case 3: No clear tag-off - fallback to manual
+    else
+        fprintf('[MANUAL] Could not estimate tag-off automatically.\n');
+        disp('Zoom/pan the plot. Then click the tag-off time manually...');
+        pause;
+        [x, ~] = ginput(1);
+        est_time_tagoff = x;
+        fprintf('User-selected tag off time: %.2f seconds\n', est_time_tagoff);
+    end
+
+    % Plot detected tag-off time
     xline(est_time_tagoff, 'g--', 'Tag Off', 'LabelVerticalAlignment', 'bottom');
+
+    % Ask if user wants to override
+    txt = input('Do you want to override the tag off time manually? (y/n): ', 's');
+    if strcmpi(txt, 'y')
+        disp('Click the new tag off time...');
+        [x, ~] = ginput(1);
+        est_time_tagoff = x;
+        fprintf('New user-selected tag off time: %.2f seconds\n', est_time_tagoff);
+        xline(est_time_tagoff, 'm--', 'Updated Tag Off', 'LabelVerticalAlignment', 'bottom');
+    end
     
 end

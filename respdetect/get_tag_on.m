@@ -23,10 +23,12 @@ function [est_time_tagon] = get_tag_on(time_sec, p, fs)
     % Last Updated: 7/11/2025
     % Stanford University
     
+    figure(10)
+    
     % Plot dive profile
     plot(time_sec, p, 'b'); grid on; hold on;
     set(gca, 'YDir', 'reverse')
-    title('Dive Profile')
+    title('Zoom in on detected tag on time... if incorrect hit "y" too choose.')
     xlabel('Time (s)'); ylabel('Depth (m)');
     ax = gca;
     ax.XRuler.Exponent = 0;
@@ -35,35 +37,46 @@ function [est_time_tagon] = get_tag_on(time_sec, p, fs)
     clear est_time_tagon
     
     % Threshold settings
-    depthThreshold = 2;        % Assuming tag is safely underwater at 2m 
+    depthThreshold = 2;        % Assuming tag is safely underwater at 2m
     consecSamples = fs*5;      % Number of consecutive points below threshold to count as reliable
     
+    % Case 1: Already underwater at start
     if p(1) > depthThreshold
-        % Tag already on at start
         est_time_tagon = time_sec(1);
-        fprintf('Tag on assumed at start of recording (first depth value is %.2f m).\n', p(1));
+        fprintf('[AUTO] Tag appears on at start (depth = %.2f m).\n', p(1));
     else
-        % Search for N consecutive samples below depthThreshold
-        belowZero = p > depthThreshold;
-        runLength = conv(double(belowZero), ones(consecSamples, 1), 'valid');
+        % Case 2: Look for reliable submersion (N consecutive samples > threshold)
+        belowSurface = p > depthThreshold;
+        runLength = conv(double(belowSurface), ones(consecSamples, 1), 'valid');
         idx = find(runLength == consecSamples, 1, 'first');
         
         if ~isempty(idx)
             est_time_tagon = time_sec(idx);
-            fprintf('Tag on time (s) using first reliable submersion is: %.2f seconds\n', est_time_tagon);
+            fprintf('[AUTO] Tag on estimated at %.2f seconds (submersion detected).\n', est_time_tagon);
         else
-            % Unable to detect tag-on — prompt user to click
-            disp('Unable to automatically determine tag on time.');
-            disp('Please click the estimated tag on point on the plot...');
-            
-            [x, ~] = ginput(1);  % Get one click from user
+            % Case 3: Could not determine tag-on, ask user
+            fprintf('[MANUAL] Unable to detect tag on time automatically.\n');
+            disp('Zoom/pan and click to select tag-on time...');
+            pause;
+            [x, ~] = ginput(1);
             est_time_tagon = x;
-            
             fprintf('User-selected tag on time: %.2f seconds\n', est_time_tagon);
         end
     end
-        
-    % Optional: plot estimated tag-on point
+    
+    % Plot detected tag-on time
     xline(est_time_tagon, 'r--', 'Tag On', 'LabelVerticalAlignment', 'bottom');
+    
+    % Offer user to override
+    txt = input('Do you want to override the tag on time manually? (y/n): ', 's');
+    if strcmpi(txt, 'y')
+        disp('Click the new tag on time...');
+        [x, ~] = ginput(1);
+        est_time_tagon = x;
+        fprintf('New user-selected tag on time: %.2f seconds\n', est_time_tagon);
+        xline(est_time_tagon, 'm--', 'Updated Tag On', 'LabelVerticalAlignment', 'bottom');
+    end
+    
+    hold off;
     
 end
