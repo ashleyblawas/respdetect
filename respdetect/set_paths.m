@@ -2,11 +2,12 @@ function set_paths(dataPath)
     arguments
         dataPath (1,:) char
     end
-    % Adds respdetect, dtagtools, and user-defined data path by taking in only
-    % data path.
+    % Adds respdetect, dtagtools, and user-defined data path by taking in
+    % the data path and the tool path.
     %
     % Inputs:
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   dataPath - Base path to data (e.g., 'C:\Documents\my_data\')
+    %   toolPath - Base path to data (e.g., 'C:\Documents\toolboxes\respdetect')
     %
     % Usage:
     %   set_paths('C:/Users/YourName/Documents/data')
