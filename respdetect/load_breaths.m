@@ -41,7 +41,7 @@ function [breath_times, breath_type, xval, metadata, time_sec, time_min, time_ho
     
     % Load movement data
     moveFile = fullfile(data_path, speciesCode, 'movement', strcat(metadata.tag, 'movement.mat'));
-    load(moveFile, jerk_smooth', 'surge_smooth', 'pitch_smooth');
+    load(moveFile, 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
     
     % Load breathing data
     breathsFile = fullfile(data_path, speciesCode, 'breaths', strcat(metadata.tag, 'breaths.mat'));
