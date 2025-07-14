@@ -174,8 +174,7 @@ function make_dives(taglist, dataPath, dive_thres)
                 disp('Dive detection complete!');
             end
             
-            figfile = strcat(dataPath, speciesCode, '/figs/', metadata.tag, '_dives.fig');
-            savefig(figfile);
+            save_fig(dataPath, speciesCode, metadata, 'dives')
         end
     end
     

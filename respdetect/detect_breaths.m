@@ -71,8 +71,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         legend([p1 p2 p3 p4 p5 p6], {'Dive depth' , 'Logging', 'Single-breath surfacing', 'Start of surfacing', 'End of surfacing', 'Breaths'}, 'Location', 'northeastoutside')
         
         % Save surface detections figure
-        figfile = strcat(dataPath, metadata.tag(1:2) , '/figs/', metadata.tag, '_surfacedetections.fig');
-        savefig(figfile);
+        save_fig(dataPath, speciesCode, metadata, 'surfacedetections')
         
         %% Step 5g: Pre-process movement data for logging period breath detections
         
