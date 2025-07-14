@@ -30,10 +30,49 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         
         % Load in metadata, movement, and diving data
         load(strcat(dataPath, speciesCode, "\metadata\", tag, "md")); clear tag;
+        
+        breath_fname = strcat(dataPath, speciesCode, "\breaths\", metadata.tag, "breaths.mat");
+        breath_txt_fname = strcat(dataPath, speciesCode, '/breaths/', metadata.tag, 'breaths.txt');
+        
+        if isfile(breath_fname)
+            fprintf("A breaths file already exists for %s.\n", metadata.tag);
+            
+            % Prompt user for action
+            disp("Choose what you want to do:");
+            disp("1. Overwrite existing breaths file [o]");
+            disp("2. Append custom suffix and save as new file [a]");
+            disp("3. Skip and continue [c]");
+            
+            choice = lower(input("Enter 'o', 'a', or 'c': ", 's'));
+            
+            switch choice
+                case 'c'
+                    fprintf("Skipping movement file creation for %s.\n", metadata.tag);
+                    return
+                case 'a'
+                    % Append suffix to filename
+                    suffix = input("Enter a suffix to append (e.g., _v2): ", 's');
+                    breath_fname = strcat(dataPath, speciesCode, "\breaths\", metadata.tag, suffix, "breaths.mat");
+                    breath_txt_fname = strcat(dataPath, speciesCode, '\breaths\', metadata.tag, suffix, 'breaths.txt');
+                case 'o'
+                    % Overwrite: continue without changes
+                otherwise
+                    warning("Invalid input. Skipping movement file creation.");
+                    return
+            end
+        else
+            fprintf("No breaths file exists for %s.\n", metadata.tag);
+            str = input("Do you want to make a breaths file now? (y/n): ", 's');
+            if ~strcmpi(str, "y")
+                return
+            end
+        end
+        
+        % Load other data
         load(strcat(dataPath, speciesCode, "\movement\", metadata.tag, "movement.mat"));
         load(strcat(dataPath, speciesCode, "\diving\", metadata.tag, "dives.mat"));
         load(strcat(dataPath, speciesCode, "\diving\", metadata.tag, "divetable.mat"));
-              
+        
         %Set path for prh files
         settagpath('prh',strcat(dataPath, speciesCode, '\prh'));
         
@@ -78,9 +117,9 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         [jerk_smooth, surge_smooth, pitch_smooth] = ...
             process_move(jerk_smooth, surge_smooth, pitch_smooth, p, p_smooth_tag, ...
             start_idx, end_idx, logging_start_idxs, logging_end_idxs, metadata);
-    
+        
         %% Step 5h: Peak detection of movement signals
-       
+        
         set_ksdensity();
         
         %% Peak detection: Jerk
@@ -156,13 +195,13 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         linkaxes(ax, 'x')
         
         save_fig(dataPath, speciesCode, metadata, 'loggingdetections')
-    
+        
         %% Step 5l: Write breaths to audit
         
         fs = metadata.fs;
         
         % Write to mat file
-        save(strcat(dataPath, speciesCode, "\breaths\", metadata.tag, "breaths"), 'tag', 'p_tag','p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
+        save(breath_fname, 'tag', 'p_tag','p_smooth_tag', 'start_idx', 'end_idx', 'all_breath_locs', 'logging_ints_s', 'fs');
         
         % Write to text file
         if strcmp(metadata.tag_ver, "CATS") == 1
@@ -171,9 +210,9 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
             writematrix(breath_datetime, strcat(dataPath, speciesCode, '/breaths/', INFO.whaleName, 'breaths.txt'),'Delimiter',',')
         else
             breaths = all_breath_locs.breath_idx;
-            writematrix(breaths, strcat(dataPath, speciesCode, '/breaths/', metadata.tag, 'breaths.txt'),'Delimiter',',')
+            writematrix(breaths, breath_txt_fname ,'Delimiter',',')
         end
-                
-    end 
+        
+    end
     
 end
