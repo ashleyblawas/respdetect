@@ -171,7 +171,6 @@ function make_dives(taglist, dataPath, dive_thres)
             Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
             Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
             save(diveTable_fname, 'Tab')
-            beep on; beep
             
             disp('Dive detection complete!');
         end
