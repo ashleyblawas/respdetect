@@ -217,6 +217,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
             writematrix(breaths, breath_txt_fname ,'Delimiter',',')
         end
         
+        disp('Breath detection complete!');
     end
     
 end
