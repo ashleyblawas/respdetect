@@ -1,9 +1,8 @@
-function [p1, p2, p3, p4, p5] = plot_surfs(time_min, p_tag,  p_smooth_tag, start_idx, end_idx, ...
+function [p1, p2, p3, p4, p5] = plot_surfs(time_min, p_smooth_tag, start_idx, end_idx, ...
         p_shallow_idx, p_shallow_ints, p_shallow, ...
         logging_surf_rows, single_breath_surf_rows, metadata)
     arguments
         time_min (1, :) double
-        p_tag (:, 1) double
         p_smooth_tag (:, 1) double
         start_idx (1, 1) double
         end_idx (1, 1) double
