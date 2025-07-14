@@ -2,9 +2,9 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
     arguments
         taglist (1, :) cell
         dataPath (1,:) char
-        n_sec (1, 1) double
-        min_sec_apart (1, 1) double
-        win_sec (1, 1) double
+        n_sec (1, 1) double {mustBePositive}
+        min_sec_apart (1, 1) double {mustBePositive}
+        win_sec (1, 1) double {mustBePositive}
     end
     % Uses previously calculated information to identify breaths
     %

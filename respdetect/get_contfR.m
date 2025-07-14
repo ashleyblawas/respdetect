@@ -1,6 +1,20 @@
-%get_contfR
-
 function [fR] = get_contfR(breath_times, breath_idx, p, date, metadata)
+    % Gets the instantaneous respiration rate of the breath detections
+    %
+    % Inputs:
+    %   breath_times    - Time of each breath relative to x variable used
+    %   breath_idx      - Indicies of each breath
+    %   p               - Depth 
+    %   date            - X variable
+    %   metadata        - Tag metadata
+    %
+    % Output:
+    %   fR       - Instantaneous respiration rate (from get_contfR)
+    %
+    % Author: Ashley Blawas
+    % Last Updated: 7/11/2025
+    % Stanford University
+    
     if strcmp(metadata.tag_ver, "CATS") == 1
         fR = 1./minutes(diff(breath_times)); % Take diff of all breath time
     else

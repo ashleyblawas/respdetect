@@ -2,7 +2,7 @@ function make_dives(taglist, dataPath, dive_thres)
     arguments
         taglist (1, :) cell
         dataPath (1,:) char
-        dive_thres (1,:) double
+        dive_thres (1,:) double {mustBePositive}
     end
     % Identifies all dives in the record and saves this information to dive
     % table and to individual variables that will be useful for breath

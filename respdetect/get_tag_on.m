@@ -2,7 +2,7 @@ function [est_time_tagon] = get_tag_on(time_sec, p, fs)
     arguments
         time_sec (1,:) double
         p (:, 1) double
-        fs (1, 1) double
+        fs (1, 1) double {mustBePositive}
     end
     % Selects the tag time on
     %

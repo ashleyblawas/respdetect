@@ -2,7 +2,7 @@ function [fR] = plot_breaths(dataPath, taglist, k)
     arguments
         dataPath (1,:) char
         taglist (1, :) cell
-        k (1, 1) double
+        k (1, 1) double {mustBePositive}
     end
     % Loads and visualizes breath & motion data
     %
