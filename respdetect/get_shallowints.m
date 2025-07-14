@@ -3,7 +3,7 @@ function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallo
         metadata (1, 1) struct
         p_tag (:, 1) double
     end
-    % Subsets depth to only time on animal
+    % Identifies shallow intervals from depth record.
     %
     % Inputs:
     %   metadata - The imported data from the metadata file
@@ -13,6 +13,9 @@ function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallo
     %
     % Outputs:
     %   p_shallow_ints - Intervals when animal is at the surface
+    %   p_shallow_idx - Indicies of shallow intervals
+    %   p_shallow - Vector of p within only shallow values (all others NaN)
+    %   p_smooth_tag - Smoothed p vector
     %
     % Usage:
     %   [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p, p_tag)

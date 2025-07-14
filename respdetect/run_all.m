@@ -101,7 +101,21 @@ end
 %% Step 7: Run tests
 
 %% Step 7a: Test detections for gm08_143b
-clearvars -except taglist tools_path mat_tools_path data_path; clc; close all
+% For these detections I used the following parameters:
+%
+% Set the minimum depth to count a dive
+%   dive_thres = 5;
+%
+% The # of seconds to distinguish between single-breath surfacing and logging surfacing
+%   n_sec = 10;
+%
+% The minimum # of seconds between peaks detected in movement signals during logging period.
+%   min_sec_apart = 3;
+%
+% The window size (# of sec) for finding aligning peaks in jerk, surge, and pitch.
+%   win_sec = 5;
+
+clear; clc; close all;
 
 % Load in validation breathing information
 load(strcat(tools_path, "\tests\gm\gm08_143bbreaths_val.mat"));
