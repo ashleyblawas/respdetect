@@ -21,7 +21,7 @@ function make_metadata(taglist, dataPath)
     % Stanford University
     
     
-    for k = 1:length(taglist);
+    for k = 1:length(taglist)
         
         % Save tag name
         if exist('k','var') == 1
@@ -53,7 +53,7 @@ function make_metadata(taglist, dataPath)
                 fprintf('fs = %i Hz\n', fs);
                 
                 % Calculate time variables from full duration of tag deployment
-                [time_sec, time_min, time_hour] = calc_time(fs, p);
+                [time_sec, ~, ~] = calc_time(fs, p);
                 
                 % Print out duration of tag
                 totalSeconds = max(time_sec); % Convert to total seconds

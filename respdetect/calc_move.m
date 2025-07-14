@@ -76,10 +76,7 @@ function calc_move(fs, Aw, p, dataPath, tag, pitch, roll, head)
     
     % Get smoothed Shannon entropy
     jerk_smooth = movmean(jerk_se', 5*fs);
-    
-    % Build filter for prh
-    fny = fs/2;
-    
+        
     % Make temp variables to work with and then add back to full
     % variables
     pitch_temp = pitch(~isnan(pitch));
@@ -150,6 +147,6 @@ function calc_move(fs, Aw, p, dataPath, tag, pitch, roll, head)
         'pitch_se', 'head_se', 'roll_se',...
         'pitch_smooth', 'head_smooth', 'roll_smooth');
     
-    display('Movement information calculation complete!');
+    disp('Movement information calculation complete!');
     
 end

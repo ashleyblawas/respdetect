@@ -13,9 +13,9 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, mi
         % Calculate distance for max peaks
         dist = sqrt((max(height)-height).^2 + (max(width)-width).^2 + (max(prom)-prom).^2);
         [f_d,xi_d] = ksdensity(dist);
-        [pks_heights, pks_locs] = findpeaks(f_d, xi_d, 'MinPeakProminence', 0.2);
+        [~, pks_locs] = findpeaks(f_d, xi_d, 'MinPeakProminence', 0.2);
         if length(pks_locs)>1
-            mins = xi_d(find(islocalmin(f_d,2)>0));
+            mins = xi_d(islocalmin(f_d,2)>0);
             thres_d = max(mins(mins > pks_locs(1) & mins < pks_locs(2)));
         else
             thres_d =[];
@@ -23,14 +23,14 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, mi
         % If there is not a clear multimodal distribution, use clustering
         % instead
         if isempty(thres_d) == 1
-            display('Using clustering peak finding method...');
+            disp('Using clustering peak finding method...');
             type = "c";
             X = [width, prom];
             Z = linkage(X, 'ward');
             idx = cluster(Z,'MAXCLUST', 2);
             g1_mean = mean(X(idx==1), 1); g2_mean = mean(X(idx==2), 1);
         else
-            display('Using heuristic peak finding method...');
+            disp('Using heuristic peak finding method...');
             type = "h";
             idx = [dist<thres_d];
             idx = double(idx); idx(idx==0)=2;
@@ -39,7 +39,7 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, mi
         
         % Remove peaks that are in small group
         rm_idx = [];
-        if length(height)>0
+        if ~isempty(height)
             % Remove the group that has smaller widths
             rm_group = (find(min([g1_mean, g2_mean]) == [g1_mean, g2_mean]));
             for c = 1:length(locs)

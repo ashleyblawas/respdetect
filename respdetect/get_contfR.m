@@ -1,9 +1,8 @@
-function [fR] = get_contfR(breath_times, breath_idx, p, date, metadata)
+function [fR] = get_contfR(breath_times, p, date, metadata)
     % Gets the instantaneous respiration rate of the breath detections
     %
     % Inputs:
     %   breath_times    - Time of each breath relative to x variable used
-    %   breath_idx      - Indicies of each breath
     %   p               - Depth 
     %   date            - X variable
     %   metadata        - Tag metadata

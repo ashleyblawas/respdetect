@@ -1,7 +1,6 @@
-function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p, p_tag)
+function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag)
     arguments
         metadata (1, 1) struct
-        p (:, 1) double
         p_tag (:, 1) double
     end
     % Subsets depth to only time on animal
@@ -25,7 +24,6 @@ function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallo
     fs = metadata.fs;
     
     % Smooth depth signal
-    p_smooth = smoothdata(p, 'movmean', fs);
     p_smooth_tag = smoothdata(p_tag, 'movmean', fs);
     p_shallow = p_smooth_tag;
     
@@ -46,7 +44,7 @@ function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallo
     
     % If surfacing is less than 1 second then remove it - likely not a surfacing anyway but a period
     % where depth briefly crosses above 0.25m
-    delete_rows = find(p_shallow_ints(:, 3) < 1*metadata.fs);
+    delete_rows = p_shallow_ints(:, 3) < 1*metadata.fs;
     p_shallow_ints(delete_rows, :) = [];
     
     % If minima of a surfacing is not at least within a reasonable range of the

@@ -37,7 +37,7 @@ function [fR] = plot_breaths(dataPath, taglist, k)
     load(breath_file, 'all_breath_locs');
     
     % Recalculate time
-    [time_sec, time_min, time_hour] = calc_time(metadata.fs, pitch);
+    [time_sec, time_min, ~] = calc_time(metadata.fs, pitch);
     
     breath_idx = all_breath_locs.breath_idx;
     
@@ -107,7 +107,7 @@ function [fR] = plot_breaths(dataPath, taglist, k)
     save_fig(dataPath, speciesCode, metadata, 'allbreaths');
     
     %% Plot respiration rate
-    fR = get_contfR(breath_times, breath_idx, p, xval, metadata);
+    fR = get_contfR(breath_times, p, xval, metadata);
     save_fig(dataPath, speciesCode, metadata, 'resprate');
     
 end
