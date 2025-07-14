@@ -114,88 +114,92 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         
         %% Step 5g: Pre-process movement data for logging period breath detections
         
-        [jerk_smooth, surge_smooth, pitch_smooth] = ...
-            process_move(jerk_smooth, surge_smooth, pitch_smooth, p, p_smooth_tag, ...
-            start_idx, end_idx, logging_start_idxs, logging_end_idxs, metadata);
-        
-        %% Step 5h: Peak detection of movement signals
-        
-        set_ksdensity();
-        
-        %% Peak detection: Jerk
-        
-        % Plot jerk signal
-        figure('units','normalized','outerposition',[0 0 1 1]);
-        ax(1) = subplot(3, 5, [1 2]);
-        plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
-        xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
-        
-        % Peak detection
-        [j_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, jerk_smooth, 3, min_sec_apart);
-        
-        % Plot jerk peaks
-        subplot(3, 5, [1 2]);
-        scatter(time_min(j_locs+start_idx), jerk_smooth(j_locs), 'r*')
-        
-        %% %% Peak detection: Surge
-        ax(2) = subplot(3, 5, [6 7]);
-        plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
-        xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
-        
-        % Peak detection
-        [s_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, surge_smooth, 8, min_sec_apart);
-        
-        % Plot surge peaks
-        subplot(3, 5, [6 7]);
-        scatter(time_min(s_locs+start_idx), surge_smooth(s_locs), 'b*')
-        
-        %% %% Peak detection: Pitch
-        ax(3) = subplot(3, 5, [11 12]);
-        plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
-        xlabel('Time (min)'); ylabel('Pitch SE Smooth');
-        
-        % Peak detection
-        [p_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, pitch_smooth, 13, min_sec_apart);
-        
-        % Plot surge peaks
-        subplot(3, 5, [11 12]);
-        scatter(time_min(p_locs+start_idx), pitch_smooth(p_locs), 'g*')
-        
-        %% Step 5i: Detect windows for breaths during logging periods
-        
-        %  Generate overlapping event windows for jerk, surge, and pitch.
-        [val3, temp_diff_break,...
-            j_wins, s_wins, p_wins,...
-            j_wins_breaks, s_wins_breaks, p_wins_breaks] = ...
-            get_windows(j_locs, s_locs, p_locs, p_shallow_idx, win_sec, metadata.fs);
-        
-        %% Step 5j: Detect breaths during logging periods
-        
-        [all_breath_locs] = get_logbreaths( ...
-            val3, temp_diff_break, j_wins, s_wins, p_wins, ...
-            j_wins_breaks, s_wins_breaks, p_wins_breaks, ...
-            p_smooth_tag, metadata.fs, start_idx, all_breath_locs);
-        
-        %% Step 5k: Plot breath detections for logging periods
-        
-        ax(4) = subplot(3, 5, [4, 5, 9, 10, 14, 15]);
-        p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
-        set(gca, 'ydir', 'reverse')
-        hold on
-        p_smooth_p2 = p_smooth_tag;
-        idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
-        p_smooth_p2(~idx_temp) = NaN;
-        p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'm-', 'LineWidth', 2);
-        p3 = scatter(time_min(all_breath_locs.breath_idx(all_breath_locs.type == "log")-1), p_smooth_tag(all_breath_locs.breath_idx(all_breath_locs.type == "log")-start_idx), 80, 'k*', 'LineWidth', 1);
-        title('Breath IDs during logging')
-        ylabel('Depth (m)'); xlabel('Time (min)'); ylim([-5, max(p_smooth_tag)]);
-        
-        legend([p1 p2, p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breaths'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
-        
-        linkaxes(ax, 'x')
-        
-        save_fig(dataPath, speciesCode, metadata, 'loggingdetections')
-        
+        if isempty(logging_start_idxs) && isempty(logging_end_idxs)
+            warning('No logging periods detected — skipping kinematic analysis.');
+            
+        else
+            [jerk_smooth, surge_smooth, pitch_smooth] = ...
+                process_move(jerk_smooth, surge_smooth, pitch_smooth, p, p_smooth_tag, ...
+                start_idx, end_idx, logging_start_idxs, logging_end_idxs, metadata);
+            
+            %% Step 5h: Peak detection of movement signals
+            
+            set_ksdensity();
+            
+            %% Peak detection: Jerk
+            
+            % Plot jerk signal
+            figure('units','normalized','outerposition',[0 0 1 1]);
+            ax(1) = subplot(3, 5, [1 2]);
+            plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
+            xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
+            
+            % Peak detection
+            [j_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, jerk_smooth, 3, min_sec_apart);
+            
+            % Plot jerk peaks
+            subplot(3, 5, [1 2]);
+            scatter(time_min(j_locs+start_idx), jerk_smooth(j_locs), 'r*')
+            
+            %% %% Peak detection: Surge
+            ax(2) = subplot(3, 5, [6 7]);
+            plot(time_min(start_idx:end_idx), surge_smooth, 'k'); grid; hold on;
+            xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
+            
+            % Peak detection
+            [s_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, surge_smooth, 8, min_sec_apart);
+            
+            % Plot surge peaks
+            subplot(3, 5, [6 7]);
+            scatter(time_min(s_locs+start_idx), surge_smooth(s_locs), 'b*')
+            
+            %% %% Peak detection: Pitch
+            ax(3) = subplot(3, 5, [11 12]);
+            plot(time_min(start_idx:end_idx), pitch_smooth, 'k'); grid; hold on;
+            xlabel('Time (min)'); ylabel('Pitch SE Smooth');
+            
+            % Peak detection
+            [p_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, pitch_smooth, 13, min_sec_apart);
+            
+            % Plot surge peaks
+            subplot(3, 5, [11 12]);
+            scatter(time_min(p_locs+start_idx), pitch_smooth(p_locs), 'g*')
+            
+            %% Step 5i: Detect windows for breaths during logging periods
+            
+            %  Generate overlapping event windows for jerk, surge, and pitch.
+            [val3, temp_diff_break,...
+                j_wins, s_wins, p_wins,...
+                j_wins_breaks, s_wins_breaks, p_wins_breaks] = ...
+                get_windows(j_locs, s_locs, p_locs, p_shallow_idx, win_sec, metadata.fs);
+            
+            %% Step 5j: Detect breaths during logging periods
+            
+            [all_breath_locs] = get_logbreaths( ...
+                val3, temp_diff_break, j_wins, s_wins, p_wins, ...
+                j_wins_breaks, s_wins_breaks, p_wins_breaks, ...
+                p_smooth_tag, metadata.fs, start_idx, all_breath_locs);
+            
+            %% Step 5k: Plot breath detections for logging periods
+            
+            ax(4) = subplot(3, 5, [4, 5, 9, 10, 14, 15]);
+            p1 = plot(time_min(start_idx:end_idx), p_smooth_tag, 'k');
+            set(gca, 'ydir', 'reverse')
+            hold on
+            p_smooth_p2 = p_smooth_tag;
+            idx_temp = ismember(1:numel(p_smooth_p2),val3); % idx is logical indices
+            p_smooth_p2(~idx_temp) = NaN;
+            p2 = plot(time_min(start_idx:end_idx), p_smooth_p2, 'm-', 'LineWidth', 2);
+            p3 = scatter(time_min(all_breath_locs.breath_idx(all_breath_locs.type == "log")-1), p_smooth_tag(all_breath_locs.breath_idx(all_breath_locs.type == "log")-start_idx), 80, 'k*', 'LineWidth', 1);
+            title('Breath IDs during logging')
+            ylabel('Depth (m)'); xlabel('Time (min)'); ylim([-5, max(p_smooth_tag)]);
+            
+            legend([p1 p2, p3],{'Dive depth' , 'Breath IDs - all three conditions', 'Breaths'}, 'Location', 'south')%, 'Breath IDs - surge jerk + pitch'}, 'Location', 'best')
+            
+            linkaxes(ax, 'x')
+            
+            save_fig(dataPath, speciesCode, metadata, 'loggingdetections')
+        end
         %% Step 5l: Write breaths to audit
         
         fs = metadata.fs;
