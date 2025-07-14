@@ -44,7 +44,7 @@ function set_paths(dataPath)
     % Add paths to MATLAB
     addpath(genpath(respdetectPath));
     addpath(genpath(dtagtoolsPath));
-    addpath(dataPath);  % Flat add for data folder
+    addpath(dataPath);  % Flat add for data
     
     % Display status
     fprintf('Added respdetect path: %s\n', respdetectPath);
