@@ -67,7 +67,7 @@ function make_metadata(taglist, dataPath)
                 return
             end
         end
-        
+            
         %Set path for prh files
         settagpath('prh',strcat(dataPath, speciesCode,'\prh'));
         
@@ -104,10 +104,10 @@ function make_metadata(taglist, dataPath)
             tag_dur);
         
         % Designate the tag version
-        prompt = {'Enter DTAG version (D2 or D3 or CATS):'};
+        prompt = {'Enter tag version (D2 or D3 or CATS):'};
         dlgtitle = 'Input';
         dims = [1 35];
-        definput = {'CATS'};
+        definput = {'D2'};
         answer = inputdlg(prompt,dlgtitle,dims,definput);
         tag_ver = answer{1};
         clear prompt dlgtitle dims definput answer
