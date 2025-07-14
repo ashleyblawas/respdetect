@@ -55,7 +55,7 @@ function [jerk_smooth, surge_smooth, pitch_smooth] = ...
     
     % Get indexes of p_smooth that are are logging with 5s window on each side
     idx_temp = zeros(length(p_smooth_tag), 1);
-    for d = 1:length(logging_start_idxs)
+    for d = 1:length(logging_start_idxs);
         idx_temp(logging_start_idxs(d)-5*metadata.fs:logging_end_idxs(d)+5*metadata.fs) = 1;
     end
     

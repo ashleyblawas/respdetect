@@ -36,11 +36,10 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath
     
     %% Use tag name to assign directories and filenames
     sp_year = tag(1:4);
-    
     % Set parent directory
     recdir = strcat(dataPath, sp_year, '\', tag);
-    
     % Set deployment name, probably the same as the parent folder
+    deploy_name = tag;
     prefix = tag;
     speciesCode = tag(1:2);
     
@@ -51,7 +50,6 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath
         addpath(genpath(strcat(mat_tools_path, '\d3'))); %Add all of your tools to the path
     elseif strcmp(tag_ver, 'D2') == 1
         addpath(genpath(strcat(mat_tools_path, '\dtag2'))); %Add all of your tools to the path
-        settagpath('audio',strcat(dataPath, speciesCode),'cal',strcat(dataPath, speciesCode,'\cal'));
     end
     
     %% Set other paths

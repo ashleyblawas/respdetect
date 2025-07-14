@@ -37,38 +37,26 @@ function [val3, temp_diff_break, j_wins, s_wins, p_wins, j_wins_breaks, s_wins_b
     % Stanford University
     
     % Initialize window arrays
-    % Preallocate cell array
-    j_wins_cell = cell(length(j_locs), 1);
-    
+    j_wins = [];
     for a = 1:length(j_locs)
         j_temp_win = (j_locs(a) - floor((win_sec / 2) * fs)) : ...
             (j_locs(a) + ceil((win_sec / 2) * fs));
-        j_wins_cell{a} = j_temp_win;
+        j_wins = [j_wins, j_temp_win];
     end
-    % Concatenate all into one vector
-    j_wins = [j_wins_cell{:}];
     
-    % Preallocate cell array
-    s_wins_cell = cell(length(s_locs), 1);
-    
+    s_wins = [];
     for b = 1:length(s_locs)
         s_temp_win = (s_locs(b) - floor((win_sec / 2) * fs)) : ...
             (s_locs(b) + ceil((win_sec / 2) * fs));
-        s_wins_cell{a} = s_temp_win;
+        s_wins = [s_wins, s_temp_win];
     end
-    % Concatenate all into one vector
-    s_wins = [s_wins_cell{:}];
     
-    % Preallocate cell array
-    p_wins_cell = cell(length(p_locs), 1);
-    
+    p_wins = [];
     for c = 1:length(p_locs)
         p_temp_win = (p_locs(c) - floor((win_sec / 2) * fs)) : ...
             (p_locs(c) + ceil((win_sec / 2) * fs));
-        p_wins_cell{a} = p_temp_win;
+        p_wins = [p_wins, p_temp_win];
     end
-    % Concatenate all into one vector
-    p_wins = [p_wins_cell{:}];
     
     % Optional: find breakpoints in windows (not used but calculated)
     if ~isempty(j_wins)
