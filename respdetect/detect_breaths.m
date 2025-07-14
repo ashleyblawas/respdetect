@@ -6,7 +6,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         min_sec_apart (1, 1) double {mustBePositive}
         win_sec (1, 1) double {mustBePositive}
     end
-    % Uses previously calculated information to identify breaths
+    % Uses previously calculated information to identify breaths.
     %
     % Inputs:
     %   taglist  - Cell array of tag names
@@ -41,7 +41,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         loadprh(metadata.tag);
         
         % Calculate time variables for full tag deployment
-        [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
+        [time_sec, time_min, ~] =calc_time(metadata.fs, p);
         
         %% Step 5b: Subset deployment to tag on time only
         
@@ -49,7 +49,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         
         %% Step 5c: Identify surface periods & classify them
         
-        [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowints(metadata, p, p_tag);
+        [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag);
         
         % If these periods are less than 10 seconds then we say they are a "single
         % breath surfacing" otherwise they are a "logging surfacings"
@@ -58,7 +58,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         
         %% Step 5d: Start plot of surfacing periods
         
-        [p1, p2, p3, p4, p5] = plot_surfs(time_min, p_tag, p_smooth_tag, start_idx, end_idx, ...
+        [p1, p2, p3, p4, p5] = plot_surfs(time_min, p_smooth_tag, start_idx, end_idx, ...
             p_shallow_idx, p_shallow_ints, p_shallow, ...
             logging_surf_rows, single_breath_surf_rows, metadata);
         
@@ -87,13 +87,13 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         %% Peak detection: Jerk
         
         % Plot jerk signal
-        fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+        figure('units','normalized','outerposition',[0 0 1 1]);
         ax(1) = subplot(3, 5, [1 2]);
         plot(time_min(start_idx:end_idx), jerk_smooth, 'k-'); grid; hold on;
         xlabel('Time (min)'); ylabel('Jerk SE Smooth'); ylim([0 1.2])
         
         % Peak detection
-        [j_locs, j_width, j_prom, idx, rm_group] = detect_peaks(metadata.fs, jerk_smooth, 3, min_sec_apart);
+        [j_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, jerk_smooth, 3, min_sec_apart);
         
         % Plot jerk peaks
         subplot(3, 5, [1 2]);
@@ -105,7 +105,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         xlabel('Time (min)'); ylabel('Surge SE Smooth'); ylim([0 1.2])
         
         % Peak detection
-        [s_locs, s_width, s_prom, idx, rm_group] = detect_peaks(metadata.fs, surge_smooth, 8, min_sec_apart);
+        [s_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, surge_smooth, 8, min_sec_apart);
         
         % Plot surge peaks
         subplot(3, 5, [6 7]);
@@ -117,7 +117,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         xlabel('Time (min)'); ylabel('Pitch SE Smooth');
         
         % Peak detection
-        [p_locs, p_width, p_prom, idx, rm_group] = detect_peaks(metadata.fs, pitch_smooth, 13, min_sec_apart);
+        [p_locs, ~, ~, ~, ~] = detect_peaks(metadata.fs, pitch_smooth, 13, min_sec_apart);
         
         % Plot surge peaks
         subplot(3, 5, [11 12]);

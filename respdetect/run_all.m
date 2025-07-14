@@ -85,7 +85,7 @@ n_sec = 10;
 % The minimum # of seconds between peaks detected in movement signals during logging period.
 min_sec_apart = 3;
 
-% The window size for finding aligning peaks in jerk, surge, and pitch.
+% The window size (# of sec) for finding aligning peaks in jerk, surge, and pitch.
 win_sec = 5;
 
 detect_breaths(taglist, data_path, n_sec, min_sec_apart, win_sec)

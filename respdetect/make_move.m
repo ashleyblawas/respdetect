@@ -3,7 +3,7 @@ function make_move(taglist, dataPath)
         taglist (1, :) cell
         dataPath (1,:) char
     end
-    % Calculates and saves movement variables used for breath detections
+    % Calculates and saves movement variables used for breath detections.
     %
     % Inputs:
     %   taglist  - Cell array of tag names
@@ -44,14 +44,11 @@ function make_move(taglist, dataPath)
             if strcmp(str, "y") == 1
                 
                 % Setup directories
-                [recdir, prefix, breathaud_filename] = setup_dirs(metadata.tag, metadata.tag_ver, dataPath);
+                [~, ~, ~] = setup_dirs(metadata.tag, metadata.tag_ver, dataPath);
                 
                 % Load the existing prh file
                 loadprh(metadata.tag);
-                
-                %Calculate other vars
-                [time_sec, time_min, time_hour] =calc_time(metadata.fs, p);
-                
+                              
                 % Calculate and save movement data
                 calc_move(metadata.fs, Aw, p, dataPath, metadata.tag, pitch, roll, head)
             end
