@@ -1,17 +1,12 @@
-function plot_dives(T, time_sec, p)
-    % Plots dives, dive starts and dive ends
-    
-    nDives = length(T(:, 1));
-    
-    dive_durs = zeros(nDives, 1);
+%plot_dives
 
-    for k= 1:nDives
+function plot_dives(T, time_sec, p)
+    for k= 1:length(T(:, 1))
         dive_durs(k) = T(k, 2)- T(k, 1);
     end
-    
-%     for k= 1:length(T(:, 1))-1
-%         surf_durs(k) = T(k+1, 1) -T(k, 2);
-%     end
+     for k= 1:length(T(:, 1))-1
+        surf_durs(k) = T(k+1, 1) -T(k, 2);
+    end
     
     figure
     subplot(2, 3, [1 2 4 5])
