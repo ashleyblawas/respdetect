@@ -6,11 +6,10 @@
 
 % Getting started:
 
-% 1. You will need to change the paths in the paths.txt file according to
-% where your directories live
+% 1. You will need to change the data_path at the top of Step 1
 
 % 2. Make sure your prh files are in a folder called "prh" that is in your
-% data folder per the paths.txt file
+% data folder under a two letter species code
 
 % Variables you may consider changing:
 
@@ -61,7 +60,7 @@ set_paths(data_path);
 
 % Allow the user to select the prh files to analyze from a given species
 % folder
-taglist = load_data(data_path, 'mn');
+taglist = load_data(data_path, 'gm');
 
 %% Step 2: Make metadata file
 
@@ -76,11 +75,20 @@ make_dives(taglist, data_path, dive_thres);
 
 %% Step 4: Process movement data
 
-make_move(taglist, dataPath)
+make_move(taglist, data_path)
 
 %% Step 5: Detect breaths
 
-detect_breaths(taglist, dataPath)
+% The # of seconds to distinguish between single-breath surfacing and logging surfacing
+n_sec = 10;
+
+% The minimum # of seconds between peaks detected in movement signals during logging period.
+min_sec_apart = 3;
+
+% The window size for finding aligning peaks in jerk, surge, and pitch.
+win_sec = 5;
+
+detect_breaths(taglist, data_path, n_sec, min_sec_apart, win_sec)
 
 %% Step 6: Plot all breaths
 

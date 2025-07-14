@@ -1,4 +1,4 @@
-function [p_shallow_ints,  p_shallow_idx,  p_shallow] = get_shallowints(metadata, p, p_tag)
+function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p, p_tag)
     arguments
         metadata (1, 1) struct
         p (:, 1) double
@@ -16,7 +16,7 @@ function [p_shallow_ints,  p_shallow_idx,  p_shallow] = get_shallowints(metadata
     %   p_shallow_ints - Intervals when animal is at the surface
     %
     % Usage:
-    %   [p_shallow_ints] = get_shallowints(metadata, p, p_tag, fs, start_idx, end_idx)
+    %   [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p, p_tag)
     %
     % Author: Ashley Blawas
     % Last Updated: 7/11/2025
