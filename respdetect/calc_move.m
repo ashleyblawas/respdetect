@@ -1,13 +1,12 @@
-function calc_move(fs, Aw, p, dataPath, tag, pitch, roll, head)
+function calc_move(fs, Aw, p, pitch, roll, head, movement_fname)
     arguments
         fs (1, 1) double
         Aw (:, 3) double
         p (:, 1) double
-        dataPath (1,:) char
-        tag (1, :) char
         pitch (:, 1) double
         roll (:, 1) double
         head (:, 1) double
+        movement_fname (1, :) string
     end
     % Calculates movement metrics and saves them into a movement file on
     % the data path
@@ -17,15 +16,12 @@ function calc_move(fs, Aw, p, dataPath, tag, pitch, roll, head)
     %   dataPath - Base path to data (e.g., 'C:\my_data\')
     %
     % Usage:
-    %   make_dives(taglist, dataPath)
+    %   calc_move(taglist, dataPath)
     %
     % Author: Ashley Blawas
     % Last Updated: 7/11/2025
     % Stanford University
-    
-    % Set species code
-    speciesCode = tag(1:2);
-    
+       
     % Calculate filtered acceleration   
     % Rename Aw vector
     surge = Aw(:, 1);
@@ -136,7 +132,7 @@ function calc_move(fs, Aw, p, dataPath, tag, pitch, roll, head)
     roll_smooth = roll_smooth_temp;
     
     % Save all movement variables to mat file
-    save(strcat(dataPath, speciesCode, "\movement\", tag, "movement.mat"), 'p', 'Aw', 'surge', 'sway', 'heave',...
+    save(movement_fname, 'p', 'Aw', 'surge', 'sway', 'heave',...
         'surge_filt', 'sway_filt', 'heave_filt',...
         'surge_diff', 'sway_diff', 'heave_diff',...
         'surge_se', 'sway_se', 'heave_se',...
