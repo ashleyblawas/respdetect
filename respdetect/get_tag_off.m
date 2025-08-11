@@ -4,26 +4,36 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
         p (:, 1) double
         fs (1, 1) double {mustBePositive}
     end
-    % Selects the tag time off
+    % GET_TAG_OFF Estimate the tag off time based on depth and time data.
     %
-    % Inputs:
-    %   time_sec - The vector containing time in seconds at which each
-    %   sample was recorded
-    %   p - The vector of depth values
-    %   fs - The sampling rate
+    %   est_time_tagoff = get_tag_off(time_sec, p, fs)
     %
-    % Usage:
-    %   [est_time_tagoff] = get_tag_off(time_sec, p, fs)
+    %   Description:
+    %       This function estimates the time at which a tag was removed or turned off
+    %       by analyzing the depth signal (`p`) relative to the recorded time vector
+    %       (`time_sec`). The tag off time is typically inferred from depth values or
+    %       other criteria indicating the end of recording or detachment.
     %
-    % Assumptions:
-    %   - time_sec and p are the same length
+    %   Inputs:
+    %       time_sec - 1xN vector containing timestamps in seconds for each recorded sample.
+    %       p        - Nx1 vector of depth values corresponding to the time samples.
+    %       fs       - Sampling frequency in Hz (scalar, positive).
     %
+    %   Output:
+    %       est_time_tagoff - Estimated time (in seconds) when the tag was turned off or removed.
+    %
+    %   Usage:
+    %       est_time_tagoff = get_tag_off(time_sec, p, fs);
+    %
+    %   Assumptions:
+    %       - `time_sec` and `p` vectors must be of equal length.
+    %       - Data are evenly sampled according to `fs`.
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
-    
-    figure(11) 
+    figure(11)
     
     % Plot dive profile
     plot(time_sec, p, 'b'); grid on; hold on;
@@ -40,7 +50,7 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
     depthThreshold = 0.5;        % Assuming tag is safely at surface within 0.2 m of 0 m
     consecSamples = fs*300;      % Number of consecutive points within threshold to count as reliable tag off (for at least 5 minutes)
     underwaterThreshold = 2 ;    % Asumming tag is safely underwater iif reading is 2 m
-   
+    
     % Detect where depth stays close to zero (surface)
     atSurface = abs(p) <= depthThreshold;
     
@@ -53,11 +63,11 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
     if p(end) > underwaterThreshold
         est_time_tagoff = time_sec(end);
         fprintf('[AUTO] Tag appears to still be on. Using end of recording (%.2f sec).\n', est_time_tagoff);
-    % Case 2: Detected long period near surface
+        % Case 2: Detected long period near surface
     elseif ~isempty(idx)
         est_time_tagoff = time_sec(idx);
         fprintf('[AUTO] Detected long surface period. Estimated tag off at %.2f sec.\n', est_time_tagoff);
-    % Case 3: No clear tag-off - fallback to manual
+        % Case 3: No clear tag-off - fallback to manual
     else
         fprintf('[MANUAL] Could not estimate tag-off automatically.\n');
         disp('Zoom/pan the plot. Then click the tag-off time manually...');
@@ -66,10 +76,10 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
         est_time_tagoff = x;
         fprintf('User-selected tag off time: %.2f seconds\n', est_time_tagoff);
     end
-
+    
     % Plot detected tag-off time
     xline(est_time_tagoff, 'g--', 'Tag Off', 'LabelVerticalAlignment', 'bottom');
-
+    
     % Ask if user wants to override
     txt = input('Do you want to override the tag off time manually? (y/n): ', 's');
     if strcmpi(txt, 'y')

@@ -4,24 +4,34 @@ function [est_time_tagon] = get_tag_on(time_sec, p, fs)
         p (:, 1) double
         fs (1, 1) double {mustBePositive}
     end
-    % Selects the tag time on
+    % GET_TAG_ON Estimate the tag on time based on depth and time data.
     %
-    % Inputs:
-    %   time_sec - The vector containing time in seconds at which each
-    %   sample was recorded
-    %   p - The vector of depth values
-    %   fs - The sampling rate
+    %   est_time_tagon = get_tag_on(time_sec, p, fs)
     %
-    % Usage:
-    %   [est_time_tagon] = get_tag_on(time_sec, p, fs)
+    %   Description:
+    %       This function estimates the time at which a tag was attached or turned on
+    %       by analyzing the depth signal (`p`) relative to the recorded time vector
+    %       (`time_sec`). The tag on time is typically inferred from depth values or
+    %       other criteria indicating the start of recording or deployment.
     %
-    % Assumptions:
-    %   - time_sec and p are the same length
+    %   Inputs:
+    %       time_sec - 1xN vector containing timestamps in seconds for each recorded sample.
+    %       p        - Nx1 vector of depth values corresponding to the time samples.
+    %       fs       - Sampling frequency in Hz (scalar, positive).
     %
-    
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Output:
+    %       est_time_tagon - Estimated time (in seconds) when the tag was turned on or attached.
+    %
+    %   Usage:
+    %       est_time_tagon = get_tag_on(time_sec, p, fs);
+    %
+    %   Assumptions:
+    %       - `time_sec` and `p` vectors must be of equal length.
+    %       - Data are evenly sampled according to `fs`.
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     figure(10)
     

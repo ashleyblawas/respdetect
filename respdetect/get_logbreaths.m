@@ -16,34 +16,49 @@ function [all_breath_locs] = get_logbreaths( ...
         start_idx (1, 1) double {mustBeInteger, mustBeNonnegative}
         all_breath_locs struct
     end
-    % Detects breath locations during logging surfacings.
+    %GET_LOGBREATHS Identifies breath events during logging periods.
     %
-    % Inputs:
-    %   val3              - Vector of indices where at least 2 of 3 peak signals overlap
-    %   temp_diff_break   - Indices where continuous regions in val3 are interrupted
-    %   j_wins            - Jerk event window indices
-    %   s_wins            - Surge event window indices
-    %   p_wins            - Pitch event window indices
-    %   j_wins_breaks     - End indices of each jerk window (used to detect duplicates)
-    %   s_wins_breaks     - End indices of each surge window
-    %   p_wins_breaks     - End indices of each pitch window
-    %   p_smooth_tag      - Smoothed pressure signal used to filter valid breathing events
-    %   fs                - Sampling frequency (Hz)
-    %   start_idx         - Offset from beginning of full pressure signal
-    %   all_breath_locs   - Struct with previous breath detections (.breath_idx and .type)
+    %   This function refines breath detections by identifying candidate breath
+    %   locations within logging periods, where at least two out of three kinematic
+    %   signals (jerk, surge, pitch) show peak activity. The detections are validated
+    %   using smoothed depth to reduce false positives, and duplicate or overlapping
+    %   detections across signals are consolidated.
     %
-    % Output:
-    %   all_breath_locs   - Updated struct with new logging breath detections added and cleaned
+    %   Inputs:
+    %     val3             - Nx1 vector of indices where ≥2 of 3 movement signals (jerk, surge, pitch) overlap
+    %     temp_diff_break  - Nx1 vector of breakpoints separating distinct detection events in `val3`
+    %     j_wins           - 1xM vector of candidate jerk window indices
+    %     s_wins           - 1xM vector of candidate surge window indices
+    %     p_wins           - 1xM vector of candidate pitch window indices
+    %     j_wins_breaks    - 1xM vector of jerk window endpoint indices
+    %     s_wins_breaks    - 1xM vector of surge window endpoint indices
+    %     p_wins_breaks    - 1xM vector of pitch window endpoint indices
+    %     p_smooth_tag     - 1xN vector of smoothed depth or pressure signal (used to filter false detections)
+    %     fs               - Scalar sampling frequency (Hz)
+    %     start_idx        - Scalar index offset relative to the full tag deployment start
+    %     all_breath_locs  - Struct with existing breath detections containing fields:
+    %                           - breath_idx : vector of breath indices
+    %                           - type       : categorical array ('ss', 'log', etc.)
     %
-    % Usage:
-    %   all_breath_locs = identify_logging_breaths(val3, temp_diff_break, ...
-    %       j_wins, s_wins, p_wins, ...
-    %       j_wins_breaks, s_wins_breaks, p_wins_breaks, ...
-    %       p_smooth_tag, fs, start_idx, all_breath_locs)
+    %   Output:
+    %     all_breath_locs  - Updated struct with new breath detections added:
+    %                           - breath_idx : appended with logging breath indices
+    %                           - type       : updated to include 'log' for these detections
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Notes:
+    %     - Only breaths with valid overlap between movement windows are retained.
+    %     - This function does not remove breaths already in the struct; it appends new ones.
+    %     - Breath types are labeled as `"log"` for logging-associated detections.
+    %
+    %   Example:
+    %     all_breath_locs = get_logbreaths(val3, temp_diff_break, ...
+    %         j_wins, s_wins, p_wins, ...
+    %         j_wins_breaks, s_wins_breaks, p_wins_breaks, ...
+    %         p_smooth_tag, fs, start_idx, all_breath_locs);
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     log_breath_locs = [];
     if ~isempty(temp_diff_break)

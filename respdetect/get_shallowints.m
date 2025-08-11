@@ -1,28 +1,49 @@
-function [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag)
+function [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag)
     arguments
         metadata (1, 1) struct
         p_tag (:, 1) double
     end
-    % Identifies shallow intervals from depth record.
+    % GET_SHALLOWINTS Identify shallow surfacing intervals from depth data.
     %
-    % Inputs:
-    %   metadata - The imported data from the metadata file
-    %   p - The depth vector
-    %   p - The depth vector when the tag is on
-    %   time_sec - Time of the record in seconds
+    %   [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag)
     %
-    % Outputs:
-    %   p_shallow_ints - Intervals when animal is at the surface
-    %   p_shallow_idx - Indicies of shallow intervals
-    %   p_shallow - Vector of p within only shallow values (all others NaN)
-    %   p_smooth_tag - Smoothed p vector
+    %   Description:
+    %       Processes a depth (pressure) time series recorded by an animal-borne tag to identify intervals
+    %       when the animal is at or near the surface. It smooths the raw depth data, thresholds to identify
+    %       shallow depths, and extracts contiguous shallow intervals. Very short surfacings and noisy
+    %       detections are filtered out by duration and by comparing minimum depths to those of neighboring surfacings.
     %
-    % Usage:
-    %   [p_shallow_ints,  p_shallow_idx,  p_shallow, p_smooth_tag] = get_shallowints(metadata, p, p_tag)
+    %   Inputs:
+    %       metadata    - Struct containing tag metadata, including sampling frequency `fs` (Hz).
+    %       p_tag       - Nx1 vector of depth measurements (e.g., pressure in meters).
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Outputs:
+    %       p_shallow_ints - Mx3 matrix with detected shallow intervals. Each row contains
+    %                        [start_idx, end_idx, duration_samples], indices refer to positions within
+    %                        the vector of shallow depth indices.
+    %       p_shallow_idx  - Px1 vector of indices in `p_tag` corresponding to shallow depths (≤ 0.5 m).
+    %       p_shallow      - Nx1 vector with shallow depths retained and others set to NaN.
+    %       p_smooth_tag   - Nx1 smoothed depth vector using moving mean filter over a 1-second window.
+    %
+    %   Behavior:
+    %       1. Smooths raw depth data with moving mean filter (window = fs samples).
+    %       2. Replaces depth values > 0.5 m with NaN to identify shallow depths.
+    %       3. Finds contiguous shallow intervals by detecting gaps in shallow indices.
+    %       4. Removes intervals shorter than 1 second duration.
+    %       5. Compares interval minima to neighboring intervals and removes outliers based on a 0.15 m threshold.
+    %
+    %   Usage example:
+    %       metadata.fs = 50; % Sampling frequency in Hz
+    %       [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag);
+    %
+    %   Notes:
+    %       - Assumes `p_tag` is a column vector.
+    %       - The 0.5 m threshold and 1 second minimum duration could be adjusted in the function.
+    %       - The smoothing window length is set to `fs` to smooth over 1 second.
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     fs = metadata.fs;
     
