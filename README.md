@@ -25,12 +25,10 @@ MATLAB toolbox dependencies:
 ### Installation Instructions
 You may either 1) directly download this repository or 2) clone it using: git clone https://github.com/ashleyblawas/respdetect.git.
 
-When you open the `main.m` file you will see that the first step steps up your directories. This setup is detailed in the repository Wiki [here](https://github.com/ashleyblawas/respdetect/wiki/3.-Setup). You will need to edit a `paths.txt` file which you will be prompted to select to designate the path of your tools and your data. After running the first step of `main.m,` the `respdetect` tools will be on your path and no further installation is needed. 
-
-**Keep in mind that you will need to have the [DTAG Tools](https://github.com/stacyderuiter/dtagtools.git) installed to work with the `respdetect` scripts.**
+When you open the `run_all.m` file you will see that you have the option to specify the data path.. This setup is detailed in the repository Wiki [here](https://github.com/ashleyblawas/respdetect/wiki/3.-Setup). You can alternatively leave the `data_path` variable empty which will force it to default to the `tests` folder in the GitHub repository. After running the first step of `run_all.m,` the `respdetect` tools will be on your path and no further installation is needed. 
 
 ## [Usage](https://github.com/ashleyblawas/respdetect/wiki)
-Check out the repository Wiki (linked above and to screenshot below) for detailed instructions on how to use these tools. The ``main.m`` script will guide you through the use of the tools.
+Check out the repository Wiki (linked above and to screenshot below) for detailed instructions on how to use these tools. The ``run_all.m`` script will guide you through the use of the tools.
 
 [![The home page of the repository Wiki.](images/wiki_screenshot.png)](https://github.com/ashleyblawas/respdetect/wiki).
 
