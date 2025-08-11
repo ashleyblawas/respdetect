@@ -102,7 +102,7 @@ function make_metadata(taglist, dataPath)
         end
         
         %Set path for prh files
-        settagpath('prh',strcat(dataPath, speciesCode,'\prh'));
+        settagpath('prh', strcat(dataPath, '\', speciesCode,'\prh'));
         
         % Load the tag's prh file
         loadprh(tag);
