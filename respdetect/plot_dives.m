@@ -50,11 +50,20 @@ function plot_dives(T, time_sec, p)
     %   Last Updated: August 11, 2025
     %   Stanford University
     
-    for k= 1:length(T(:, 1))
-        dive_durs(k) = T(k, 2)- T(k, 1);
+    n_dives = size(T, 1);  % Number of dive rows
+    
+    % Preallocate
+    dive_durs = zeros(n_dives, 1);       % One duration per dive
+    surf_durs = zeros(n_dives - 1, 1);   % One surface duration between dives
+    
+    % Compute dive durations
+    for k = 1:n_dives
+        dive_durs(k) = T(k, 2) - T(k, 1);
     end
-    for k= 1:length(T(:, 1))-1
-        surf_durs(k) = T(k+1, 1) -T(k, 2);
+    
+    % Compute surface durations
+    for k = 1:(n_dives - 1)
+        surf_durs(k) = T(k + 1, 1) - T(k, 2);
     end
     
     figure

@@ -60,15 +60,18 @@ function [all_breath_locs] = get_logbreaths( ...
     %   Last Updated: August 11, 2025
     %   Stanford University
     
-    log_breath_locs = [];
+    % Preallocate with max possible size
+    log_breath_locs = NaN(num_sections, 1);
+    log_breath_count = 0;
+    
     if ~isempty(temp_diff_break)
-        for c = 1:(length(temp_diff_break)+1)
+        for c = 1:num_sections
             % Initialize for first loop
             if c == 1
                 j_win_count = 0; s_win_count = 0; p_win_count = 0;
                 cont_val3_prev = -3 * fs; % Set pre-window for breath separation
                 cont_range = 1:temp_diff_break(1);
-            elseif c == length(temp_diff_break)+1
+            elseif c == num_sections
                 cont_val3_prev = cont_val3;
                 cont_range = temp_diff_break(end)+1:length(val3);
             else
@@ -113,12 +116,17 @@ function [all_breath_locs] = get_logbreaths( ...
                     if cont_val3(1) > cont_val3_prev(end) + fs/10 || ...
                             max(p_smooth_tag(cont_val3_prev)) > 0.5 || ...
                             max(p_smooth_tag(cont_val3)) > 0.5
-                        log_breath_locs(end+1, 1) = cont_val3(floor(length(cont_val3)/2));
+                        
+                        log_breath_count = log_breath_count + 1;
+                        log_breath_locs(log_breath_count, 1) = cont_val3(floor(length(cont_val3)/2));
                     end
                 end
             end
         end
     end
+    
+    % Trim unused rows
+    log_breath_locs = log_breath_locs(1:log_breath_count);
     
     %% Remove duplicate breaths (ss vs. log < 3 s apart)
     temp_all_breaths = [all_breath_locs.breath_idx; log_breath_locs];
@@ -129,13 +137,24 @@ function [all_breath_locs] = get_logbreaths( ...
     temp_all_breaths_type_s = temp_all_breaths_type(sortidx, :);
     
     sim_breaths = find(diff(temp_all_breaths_s) < 3 * fs);
-    rm_rows = [];
+    
+    % Preallocate with maximum possible size (2 rows per sim_breath)
+    rm_rows = NaN(length(sim_breaths) * 2, 1);
+    rm_count = 0;
     
     for i = 1:length(sim_breaths)
-        range = sim_breaths(i):sim_breaths(i)+1;
+        range = sim_breaths(i):sim_breaths(i) + 1;
         to_remove = find(temp_all_breaths_type_s(range) == "log");
-        rm_rows = [rm_rows; sim_breaths(i) + to_remove - 1];
+        
+        n_remove = length(to_remove);
+        if n_remove > 0
+            rm_rows(rm_count + 1 : rm_count + n_remove) = sim_breaths(i) + to_remove - 1;
+            rm_count = rm_count + n_remove;
+        end
     end
+    
+    % Trim unused preallocated space
+    rm_rows = rm_rows(1:rm_count);
     
     temp_all_breaths_s(rm_rows) = [];
     temp_all_breaths_type_s(rm_rows) = [];

@@ -56,9 +56,6 @@ function set_paths(dataPath)
         dataPath = fullfile(pwd, dataPath);
     end
     
-    % Define dtagtools path relative to respdetect
-    dtagtoolsPath = fullfile(respdetectPath, 'dtagtools');
-    
     % Validate paths
     if ~isfolder(respdetectPath)
         error('respdetect path not found at: %s', respdetectPath);
@@ -79,21 +76,4 @@ function set_paths(dataPath)
     fprintf('Added respdetect path: %s\n', respdetectPath);
     fprintf('Added dtagtools path:  %s\n', dtagtoolsPath);
     fprintf('Added data path:       %s\n', dataPath);
-end
-
-function folderPath = locate_folder_up(startPath, targetFolder)
-    % Move up to find a folder named targetFolder
-    folderPath = '';
-    currentPath = startPath;
-    while true
-        [parentPath, currentName, ~] = fileparts(currentPath);
-        if strcmpi(currentName, targetFolder)
-            folderPath = currentPath;
-            return;
-        end
-        if strcmp(parentPath, currentPath)
-            return;  % Reached root
-        end
-        currentPath = parentPath;
-    end
 end

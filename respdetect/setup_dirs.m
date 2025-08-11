@@ -58,7 +58,6 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath
     % Set parent directory
     recdir = strcat(dataPath, sp_year, '\', tag);
     % Set deployment name, probably the same as the parent folder
-    deploy_name = tag;
     prefix = tag;
     speciesCode = tag(1:2);
     

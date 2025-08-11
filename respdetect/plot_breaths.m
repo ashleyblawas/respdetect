@@ -68,7 +68,7 @@ function [fR] = plot_breaths(dataPath, taglist, k)
     
     % Load movement data
     move_file = fullfile(dataPath, speciesCode, 'movement', [metadata.tag, 'movement.mat']);
-    load(move_file, 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
+    load(move_file, 'p', 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
     
     % Load breath detection data
     breath_file = fullfile(dataPath, speciesCode, 'breaths', [metadata.tag, 'breaths.mat']);

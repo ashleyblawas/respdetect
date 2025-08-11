@@ -49,26 +49,34 @@ function [val3, temp_diff_break, j_wins, s_wins, p_wins, j_wins_breaks, s_wins_b
     %   Last Updated: August 11, 2025
     %   Stanford University
     
-    % Initialize window arrays
-    j_wins = [];
+    % Calculate window size (samples per window)
+    win_size = floor((win_sec / 2) * fs) + ceil((win_sec / 2) * fs) + 1;
+    
+    % Preallocate j_wins
+    j_wins = NaN(1, win_size * length(j_locs));
     for a = 1:length(j_locs)
-        j_temp_win = (j_locs(a) - floor((win_sec / 2) * fs)) : ...
+        idx_start = (a - 1) * win_size + 1;
+        idx_end = a * win_size;
+        j_wins(idx_start:idx_end) = (j_locs(a) - floor((win_sec / 2) * fs)) : ...
             (j_locs(a) + ceil((win_sec / 2) * fs));
-        j_wins = [j_wins, j_temp_win];
     end
     
-    s_wins = [];
+    % Preallocate s_wins
+    s_wins = NaN(1, win_size * length(s_locs));
     for b = 1:length(s_locs)
-        s_temp_win = (s_locs(b) - floor((win_sec / 2) * fs)) : ...
+        idx_start = (b - 1) * win_size + 1;
+        idx_end = b * win_size;
+        s_wins(idx_start:idx_end) = (s_locs(b) - floor((win_sec / 2) * fs)) : ...
             (s_locs(b) + ceil((win_sec / 2) * fs));
-        s_wins = [s_wins, s_temp_win];
     end
     
-    p_wins = [];
+    % Preallocate p_wins
+    p_wins = NaN(1, win_size * length(p_locs));
     for c = 1:length(p_locs)
-        p_temp_win = (p_locs(c) - floor((win_sec / 2) * fs)) : ...
+        idx_start = (c - 1) * win_size + 1;
+        idx_end = c * win_size;
+        p_wins(idx_start:idx_end) = (p_locs(c) - floor((win_sec / 2) * fs)) : ...
             (p_locs(c) + ceil((win_sec / 2) * fs));
-        p_wins = [p_wins, p_temp_win];
     end
     
     % Optional: find breakpoints in windows (not used but calculated)
