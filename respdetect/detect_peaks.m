@@ -1,6 +1,52 @@
-%% Find peaks in movement data for breath detections
-
 function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, min_sec_apart)
+    arguments
+        fs (1,1) double {mustBePositive, mustBeFinite}                     % Sampling rate in Hz
+        move_sig (:,1) double {mustBeNonempty, mustBeFinite}              % Movement signal (e.g., jerk or surge entropy)
+        val (1,1) double {mustBeInteger, mustBePositive}                  % Plot index value for subplot
+        min_sec_apart (1,1) double {mustBePositive, mustBeFinite}         % Minimum seconds between peaks
+    end
+    % DETECT_PEAKS Identifies and filters peaks from a movement signal based on spacing and shape.
+    %
+    %   This function detects peaks in a movement signal (e.g., jerk, surge, or pitch)
+    %   that are separated by at least `min_sec_apart` seconds, then filters them using
+    %   a shape-based clustering or heuristic method depending on the distribution.
+    %   It optionally visualizes peak characteristics for interpretation.
+    %
+    %   Inputs:
+    %     fs             - Sampling frequency (Hz)
+    %     move_sig       - Input movement signal (e.g., jerk or pitch time series)
+    %     val            - Integer subplot index for visualization (1–15)
+    %     min_sec_apart  - Minimum allowable time between peaks (in seconds)
+    %
+    %   Outputs:
+    %     locs       - Indices of accepted peak locations in the signal
+    %     width      - Normalized widths of detected peaks
+    %     prom       - Normalized prominences of detected peaks
+    %     idx        - Cluster or group labels for each peak (1 or 2)
+    %     rm_group   - Identifier of the removed group (1 or 2), based on width comparison
+    %
+    %   Methodology:
+    %     - Uses `findpeaks()` to detect local maxima spaced by at least `min_sec_apart`
+    %     - Normalizes peak height, width, and prominence to range [0, 1]
+    %     - If multiple peaks exist:
+    %         Attempts to separate meaningful vs. noisy peaks using:
+    %             - Heuristic method via kernel density estimate (KDE), or
+    %             - Agglomerative clustering (`linkage` + `cluster`)
+    %         Removes the group with smaller average peak widths
+    %     - If only one peak or no peaks are found, returns empty outputs
+    %
+    %   Notes:
+    %     - Produces diagnostic plots for visual validation using `subplot(3, 5, val)`
+    %     - Requires the Statistics and Machine Learning Toolbox (for `linkage`, `cluster`)
+    %
+    %   Example:
+    %     [locs, width, prom] = detect_peaks(50, jerk_signal, 3, 2);
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
+    
+    
     % Peak detect jerk, defining here that the max breath rate is 20 breaths/min
     % given 3 second separation
     [height, locs, width, prom] = findpeaks(move_sig, 'MinPeakDistance', min_sec_apart*fs);
@@ -68,6 +114,6 @@ function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, mi
         width = [];
         prom = [];
         idx = [];
-        rm_group = [];  
+        rm_group = [];
     end
     

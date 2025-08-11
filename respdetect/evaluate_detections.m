@@ -4,19 +4,41 @@ function results = evaluate_detections(ref_times, test_times, tolerance)
         test_times (:, 1) double
         tolerance (1,1) double {mustBePositive}
     end
-    % Evaluate how well test detections match reference breath detections
+    % EVALUATE_DETECTIONS Compares detected breath times against reference times.
     %
-    % Inputs:
-    %   ref_times   - vector of reference breath times (in seconds or datetimes)
-    %   test_times  - vector of detected breath times
-    %   tolerance   - allowable difference (in seconds) to count as a match
+    %   This function compares a set of test detections (e.g., from an automated
+    %   algorithm) against reference breath times (e.g., manually annotated) and
+    %   evaluates performance using standard classification metrics.
     %
-    % Output:
-    %   results     - struct with TP, FP, FN, Precision, Recall, F1, and match index
+    %   A match is defined as a test time occurring within ±`tolerance` seconds
+    %   of a reference time. Each reference breath can only be matched once.
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Inputs:
+    %     ref_times   - [Nx1] vector of reference breath times (seconds or datetime)
+    %     test_times  - [Mx1] vector of predicted or detected breath times
+    %     tolerance   - Scalar, allowable difference (in seconds) for a valid match
+    %
+    %   Output:
+    %     results     - Struct containing evaluation metrics:
+    %                TP           - Number of true positives (correct matches)
+    %                FP           - Number of false positives (extra detections)
+    %                FN           - Number of false negatives (missed detections)
+    %                Precision    - TP / (TP + FP)
+    %                Recall       - TP / (TP + FN)
+    %                F1           - Harmonic mean of Precision and Recall
+    %                MatchedPairs - [Px2] matrix of matched reference and test times
+    %
+    %   Notes:
+    %     - Input vectors are automatically reshaped to column format.
+    %     - One-to-one matching: each reference breath is matched at most once.
+    %     - Precision and Recall are set to NaN if division by zero occurs.
+    %
+    %   Example:
+    %     results = evaluate_detections(ref_breaths, detected_breaths, 2.0);
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     % Ensure input vectors are column vectors
     ref_times = ref_times(:);
@@ -40,7 +62,7 @@ function results = evaluate_detections(ref_times, test_times, tolerance)
         end
     end
     
- 
+    
     % Compute stats
     TP = sum(matched_test);
     FP = sum(~matched_test);
@@ -67,5 +89,5 @@ function results = evaluate_detections(ref_times, test_times, tolerance)
     fprintf('Precision: %.2f | Recall: %.2f | F1 Score: %.2f\n', Precision, Recall, F1);
     fprintf('\nMatched breaths within %.1f sec: %d/%d (%.1f%%)\n', ...
         tolerance, matched, length(ref_times), 100 * matched / length(ref_times));
-
+    
 end

@@ -6,22 +6,51 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         min_sec_apart (1, 1) double {mustBePositive}
         win_sec (1, 1) double {mustBePositive}
     end
-    % Uses previously calculated information to identify breaths.
+    % DETECT_BREATHS Detects breaths in dive data using movement and depth signals.
     %
-    % Inputs:
-    %   taglist  - Cell array of tag names
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   This function processes sensor data for each tag in `taglist` to identify
+    %   breath events during both short surfacings and extended logging periods.
+    %   It loads pre-processed data (movement, diving, metadata, etc.), classifies
+    %   surfacings, applies peak detection on filtered movement signals, and saves
+    %   identified breaths to both `.mat` and `.txt` files.
     %
-    % Outputs:
-    %   Saves a file in the data path under the species of interest in the "breaths" folder.
-    %   This function saves no variables to the workspace.
+    %   Inputs:
+    %     taglist        - Cell array of tag names (e.g., {'gm123a', 'gm456b'})
+    %     dataPath       - Base path to data (char vector)
+    %     n_sec          - Threshold duration (in seconds) to distinguish logging from single-breath surfacings
+    %     min_sec_apart  - Minimum time (in seconds) between successive peaks to avoid false breaths
+    %     win_sec        - Time window (in seconds) used to validate overlapping signal features
     %
-    % Usage:
-    %   detect_breaths(taglist, dataPath)
+    %   Outputs:
+    %     None returned to workspace. Instead:
+    %       - Breath detection results are saved to:
+    %           <dataPath>/<species>/breaths/<tag>breaths.mat
+    %           <dataPath>/<species>/breaths/<tag>breaths.txt
+    %       - Diagnostic figures are saved to:
+    %           <dataPath>/<species>/figures/
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Workflow Summary:
+    %     1. Loads tag-specific metadata, diving, and movement data
+    %     2. Subsets depth to tag-on/off periods
+    %     3. Identifies shallow periods (potential surfacings)
+    %     4. Classifies each surfacing as a single breath or logging bout
+    %     5. Applies peak detection to kinematic signals (jerk, surge, pitch)
+    %     6. Detects breaths using overlapping peak windows
+    %     7. Plots and saves breath detections for both surfacing types
+    %     8. Exports breath indices or timestamps
+    %
+    %   Example:
+    %     detect_breaths({'gm123a', 'gm456b'}, 'C:/Users/ashley/data/', 10, 5, 3);
+    %
+    %   Notes:
+    %     - Assumes required files (movement.mat, dives.mat, divetable.mat, metadata)
+    %       are located under appropriate subdirectories in `dataPath`.
+    %     - Supports both "CATS" and other tag types for export formatting.
+    %     - Prompts user before overwriting existing breath files.
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     for k = 1:length(taglist)
         

@@ -1,4 +1,8 @@
 function [time_sec, time_min, time_hour] = calc_time(fs, p)
+    arguments
+        fs (1,1) double {mustBePositive, mustBeFinite}      % Sampling frequency in Hz
+        p (:,1) double {mustBeNonempty, mustBeFinite}       % Sensor data (e.g., pressure)
+    end
     % CALC_TIME Generates time vectors corresponding to pressure (or sensor) data.
     %
     %   This function calculates time vectors in seconds, minutes, and hours

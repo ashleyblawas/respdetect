@@ -1,4 +1,13 @@
 function calc_move(fs, Aw, p, pitch, roll, head, movement_fname)
+    arguments
+        fs (1,1) double {mustBePositive, mustBeFinite}
+        Aw (:,3) double {mustBeNonempty, mustBeFinite}  % Nx3 acceleration
+        p (:,1) double {mustBeNonempty, mustBeFinite}   % Nx1 depth/pressure
+        pitch (:,1) double {mustBeNonempty, mustBeFinite}
+        roll  (:,1) double {mustBeNonempty, mustBeFinite}
+        head  (:,1) double {mustBeNonempty, mustBeFinite}
+        movement_fname (1,:) char {mustBeNonempty}      % Output file name
+    end
     % CALC_MOVE Computes movement metrics from accelerometer and orientation data.
     %
     %   This function processes tri-axial acceleration (Aw) and orientation

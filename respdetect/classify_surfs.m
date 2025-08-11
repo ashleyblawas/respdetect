@@ -3,6 +3,15 @@ function [single_breath_surf_rows, logging_surf_rows, ...
         p_shallow_ints, all_breath_locs] = ...
         classify_surfs(p_shallow_ints, p_shallow_idx, p_shallow, time_sec, ...
         start_idx, n_sec, fs)
+    arguments
+        p_shallow_ints (:,3) double {mustBeNonempty, mustBeFinite}   % [Nx3] matrix of shallow intervals
+        p_shallow_idx (:,1) double {mustBeNonnegative, mustBeInteger} % Indices into depth array
+        p_shallow (:,1) logical {mustBeNonempty}                     % Logical vector for shallow positions
+        time_sec (:,1) double {mustBeNonempty, mustBeFinite}         % Time in seconds
+        start_idx (1,1) double {mustBeNonnegative, mustBeInteger}    % Offset index (e.g., tag-on index)
+        n_sec (1,1) double {mustBePositive, mustBeFinite}            % Threshold duration for logging
+        fs (1,1) double {mustBePositive, mustBeFinite}               % Sampling rate in Hz
+    end
     % CLASSIFY_SURFS Classifies shallow surfacings into single-breath or logging types.
     %
     %   This function takes shallow interval data and separates surfacing events
