@@ -5,9 +5,7 @@ function make_dives(taglist, dataPath, dive_thres)
         dive_thres (1,:) double {mustBePositive}
     end
     % MAKE_DIVES Identifies dives across multiple tag records and saves dive metadata.
-    %
-    %   make_dives(taglist, dataPath, dive_thres)
-    %
+    %    
     %   This function processes pressure (depth) data from a list of tagged animals to detect
     %   dive events based on a specified depth threshold. For each tag in the list, it loads
     %   the associated data, identifies individual dives, and saves dive-related metrics to

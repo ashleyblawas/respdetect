@@ -6,8 +6,6 @@ function [est_time_tagoff] = get_tag_off(time_sec, p, fs)
     end
     % GET_TAG_OFF Estimate the tag off time based on depth and time data.
     %
-    %   est_time_tagoff = get_tag_off(time_sec, p, fs)
-    %
     %   Description:
     %       This function estimates the time at which a tag was removed or turned off
     %       by analyzing the depth signal (`p`) relative to the recorded time vector

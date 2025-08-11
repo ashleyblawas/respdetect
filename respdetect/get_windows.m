@@ -10,9 +10,6 @@ function [val3, temp_diff_break, j_wins, s_wins, p_wins, j_wins_breaks, s_wins_b
     end
     % GET_WINDOWS Generate overlapping detection windows for jerk, surge, and pitch peaks.
     %
-    %   [val3, temp_diff_break, j_wins, s_wins, p_wins, j_wins_breaks, s_wins_breaks, p_wins_breaks] = ...
-    %       get_windows(j_locs, s_locs, p_locs, p_shallow_idx, win_sec, fs)
-    %
     %   This function creates symmetric time windows around peak indices for three types
     %   of movement signals: jerk (j_locs), surge (s_locs), and pitch (p_locs). It identifies
     %   regions where at least two of the three signals overlap and fall within shallow

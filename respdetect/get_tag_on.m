@@ -6,8 +6,6 @@ function [est_time_tagon] = get_tag_on(time_sec, p, fs)
     end
     % GET_TAG_ON Estimate the tag on time based on depth and time data.
     %
-    %   est_time_tagon = get_tag_on(time_sec, p, fs)
-    %
     %   Description:
     %       This function estimates the time at which a tag was attached or turned on
     %       by analyzing the depth signal (`p`) relative to the recorded time vector

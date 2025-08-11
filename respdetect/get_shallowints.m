@@ -5,8 +5,6 @@ function [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowi
     end
     % GET_SHALLOWINTS Identify shallow surfacing intervals from depth data.
     %
-    %   [p_shallow_ints, p_shallow_idx, p_shallow, p_smooth_tag] = get_shallowints(metadata, p_tag)
-    %
     %   Description:
     %       Processes a depth (pressure) time series recorded by an animal-borne tag to identify intervals
     %       when the animal is at or near the surface. It smooths the raw depth data, thresholds to identify

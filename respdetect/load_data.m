@@ -5,8 +5,6 @@ function taglist = load_data(dataPath, speciesCode)
     end
     % LOAD_DATA Retrieves a list of PRH (sensor) files for a specified species.
     %
-    %   taglist = load_data(dataPath, speciesCode)
-    %
     %   This function searches the data directory for PRH `.mat` files corresponding to a
     %   specific species and returns a list of tag names for use in subsequent analyses.
     %
