@@ -3,24 +3,39 @@ function taglist = load_data(dataPath, speciesCode)
         dataPath (1,:) char
         speciesCode (1, 2) char
     end
-    % Determines the prh files that will be loaded for analysis
+    % LOAD_DATA Retrieves a list of PRH (sensor) files for a specified species.
     %
-    % Inputs:
-    %   speciesCode  - Two-letter species code (e.g., 'gm', 'mn', 'tt')
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   taglist = load_data(dataPath, speciesCode)
     %
-    % Usage:
-    %   load_data('C:\my_data\','gm')
+    %   This function searches the data directory for PRH `.mat` files corresponding to a
+    %   specific species and returns a list of tag names for use in subsequent analyses.
     %
-    % Assumptions:
-    %   - This function is located somewhere inside the respdetect directory.
-    %   - SpeciesCode is a two letter code that exists as a subfolder within
-    %   the datapath and within this folder is a prh folder with your records
-    %   of interest
+    %   Inputs:
+    %       dataPath    - Character array specifying the base path to the data directory.
+    %                     Example: 'C:\my_data\' or '/Users/username/data/'
+    %       speciesCode - Two-letter species code (character array) used to identify the
+    %                     subfolder within `dataPath`. This should match a folder name within
+    %                     the base path that contains the species-specific data.
+    %                     Example: 'gm' (pilot whale), 'mn' (humpback whale), 'tt' (bottlenose dolphin)
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Output:
+    %       taglist     - Cell array of strings or character vectors representing the tag IDs
+    %                     or file names (without the `.mat` extension) found in the PRH folder.
+    %
+    %   Example:
+    %       taglist = load_data('C:\my_data\', 'gm');
+    %
+    %   Assumptions:
+    %       - The `dataPath` contains a subfolder named with the given `speciesCode`.
+    %       - Inside that species folder, there is a `prh` subfolder containing `.mat` files.
+    %       - The PRH files contain processed tag data with naming convention: <tag>.mat
+    %       - This function is used within the context of the RespDetect pipeline.
+    %
+    %   See also: load, dir, fullfile
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     % Build full path to prh files for the given species
     prhFolder = fullfile(dataPath, speciesCode, 'prh');

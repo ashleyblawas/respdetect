@@ -4,26 +4,59 @@ function make_dives(taglist, dataPath, dive_thres)
         dataPath (1,:) char
         dive_thres (1,:) double {mustBePositive}
     end
-    % Identifies all dives in the record and saves this information to dive
-    % table and to individual variables that will be useful for breath
-    % detection later
+    % MAKE_DIVES Identifies dives across multiple tag records and saves dive metadata.
     %
-    % Inputs:
-    %   taglist  - Cell array of tag names
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
-    %   dive_thres - The minimum depth a dive must reach to be recorded as
-    %   a dive
-    %
-    % Outputs:
-    %   Saves a file in the data path under the species of interest in the "diving" folder.
-    %   This function saves no variables to the workspace.
-    %
-    % Usage:
     %   make_dives(taglist, dataPath, dive_thres)
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   This function processes pressure (depth) data from a list of tagged animals to detect
+    %   dive events based on a specified depth threshold. For each tag in the list, it loads
+    %   the associated data, identifies individual dives, and saves dive-related metrics to
+    %   a structured file for later use in respiration or behavior analyses.
+    %
+    %   Inputs:
+    %       taglist     - Cell array of tag names (e.g., {'gm01_001a', 'gm02_002b', ...}).
+    %                     Each tag corresponds to a PRH .mat file stored in the appropriate
+    %                     subdirectory under `dataPath`.
+    %       dataPath    - Character array specifying the base path to the data directory.
+    %                     It should contain species-specific subfolders with PRH data and
+    %                     a 'diving' subfolder where dive data will be saved.
+    %                     Example: 'C:\my_data\' or '/Users/username/data/'
+    %       dive_thres  - Positive scalar or vector indicating the minimum depth (in meters)
+    %                     that defines a valid dive. Dives shallower than this threshold will
+    %                     be ignored. If a vector is provided, it should match the number of
+    %                     tags in `taglist`.
+    %
+    %   Outputs:
+    %       - No variables are returned to the workspace.
+    %       - For each tag, a `.mat` file is saved to:
+    %           [dataPath / species / 'diving' / tagname '_dives.mat']
+    %
+    %         Each saved file contains:
+    %             - dive_table: Table with start/end times, max depth, duration, etc.
+    %             - dive_idx: Index of dive segments in the depth signal.
+    %             - p_surf: Surface pressure signal between dives.
+    %
+    %   Assumptions:
+    %       - Each tag in `taglist` corresponds to a `.mat` file in the species' `/prh/` folder.
+    %       - The PRH file contains at least the depth signal `p` and sampling rate `fs`.
+    %       - A `/diving/` subfolder exists or will be created within the species folder.
+    %       - Depth is recorded in meters and positive downward.
+    %
+    %   Example:
+    %       taglist = {'gm01_001a', 'gm02_002b'};
+    %       dataPath = 'C:\my_data\';
+    %       dive_thres = 2;  % Only count dives deeper than 2 meters
+    %       make_dives(taglist, dataPath, dive_thres);
+    %
+    %   Notes:
+    %       - This function is typically run once before detecting breaths.
+    %       - Outputs are designed for compatibility with respiration detection workflows.
+    %
+    %   See also: load_data, get_shallowints, classify_surfs
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     for k = 1:length(taglist)
         
@@ -112,7 +145,7 @@ function make_dives(taglist, dataPath, dive_thres)
             % Add back start index if needed to time variables
             if metadata.tag_on ~=0
                 T(:, [1:2, 4]) = T(:, [1:2, 4]) + metadata.tag_on;
-                               
+                
                 nDives = size(T, 1);  % Number of dives
                 
                 % Preallocate with appropriate data types

@@ -15,7 +15,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
     %   identified breaths to both `.mat` and `.txt` files.
     %
     %   Inputs:
-    %     taglist        - Cell array of tag names (e.g., {'gm123a', 'gm456b'})
+    %     taglist        - Cell array of tag names (e.g., {'gm01_001a', 'gm02_002b'})
     %     dataPath       - Base path to data (char vector)
     %     n_sec          - Threshold duration (in seconds) to distinguish logging from single-breath surfacings
     %     min_sec_apart  - Minimum time (in seconds) between successive peaks to avoid false breaths
@@ -40,7 +40,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
     %     8. Exports breath indices or timestamps
     %
     %   Example:
-    %     detect_breaths({'gm123a', 'gm456b'}, 'C:/Users/ashley/data/', 10, 5, 3);
+    %     detect_breaths({'gm01_001a', 'gm02_002b'}, 'C:/Users/ashley/data/', 10, 5, 3);
     %
     %   Notes:
     %     - Assumes required files (movement.mat, dives.mat, divetable.mat, metadata)

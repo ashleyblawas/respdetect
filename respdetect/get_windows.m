@@ -8,33 +8,49 @@ function [val3, temp_diff_break, j_wins, s_wins, p_wins, j_wins_breaks, s_wins_b
         win_sec (1, 1) double
         fs (1, 1) double
     end
-    %  Generate overlapping event windows for jerk, surge, and pitch.
+    % GET_WINDOWS Generate overlapping detection windows for jerk, surge, and pitch peaks.
     %
-    % Inputs:
-    %   j_locs         - Indices of jerk peaks
-    %   s_locs         - Indices of surge peaks
-    %   p_locs         - Indices of pitch peaks
-    %   p_shallow_idx  - Indices for shallow points
-    %   win_sec        - Window duration in seconds (symmetric around peak)
-    %   fs             - Sampling rate (Hz)
+    %   [val3, temp_diff_break, j_wins, s_wins, p_wins, j_wins_breaks, s_wins_breaks, p_wins_breaks] = ...
+    %       get_windows(j_locs, s_locs, p_locs, p_shallow_idx, win_sec, fs)
     %
-    % Outputs:
-    %   val3              - Sorted indices where at least 2 of 3 conditions are met
-    %   temp_diff_break   - Index breaks where continuous regions in val3 are interrupted
-    %   j_wins            - Jerk event window indices
-    %   s_wins            - Surge event window indices
-    %   p_wins            - Pitch event window indices
-    %   j_wins_breaks     - End indices of each jerk window (used to detect duplicates)
-    %   s_wins_breaks     - End indices of each surge window
-    %   p_wins_breaks     - End indices of each pitch window
+    %   This function creates symmetric time windows around peak indices for three types
+    %   of movement signals: jerk (j_locs), surge (s_locs), and pitch (p_locs). It identifies
+    %   regions where at least two of the three signals overlap and fall within shallow
+    %   depth periods, and returns both these overlapping indices and their breakpoints.
     %
-    % Usage:
-    %   [val3, temp_diff_break, log_breath_locs, j_wins, s_wins, p_wins, j_win_breaks, s_win_breaks, p_win_breaks] = ...
-    %   get_windows(j_locs, s_locs, p_locs, p_shallow_idx, win_sec, fs)
+    %   Inputs:
+    %       j_locs         - Nx1 vector of indices where jerk peaks were detected.
+    %       s_locs         - Nx1 vector of indices where surge peaks were detected.
+    %       p_locs         - Nx1 vector of indices where pitch peaks were detected.
+    %       p_shallow_idx  - Indices within the signal that are considered shallow (e.g., near surface).
+    %       win_sec        - Duration (in seconds) of each window around a peak. Window is symmetric.
+    %       fs             - Sampling rate (Hz).
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Outputs:
+    %       val3              - Sorted indices where at least two of the three event windows overlap
+    %                           and intersect with shallow regions.
+    %       temp_diff_break   - Indices where there are discontinuities (gaps > 1 sample) in `val3`.
+    %       j_wins            - Vector of indices included in all jerk-centered windows.
+    %       s_wins            - Vector of indices included in all surge-centered windows.
+    %       p_wins            - Vector of indices included in all pitch-centered windows.
+    %       j_wins_breaks     - Endpoints of discontinuous jerk windows.
+    %       s_wins_breaks     - Endpoints of discontinuous surge windows.
+    %       p_wins_breaks     - Endpoints of discontinuous pitch windows.
+    %
+    %   Example:
+    %       [val3, breaks, jw, sw, pw, jwb, swb, pwb] = get_windows(j_locs, s_locs, p_locs, ...
+    %           p_shallow_idx, 1.5, 50);
+    %
+    %   Notes:
+    %       - All windows are generated symmetrically around each peak index using the
+    %         specified `win_sec` duration and `fs` sampling frequency.
+    %       - val3 includes all indices that are part of overlapping jerk/surge/pitch events
+    %         (at least two out of three).
+    %       - The function can be used to identify candidate breathing events or logging behavior.
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     % Initialize window arrays
     j_wins = [];
