@@ -1,39 +1,61 @@
 function [jerk_smooth, surge_smooth, pitch_smooth] = ...
-        process_move(jerk_smooth, surge_smooth, pitch_smooth, ...
-        p, p_smooth_tag, ...
-        start_idx, end_idx, ...
-        logging_start_idxs, logging_end_idxs, ...
-        metadata)
+    process_move(jerk_smooth, surge_smooth, pitch_smooth, ...
+    p, p_smooth_tag, ...
+    start_idx, end_idx, ...
+    logging_start_idxs, logging_end_idxs, ...
+    metadata)
     arguments
-        jerk_smooth
-        surge_smooth
-        pitch_smooth
-        p (:, 1) double
-        p_smooth_tag (:, 1) double
-        start_idx (1, 1) double
-        end_idx (1, 1) double
-        logging_start_idxs (:, 1) double
-        logging_end_idxs (:, 1) double
-        metadata (1, 1) struct
+        jerk_smooth (:,1) double                      % Smoothed jerk signal
+        surge_smooth (:,1) double                     % Smoothed surge signal
+        pitch_smooth (:,1) double                     % Smoothed pitch signal
+        p (:,1) double                                % Raw depth vector
+        p_smooth_tag (:,1) double                     % Smoothed depth vector
+        start_idx (1,1) double {mustBeInteger, mustBeNonnegative} % Start index for tag on
+        end_idx (1,1) double {mustBeInteger, mustBeNonnegative}   % End index for tag off
+        logging_start_idxs (:,1) double {mustBeInteger}           % Start indices of logging surfacings
+        logging_end_idxs (:,1) double {mustBeInteger}             % End indices of logging surfacings
+        metadata (1,1) struct                            % Struct containing sampling rate and metadata info
     end
-    % Processes movement data within logging periods
+    % PROCESS_MOVE Filters and normalizes movement signals during logging surfacings
+    %
+    % This function preprocesses movement variables (jerk, surge, and pitch)
+    % by filtering out underwater periods, trimming to the tag-on/tag-off window,
+    % and keeping only the values within logging surfacings (±5 seconds). It then
+    % normalizes each continuous segment of the signal.
     %
     % Inputs:
+    %   jerk_smooth           - Smoothed jerk signal (vector)
+    %   surge_smooth          - Smoothed surge signal (vector)
+    %   pitch_smooth          - Smoothed pitch signal (vector)
+    %   p                     - Raw depth vector
+    %   p_smooth_tag          - Smoothed depth vector
+    %   start_idx             - Index of tag-on in the data
+    %   end_idx               - Index of tag-off in the data
+    %   logging_start_idxs    - Vector of start indices for logging surfacings
+    %   logging_end_idxs      - Vector of end indices for logging surfacings
+    %   metadata              - Struct containing metadata fields (e.g., fs)
     %
     % Outputs:
-    %   jerk_smooth
-    %   surge_smooth
-    %   pitch_smooth
+    %   jerk_smooth           - Cleaned and normalized jerk signal
+    %   surge_smooth          - Cleaned and normalized surge signal
+    %   pitch_smooth          - Cleaned and normalized pitch signal
+    %
+    % Behavior:
+    %   - Values deeper than 5 m are NaN'd (movement during deeper dives removed)
+    %   - Data outside tag-on/tag-off is trimmed
+    %   - Only logging surfacings (±5 seconds) are retained
+    %   - Remaining sections are normalized (rescaled to [0, 1])
     %
     % Usage:
-    %   [jerk_smooth, surge_smooth, pitch_smooth] = process_move(jerk_smooth, surge_smooth, pitch_smooth, ...
-    %   p, p_smooth_tag, ...
-    %   start_idx, end_idx, ...
-    %   logging_start_idxs, logging_end_idxs, ...
-    %   metadata)
+    %   [jerk_smooth, surge_smooth, pitch_smooth] = process_move( ...
+    %       jerk_smooth, surge_smooth, pitch_smooth, ...
+    %       p, p_smooth_tag, ...
+    %       start_idx, end_idx, ...
+    %       logging_start_idxs, logging_end_idxs, ...
+    %       metadata);
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
+    % Author: Ashley Blawas  
+    % Last Updated: August 11, 2025  
     % Stanford University
     
     % Want pitch to be positive for peak detect, so adding min

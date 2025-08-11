@@ -3,22 +3,55 @@ function make_metadata(taglist, dataPath)
         taglist (1, :) cell
         dataPath (1,:) char
     end
-    % Loops over taglist and creates metadata files if not present.
+    % MAKE_METADATA Generates and saves metadata files for each tag record.
     %
-    % Inputs:
-    %   taglist  - Cell array of tag names
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   This function loops over a list of tag names and generates a corresponding
+    %   metadata structure for each tag. If the metadata file already exists in the
+    %   appropriate folder, it will not be overwritten. Otherwise, it extracts key
+    %   parameters from the PRH file (e.g., sampling rate, tag deployment times, species code),
+    %   constructs a standardized metadata struct, and saves it to disk for later use.
     %
-    % Outputs:
-    %   Saves a file in the data path under the species of interest in the "metadata" folder.
-    %   This function saves no variables to the workspace.
+    %   Inputs:
+    %     taglist   - Cell array of tag names (e.g., {'gm01_001a', 'mn02_003b'})
+    %                 Each tag should correspond to an existing PRH .mat file within
+    %                 the species-specific `/prh/` folder inside the dataPath.
     %
-    % Usage:
-    %   make_metadata(taglist, dataPath)
+    %     dataPath  - Base path to the data directory (character array).
+    %                 It should contain subfolders named after species codes (e.g., 'gm', 'mn'),
+    %                 each of which must contain a `prh/` folder with the relevant tag files.
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %   Outputs:
+    %     - This function saves `.mat` files to:
+    %         [dataPath / speciesCode / 'metadata' / tagname '_metadata.mat']
+    %
+    %     - Each metadata file contains a struct with the following example fields:
+    %         fs:         Sampling rate (Hz)
+    %         tag:        Tag ID
+    %         tag_on:     Estimated tag-on time (if present)
+    %         tag_off:    Estimated tag-off time (if present)
+    %         species:    Two-letter species code
+    %         other metadata fields as needed
+    %
+    %     - No variables are returned to the workspace.
+    %
+    %   Usage:
+    %     make_metadata(taglist, dataPath)
+    %
+    %   Assumptions:
+    %     - A valid PRH file exists for each tag in the appropriate `/prh/` subfolder.
+    %     - The function checks for the existence of metadata files before creating new ones.
+    %     - The metadata folder will be created if it does not already exist.
+    %
+    %   Example:
+    %     taglist = {'gm01_001a', 'gm02_002b'};
+    %     dataPath = 'C:\my_data\';
+    %     make_metadata(taglist, dataPath);
+    %
+    %   See also: load_data, make_dives, get_tag_on, get_tag_off
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     
     for k = 1:length(taglist)
@@ -67,7 +100,7 @@ function make_metadata(taglist, dataPath)
                 return
             end
         end
-            
+        
         %Set path for prh files
         settagpath('prh',strcat(dataPath, speciesCode,'\prh'));
         

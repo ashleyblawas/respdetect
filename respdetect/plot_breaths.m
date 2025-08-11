@@ -4,19 +4,57 @@ function [fR] = plot_breaths(dataPath, taglist, k)
         taglist (1, :) cell
         k (1, 1) double {mustBePositive}
     end
-    % Loads and visualizes breath & motion data
+    % PLOT_BREATHS Loads and visualizes breath detections and depth profile.
     %
-    % Inputs:
-    %   dataPath - Base path to data
-    %   taglist  - Cell array of tag names
-    %   k        - Index of tag in taglist to process
+    %   This function loads pre-processed data for a selected tag and plots both
+    %   the continuous instantaneous respiration rate (`fR`) and the associated
+    %   dive profile. Breath detections are overlaid for visual inspection of
+    %   surfacing and breathing patterns.
     %
-    % Output:
-    %   fR       - Instantaneous respiration rate (from get_contfR)
+    %   Inputs:
+    %     dataPath - Base path to data (character array). Should point to the root
+    %                directory containing species folders (e.g., 'gm', 'tt', etc.)
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %     taglist  - Cell array of tag names (e.g., {'gm01_001a', 'gm02_004b'})
+    %
+    %     k        - Index of the tag in taglist to process. This allows looping
+    %                over multiple tags or selecting one at a time (e.g., `taglist{k}`).
+    %
+    %   Outputs:
+    %     fR       - Instantaneous respiration rate (breaths per minute)
+    %                Computed from breath timestamps using `get_contfR.m`.
+    %
+    %   Function Behavior:
+    %     - Loads required data files:
+    %         PRH data (e.g., Aw, pitch, roll, head, p)
+    %         Metadata (e.g., fs, tag date)
+    %         Breath detections (from surfacing classification)
+    %
+    %     - Calculates continuous respiration rate (`fR`) from breath times
+    %
+    %     - Plots:
+    %         Instantaneous respiration rate over time (stairs plot)
+    %         Depth profile with time-aligned breath events
+    %
+    %   Assumptions:
+    %     - Tag data have been pre-processed using:
+    %         `make_metadata`, `make_move`, `make_dives`, and `classify_surfs`
+    %     - Files are organized in the standard folder structure under `dataPath`
+    %     - Breath detections are stored in a file with the suffix `_breaths.mat`
+    %
+    %   Usage:
+    %     [fR] = plot_breaths(dataPath, taglist, 1);
+    %
+    %   Example:
+    %     taglist = {'gm01_001a', 'gm01_002a'};
+    %     dataPath = 'D:\whaledata\';
+    %     k = 1;
+    %     fR = plot_breaths(dataPath, taglist, k);
+    %
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     %% Load Data
     tag = taglist{k};

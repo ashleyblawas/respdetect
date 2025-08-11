@@ -3,22 +3,57 @@ function make_move(taglist, dataPath)
         taglist (1, :) cell
         dataPath (1,:) char
     end
-    % Calculates and saves movement variables used for breath detections.
+    % MAKE_MOVE Computes and saves movement features used in breath detection.
     %
-    % Inputs:
-    %   taglist  - Cell array of tag names
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   This function loops over a list of tag deployments and generates movement-related
+    %   metrics (e.g., jerk, entropy, orientation derivatives) from tri-axial accelerometer
+    %   and orientation signals. These metrics are essential for detecting breaths during
+    %   shallow surfacings.
     %
-    % Outputs:
-    %   Saves a file in the data path under the species of interest in the "movement" folder.
-    %   This function saves no variables to the workspace.
+    %   For each tag, this function loads the PRH file, computes movement metrics, and
+    %   saves the results in the appropriate "movement" folder for later analysis.
     %
-    % Usage:
-    %   make_moves(taglist, dataPath)
+    %   Inputs:
+    %     taglist   - Cell array of tag names (e.g., {'gm01_001a', 'mn02_003b'})
+    %                 Each tag must correspond to a valid PRH file under the species-specific
+    %                 folder in the provided data path.
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
+    %     dataPath  - Base directory where tag data are stored (character array).
+    %                 Must include species folders (e.g., 'gm', 'mn') containing:
+    %                   /prh/      - PRH sensor data (.mat files)
+    %                   /movement/ - Output folder for movement metrics (auto-created if missing)
+    %
+    %   Outputs:
+    %     - Saves a .mat file for each tag to:
+    %         [dataPath / speciesCode / 'movement' / tagname '_movement.mat']
+    %
+    %     - The saved file includes variables such as:
+    %         filtered acceleration (2–15 Hz bandpass or >2 Hz highpass)
+    %         orientation derivatives (pitch, roll, heading)
+    %         Shannon entropy and smoothed entropy
+    %         jerk (acceleration derivative magnitude)
+    %
+    %     - No variables are returned to the MATLAB workspace.
+    %
+    %   Assumptions:
+    %     - PRH files are correctly formatted and contain required fields:
+    %         Aw (acceleration), pitch, roll, head, p (depth), fs (sampling rate)
+    %     - NaNs in sensor signals represent missing or invalid data and are handled internally
+    %     - The movement folder will be created if it does not already exist
+    %
+    %   Usage:
+    %     make_move(taglist, dataPath)
+    %
+    %   Example:
+    %     taglist = {'tt01_001a', 'tt01_002a'};
+    %     dataPath = 'D:\whaledata\';
+    %     make_move(taglist, dataPath);
+    %
+    %   See also: calc_move, make_metadata, load_data
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     % Load in metadata and prh
     for k = 1:length(taglist)
