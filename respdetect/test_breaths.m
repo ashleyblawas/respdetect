@@ -1,22 +1,48 @@
-function test_breaths(dataPath, ref_filename, test_filename, tolerance);
+function test_breaths(dataPath, ref_filename, test_filename, tolerance)
     arguments
         dataPath (1,:) char
         ref_filename (1,:) char
         test_filename (1,:) char
         tolerance (1,:) double {mustBePositive}
     end
-    % Compare user generated breath detections to reference.
+    % TEST_BREATHS Compare user-generated breath detections against a reference file.
+    %
+    % This function compares detected breath events (from a test file) to a known
+    % reference file and prints out a summary of detection performance, including:
+    %   - Number of breaths
+    %   - Instantaneous breathing rate (breaths per minute)
+    %   - Inter-breath interval (IBI)
+    %   - Detection count mismatch (over-/under-detection)
+    %   - Suggestions for improving detection if mismatch exists
+    %
+    % The function also calls `evaluate_detections` to match detected events
+    % against the reference within a given time `tolerance`.
     %
     % Inputs:
-    %   dataPath
-    %   ref_times   - vector of reference breath times (in seconds or datetimes)
-    %   test_times  - vector of detected breath times
-    %   tolerance   - allowable difference (in seconds) to count as a match
+    %   dataPath     - Base path to data directory (e.g., 'C:\my_data\')
+    %   ref_filename - Filename of reference breath detections (e.g., 'gm09_123a_breaths.mat')
+    %   test_filename- Filename of test breath detections to evaluate
+    %   tolerance    - Allowable time difference (in seconds) to count a detection
+    %                  as a match
     %
-    % Output:
+    % Outputs:
+    %   (None returned; outputs printed to console. Matching logic handled by
+    %   evaluate_detections.)
+    %
+    % Assumptions:
+    %   - Both input .mat files contain a struct named `all_breath_locs` with the
+    %     field `breath_idx`, and a scalar `fs` (sampling rate in Hz).
+    %   - Filenames begin with species code (first two characters), used to locate
+    %     the 'breaths' subfolder (e.g., `dataPath/gm/breaths/filename.mat`).
+    %
+    % Usage:
+    %   test_breaths('C:\data\', 'gm08_123a_breaths.mat', 'gm08_123a_test.mat', 2)
+    %
+    % Related Functions:
+    %   evaluate_detections
     %
     % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
+    % Last Updated: August 11, 2025
     % Stanford University
     
     ref_data = load(fullfile(dataPath, ref_filename(1:2), "breaths", ref_filename));

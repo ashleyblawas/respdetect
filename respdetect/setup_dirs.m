@@ -4,22 +4,41 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath
         tag_ver (1, :) char
         dataPath (1,:) char
     end
-    % Sets up the typical Matlab directories for a given record including
-    % audit, cal, and prh
+    % SETUP_DIRS Configures standard data and tool paths for a given tag deployment.
+    %
+    % This function sets up the necessary paths for working with a specific
+    % deployment tag by assigning paths to recording directories, audit files,
+    % and loading the appropriate dtagtools version (D2 or D3).
     %
     % Inputs:
-    %   tag - In the usual tag form "gm08_143b"
-    %   tag_ver - Either D2, D3, or other to know which Matlab tools to use
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   tag         - Tag name in standard format (e.g., 'gm08_143b')
+    %   tag_ver     - Tag version ('D2', 'D3', or other)
+    %   dataPath    - Base path to your data repository (e.g., 'C:\my_data\')
+    %
+    % Outputs:
+    %   recdir             - Full path to the recording directory for the tag
+    %   prefix             - Tag prefix used for naming outputs
+    %   acousaud_filename  - Full path to the acoustic audit file for the tag
     %
     % Usage:
-    %  [recdir, prefix, acousaud_filename] = setup_dirs('gm08_143b', 'D2', 'C:\my_data\'))
+    %   [recdir, prefix, acousaud_filename] = setup_dirs('gm08_143b', 'D2', 'C:\my_data\')
+    %
+    % Behavior:
+    %   - Constructs full path to the recording folder using species/year from tag.
+    %   - Constructs path to the acoustic audit file.
+    %   - Adds appropriate dtagtools version (D2 or D3) to MATLAB path.
+    %   - Uses `settagpath` to configure 'prh' and 'audit' paths for Dtag tools.
     %
     % Assumptions:
-    %   - This function is located somewhere inside the respdetect directory.
+    %   - Function is located within the 'respdetect' directory tree.
+    %   - The `dtagtools` folder exists inside 'respdetect' and contains both D2 and D3 versions.
+    %   - The `settagpath` function is available and in the path.
+    %
+    % Errors:
+    %   - Throws an error if 'respdetect' directory cannot be found upward from current file.
     %
     % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
+    % Last Updated: August 11, 2025
     % Stanford University
     
     currentFile = mfilename('fullpath');

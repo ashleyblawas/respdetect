@@ -1,12 +1,36 @@
 function set_ksdensity()
-    % Adds ksdensity path from the Statistics Toolbox to the top of the
-    % path
+    % SET_KSDENSITY Ensures the correct `ksdensity` function from MATLAB's Statistics Toolbox is used
+    %
+    % This function verifies that the `ksdensity` function in the current MATLAB path
+    % originates from the official Statistics Toolbox and moves its folder to the top of the path
+    % to avoid conflicts with custom or shadowed versions.
+    %
+    % Behavior:
+    %   - Locates the path of the `ksdensity` function using `which`
+    %   - Checks that the path includes the expected toolbox directory structure
+    %     (i.e., it is from `toolbox/stats/stats`)
+    %   - If found, it moves the folder containing `ksdensity.m` to the top of the MATLAB path
+    %   - Throws an error if `ksdensity` is missing or not from the expected source
+    %
+    % Notes:
+    %   - This is useful in environments where shadowed or custom versions of `ksdensity`
+    %     may interfere with analysis scripts.
+    %   - Requires the Statistics and Machine Learning Toolbox.
+    %
+    % Inputs:
+    %   None
+    %
+    % Outputs:
+    %   None (Modifies MATLAB path in session if applicable)
+    %
+    % Usage:
+    %   set_ksdensity()
     %
     % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
+    % Last Updated: August 11, 2025
     % Stanford University
     
-     % Add this path to make sure using the right ksdensity
+    % Add this path to make sure using the right ksdensity
     % Get the full path to the official ksdensity.m
     ksPath = which('ksdensity');
     
