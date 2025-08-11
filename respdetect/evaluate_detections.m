@@ -47,9 +47,12 @@ function results = evaluate_detections(ref_times, test_times, tolerance)
     % Match each test breath to a reference breath
     matched_ref = false(size(ref_times));
     matched_test = false(size(test_times));
-    matched_pairs = [];
     
+    % Preallocate for speed
+    max_matches = length(test_times);  % Worst case: every test_time has a match
+    matched_pairs = zeros(max_matches, 2);  % Preallocate as 2-column matrix
     matched = 0;
+    
     for i = 1:length(test_times)
         time_diffs = abs(ref_times - test_times(i));
         [min_diff, idx] = min(time_diffs);
@@ -57,11 +60,13 @@ function results = evaluate_detections(ref_times, test_times, tolerance)
         if min_diff <= tolerance && ~matched_ref(idx)
             matched_ref(idx) = true;
             matched_test(i) = true;
-            matched_pairs = [matched_pairs; ref_times(idx), test_times(i)];
             matched = matched + 1;
+            matched_pairs(matched, :) = [ref_times(idx), test_times(i)];
         end
     end
     
+    % Trim unused preallocated rows
+    matched_pairs = matched_pairs(1:matched, :);
     
     % Compute stats
     TP = sum(matched_test);

@@ -1,7 +1,6 @@
-function fR = get_contfR(breath_times, breath_idx, p, date, metadata)
+function fR = get_contfR(breath_times, p, date, metadata)
     arguments
         breath_times (:,1) {mustBeNonempty}
-        breath_idx (:,1) double {mustBePositive, mustBeInteger, mustBeVector}
         p (:,1) double {mustBeNonempty, mustBeFinite}
         date (:,1) {mustBeNonempty}  % Can be datetime or numeric
         metadata struct
@@ -14,7 +13,6 @@ function fR = get_contfR(breath_times, breath_idx, p, date, metadata)
     %
     %   Inputs:
     %     breath_times - Nx1 vector of breath times (datetime or numeric, depending on tag type)
-    %     breath_idx   - Nx1 vector of indices into the depth vector `p` for each breath
     %     p            - Depth vector (same length as deployment duration)
     %     date         - Time vector (same length as `p`) used for plotting
     %     metadata     - Struct containing tag metadata, including the field 'tag_ver'
