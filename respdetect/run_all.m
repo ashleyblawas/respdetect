@@ -52,8 +52,9 @@
 % Clear workspace and command window and close all figures
 clear; clc; close all
 
-% Manually enter the path where your data files are stored...
-data_path = 'C:\Users\ashle\Dropbox\Ashley\Graduate\Manuscripts\respdetect\tests\';
+% Manually enter the path where your data files are stored or leave blank to default to test path...
+data_path = [];
+% e.g., 'C:\Users\me\Projects\WhaleData\';
 
 % Set the species code of the folder for analysis
 speciesCode = 'gm';
