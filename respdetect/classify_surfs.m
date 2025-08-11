@@ -1,27 +1,44 @@
 function [single_breath_surf_rows, logging_surf_rows, ...
-        logging_start_idxs, logging_end_idxs, logging_ints_s, p_shallow_ints, all_breath_locs] = ...
+        logging_start_idxs, logging_end_idxs, logging_ints_s, ...
+        p_shallow_ints, all_breath_locs] = ...
         classify_surfs(p_shallow_ints, p_shallow_idx, p_shallow, time_sec, ...
         start_idx, n_sec, fs)
-    % Classifies surfacings into single-breath and logging types.
+    % CLASSIFY_SURFS Classifies shallow surfacings into single-breath or logging types.
     %
-    % Inputs:
-    %   p_shallow_ints   - [Nx3] matrix where column 3 contains duration in samples
-    %   p_shallow_idx    - [Mx1] vector of indices into the depth array
-    %   p_shallow        - Logical vector to say wether p is shallow or not
-    %   time_sec         - Time vector in seconds
-    %   start_idx        - Index offset for tag-on period
-    %   n_sec            - Threshold duration (in seconds) for logging surfacing
-    %   fs               - Sampling frequency (Hz)
+    %   This function takes shallow interval data and separates surfacing events
+    %   into short, single-breath surfacings or longer logging bouts based on a
+    %   duration threshold (n_sec). It also detects breath cues for single-breath
+    %   surfacings and records timing for all logging events.
     %
-    % Outputs:
-    %   single_breath_surf_rows - Row indices of short surfacings (<= n_sec)
-    %   logging_surf_rows       - Row indices of longer logging surfacings
-    %   logging_start_idxs      - Indices of logging start points (into depth array)
-    %   logging_end_idxs        - Indices of logging end points (into depth array)
-    %   logging_ints_s          - [Nx2] matrix of logging intervals in seconds (start, end)
-    %   p_shallow_ints          - New column for index of depth minima for
-    %   single surfacing breaths
-    %   all_breath_locs         - Info with time and cue for each breath
+    %   Inputs:
+    %     p_shallow_ints  - [Nx3] matrix of shallow intervals; columns are:
+    %                         [start_idx, end_idx, duration_in_samples]
+    %     p_shallow_idx   - [Mx1] vector of indices into depth data (e.g., p)
+    %     p_shallow       - Logical vector indicating shallow positions in p
+    %     time_sec        - Time vector (in seconds)
+    %     start_idx       - Index offset corresponding to tag-on point
+    %     n_sec           - Duration threshold in seconds for logging classification
+    %     fs              - Sampling frequency in Hz
+    %
+    %   Outputs:
+    %     single_breath_surf_rows - Indices of rows in p_shallow_ints for single-breath surfacings
+    %     logging_surf_rows       - Indices of rows in p_shallow_ints for logging surfacings
+    %     logging_start_idxs      - Start indices (into p) of logging bouts
+    %     logging_end_idxs        - End indices (into p) of logging bouts
+    %     logging_ints_s          - [Nx2] matrix of logging intervals in seconds [start, end]
+    %     p_shallow_ints          - Updated p_shallow_ints with 4th column indicating
+    %                               depth minima index for single-breath surfacings
+    %     all_breath_locs         - Struct with:
+    %                                 - breath_idx: indices of detected single breaths
+    %                                 - type: surfacing type ("ss" = single surfacing)
+    %
+    %   Example:
+    %     [sbs_rows, log_rows, log_starts, log_ends, log_ints, psi_out, breaths] = ...
+    %         classify_surfs(p_ints, p_idx, p_shallow, t_sec, start_idx, 10, 50);
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: August 11, 2025
+    %   Stanford University
     
     % Classify surfacings
     sample_threshold = n_sec * fs;

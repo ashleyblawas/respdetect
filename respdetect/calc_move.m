@@ -1,28 +1,45 @@
 function calc_move(fs, Aw, p, pitch, roll, head, movement_fname)
-    arguments
-        fs (1, 1) double
-        Aw (:, 3) double
-        p (:, 1) double
-        pitch (:, 1) double
-        roll (:, 1) double
-        head (:, 1) double
-        movement_fname (1, :) string
-    end
-    % Calculates movement metrics and saves them into a movement file on
-    % the data path
+    % CALC_MOVE Computes movement metrics from accelerometer and orientation data.
     %
-    % Inputs:
-    %   taglist  - Cell array of tag names
-    %   dataPath - Base path to data (e.g., 'C:\my_data\')
+    %   This function processes tri-axial acceleration (Aw) and orientation
+    %   signals (pitch, roll, head) to calculate various movement metrics,
+    %   including filtered signals, derivatives, jerk, and Shannon entropy-based
+    %   features. The results are saved to a `.mat` file specified by the user.
     %
-    % Usage:
-    %   calc_move(taglist, dataPath)
+    %   Inputs:
+    %     fs             - Sampling rate in Hz (scalar)
+    %     Aw             - Nx3 matrix of acceleration data [surge, sway, heave]
+    %     p              - Nx1 pressure or depth vector (used for reference)
+    %     pitch          - Nx1 pitch angle (radians or degrees)
+    %     roll           - Nx1 roll angle
+    %     head           - Nx1 heading angle
+    %     movement_fname - String name of output .mat file where results are saved
     %
-    % Author: Ashley Blawas
-    % Last Updated: 7/11/2025
-    % Stanford University
-       
-    % Calculate filtered acceleration   
+    %   Outputs:
+    %     None (results are saved to 'movement_fname' file)
+    %
+    %   Movement metrics calculated:
+    %     - Filtered acceleration signals (2–15 Hz bandpass or >2 Hz highpass)
+    %     - Derivatives (diff) of acceleration and orientation
+    %     - Shannon entropy of derivatives
+    %     - Smoothed entropy over 5-second moving window
+    %     - Jerk (time derivative of acceleration vector)
+    %
+    %   The function handles NaNs in the input data by filtering only the valid
+    %   segments and reintroducing NaNs to preserve original data length.
+    %
+    %   Example:
+    %     calc_move(50, Aw, p, pitch, roll, head, "results/movement_metrics.mat");
+    %
+    %   Assumptions:
+    %     - The input vectors are all the same length.
+    %     - NaNs represent invalid data points and are handled internally.
+    %
+    %   Author: Ashley Blawas
+    %   Last Updated: 8/11/2025
+    %   Stanford University
+    
+    % Calculate filtered acceleration
     % Rename Aw vector
     surge = Aw(:, 1);
     sway = Aw(:, 2);
