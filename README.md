@@ -33,7 +33,7 @@ Check out the repository Wiki (linked above and to screenshot below) for detaile
 [![The home page of the repository Wiki.](images/wiki_screenshot.png)](https://github.com/ashleyblawas/respdetect/wiki).
 
 ## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change. More information on contributing can be found [here](https://github.com/ashleyblawas/respdetect/edit/main/CONTRIBUTING.md).
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change. More information on contributing can be found [here](https://github.com/ashleyblawas/respdetect/blob/main/CONTRIBUTING.md).
 
 ## License
 [GNU](https://choosealicense.com/licenses/gpl-3.0/)
