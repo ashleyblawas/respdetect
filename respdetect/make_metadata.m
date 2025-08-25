@@ -66,7 +66,7 @@ function make_metadata(taglist, dataPath)
         speciesCode = tag(1:2);
         
         % Make metadata file
-        metadata_fname = strcat(dataPath, speciesCode, "\metadata\", tag, "md.mat");
+        metadata_fname = strcat(dataPath, '\', speciesCode, "\metadata\", tag, "md.mat");
         
         if isfile(metadata_fname)
             fprintf("A metadata file already exists for %s.\n", tag);
@@ -86,7 +86,7 @@ function make_metadata(taglist, dataPath)
                 case 'a'
                     % Append suffix to filename
                     suffix = input("Enter a suffix to append (e.g., _v2): ", 's');
-                    metadata_fname = strcat(dataPath, speciesCode, "\metadata\", tag, suffix, "md");
+                    metadata_fname = strcat(dataPath, '\', speciesCode, "\metadata\", tag, suffix, "md");
                 case 'o'
                     % Overwrite: continue without changes
                 otherwise

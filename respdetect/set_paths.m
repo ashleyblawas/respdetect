@@ -1,4 +1,4 @@
-function set_paths(dataPath)
+function data_path = set_paths(dataPath)
     arguments
         dataPath (1,:) char = ''  % Make input optional
     end
@@ -50,10 +50,10 @@ function set_paths(dataPath)
     
     % Resolve data path
     if isempty(dataPath)
-        dataPath = fullfile(repoRoot, 'tests');
+        data_path = fullfile(repoRoot, 'tests');
     elseif ~isfolder(dataPath)
         % Assume it's a relative path, resolve it from current working dir
-        dataPath = fullfile(pwd, dataPath);
+        data_path = fullfile(pwd, dataPath);
     end
     
     % Validate paths
@@ -63,17 +63,17 @@ function set_paths(dataPath)
     if ~isfolder(dtagtoolsPath)
         error('dtagtools path not found at: %s', dtagtoolsPath);
     end
-    if ~isfolder(dataPath)
-        error('The data path does not exist: %s', dataPath);
+    if ~isfolder(data_path)
+        error('The data path does not exist: %s', data_path);
     end
     
     % Add paths to MATLAB
     addpath(genpath(respdetectPath));
     addpath(genpath(dtagtoolsPath));
-    addpath(dataPath);  % Flat add for data
+    addpath(data_path);  % Flat add for data
     
     % Display confirmation
     fprintf('Added respdetect path: %s\n', respdetectPath);
     fprintf('Added dtagtools path:  %s\n', dtagtoolsPath);
-    fprintf('Added data path:       %s\n', dataPath);
+    fprintf('Added data path:       %s\n', data_path);
 end

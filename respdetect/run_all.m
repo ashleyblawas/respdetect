@@ -60,7 +60,7 @@ data_path = [];
 speciesCode = 'gm';
 
 % Set the data and tool paths
-set_paths(data_path);
+data_path = set_paths(data_path);
 
 % Allow the user to select the prh files to analyze from a given species
 % folder
