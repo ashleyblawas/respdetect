@@ -64,11 +64,11 @@ function make_move(taglist, dataPath)
         speciesCode = tag(1:2);
         
         % Load in metadata
-        load(strcat(dataPath, speciesCode, "\metadata\", tag, "md"));
+        load(strcat(dataPath, '\', speciesCode, "\metadata\", tag, "md"));
         clear tag
         
         % Make movement filename
-        movement_fname = strcat(dataPath, speciesCode, "\movement\", metadata.tag, "movement.mat");
+        movement_fname = strcat(dataPath,'\', speciesCode, "\movement\", metadata.tag, "movement.mat");
         
         if isfile(movement_fname)
             fprintf("A movement file already exists for %s.\n", metadata.tag);
