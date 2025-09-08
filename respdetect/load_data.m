@@ -75,8 +75,8 @@ function taglist = load_data(dataPath, speciesCode)
     % Make new folders in data path if they don't already exist
     flds = ["metadata", "diving", "movement", "breaths", "figs", "audit"];
     for i = 1:length(flds)
-        if not(isfolder(strcat(dataPath, speciesCode, '\', flds(i))))
-            mkdir(strcat(dataPath, speciesCode, '\', flds(i)));
+        if not(isfolder(strcat(dataPath, '\', speciesCode, '\', flds(i))))
+            mkdir(strcat(dataPath, '\', speciesCode, '\', flds(i)));
         end
     end
     
