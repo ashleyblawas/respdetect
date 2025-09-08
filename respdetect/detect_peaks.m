@@ -1,7 +1,7 @@
 function [locs, width, prom, idx, rm_group] = detect_peaks(fs, move_sig, val, min_sec_apart)
     arguments
         fs (1,1) double {mustBePositive, mustBeFinite}                     % Sampling rate in Hz
-        move_sig (:,1) double {mustBeNonempty, mustBeFinite}              % Movement signal (e.g., jerk or surge entropy)
+        move_sig (:,1) double                                              % Movement signal (e.g., jerk or surge entropy)
         val (1,1) double {mustBeInteger, mustBePositive}                  % Plot index value for subplot
         min_sec_apart (1,1) double {mustBePositive, mustBeFinite}         % Minimum seconds between peaks
     end
