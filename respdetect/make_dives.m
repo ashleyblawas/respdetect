@@ -64,11 +64,11 @@ function make_dives(taglist, dataPath, dive_thres)
         speciesCode = tag(1:2);
         
         % Load in metadata
-        load(strcat(dataPath, speciesCode, "\metadata\", tag, "md"));
+        load(strcat(dataPath, '\', speciesCode, "\metadata\", tag, "md"));
         clear tag
         
         %Set path for prh files
-        settagpath('prh',strcat(dataPath, speciesCode, '\prh'));
+        settagpath('prh',strcat(dataPath, '\', speciesCode, '\prh'));
         
         % Load the existing prh file
         loadprh(metadata.tag);
@@ -91,8 +91,8 @@ function make_dives(taglist, dataPath, dive_thres)
         [time_sec, ~, ~] =calc_time(metadata.fs, p_tag);
         
         % Make a diving file
-        dive_fname = strcat(dataPath, speciesCode, "\diving\", metadata.tag, "dives.mat");
-        diveTable_fname = strcat(dataPath, speciesCode, "\diving\", metadata.tag, "divetable.mat");
+        dive_fname = strcat(dataPath, '\', speciesCode, "\diving\", metadata.tag, "dives.mat");
+        diveTable_fname = strcat(dataPath, '\', speciesCode, "\diving\", metadata.tag, "divetable.mat");
         
         if isfile(dive_fname)
             fprintf("A dive file already exists for %s.\n", metadata.tag);
@@ -113,8 +113,8 @@ function make_dives(taglist, dataPath, dive_thres)
                 case 'a'
                     % Append suffix to filename
                     suffix = input("Enter a suffix to append (e.g., _v2): ", 's');
-                    dive_fname = strcat(dataPath, speciesCode, "\diving\", metadata.tag, suffix, "dives.mat");
-                    diveTable_fname = strcat(dataPath, speciesCode, "\diving\", metadata.tag, suffix, "divetable.mat");
+                    dive_fname = strcat(dataPath, '\', speciesCode, "\diving\", metadata.tag, suffix, "dives.mat");
+                    diveTable_fname = strcat(dataPath, '\', speciesCode, "\diving\", metadata.tag, suffix, "divetable.mat");
                 case 'o'
                     % Overwrite: continue without changes
                 otherwise
