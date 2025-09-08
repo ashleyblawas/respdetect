@@ -45,7 +45,7 @@ function test_breaths(dataPath, ref_filename, test_filename, tolerance)
     % Last Updated: August 11, 2025
     % Stanford University
     
-    ref_data = load(fullfile(dataPath, ref_filename(1:2), "breaths", ref_filename));
+    ref_data = load(fullfile(dataPath, ref_filename(1:2), ref_filename));
     ref_breath_idx = ref_data.all_breath_locs.breath_idx;
     ref_breath_s = ref_breath_idx / ref_data.fs;
     ref_ibi = diff(ref_breath_s);
