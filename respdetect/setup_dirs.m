@@ -56,13 +56,13 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath
     %% Use tag name to assign directories and filenames
     sp_year = tag(1:4);
     % Set parent directory
-    recdir = strcat(dataPath, sp_year, '\', tag);
+    recdir = strcat(dataPath, '\', sp_year, '\', tag);
     % Set deployment name, probably the same as the parent folder
     prefix = tag;
     speciesCode = tag(1:2);
     
     % Set name of acoustic audit file
-    acousaud_filename = strcat(dataPath, speciesCode, '\audit\', tag, '_acousticaud.txt');
+    acousaud_filename = strcat(dataPath, '\', speciesCode, '\audit\', tag, '_acousticaud.txt');
     
     if strcmp(tag_ver, 'D3') == 1
         addpath(genpath(strcat(mat_tools_path, '\d3'))); %Add all of your tools to the path
@@ -72,10 +72,10 @@ function [recdir, prefix, acousaud_filename] = setup_dirs(tag, tag_ver, dataPath
     
     %% Set other paths
     %Set path for prh files
-    settagpath('prh',strcat(dataPath, speciesCode, '\prh'));
+    settagpath('prh',strcat(dataPath, '\', speciesCode, '\prh'));
     
     %Set path for audit files
-    settagpath('audit',strcat(dataPath, speciesCode,'\audit'));
+    settagpath('audit',strcat(dataPath, '\', speciesCode,'\audit'));
     
 end
 
