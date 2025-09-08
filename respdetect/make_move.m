@@ -106,6 +106,9 @@ function make_move(taglist, dataPath)
         % Setup directories
         [~, ~, ~] = setup_dirs(metadata.tag, metadata.tag_ver, dataPath);
         
+        pitch = [];
+        head = [];
+        
         % Load the existing prh file
         loadprh(metadata.tag);
         
