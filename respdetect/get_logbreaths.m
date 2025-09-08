@@ -61,6 +61,7 @@ function [all_breath_locs] = get_logbreaths( ...
     %   Stanford University
     
     % Preallocate with max possible size
+    num_sections = length(temp_diff_break) +1;
     log_breath_locs = NaN(num_sections, 1);
     log_breath_count = 0;
     
