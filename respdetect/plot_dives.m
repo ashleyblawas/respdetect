@@ -1,6 +1,6 @@
 function plot_dives(T, time_sec, p)
     arguments
-        T (:, 3) double           % Dive matrix with 3 columns: [start, end, max depth]
+        T (:, 6) double           % Dive matrix with 3 columns: [start, end, max depth]
         time_sec (1, :) double    % Time vector (row vector)
         p (:, 1) double           % Depth vector (column vector)
     end
