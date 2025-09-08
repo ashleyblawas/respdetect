@@ -1,7 +1,7 @@
 function fR = get_contfR(breath_times, p, date, metadata)
     arguments
         breath_times (:,1) {mustBeNonempty}
-        p (:,1) double {mustBeNonempty, mustBeFinite}
+        p (:,1) double {mustBeNonempty}
         date (:,1) {mustBeNonempty}  % Can be datetime or numeric
         metadata struct
     end
