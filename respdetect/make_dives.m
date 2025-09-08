@@ -5,7 +5,7 @@ function make_dives(taglist, dataPath, dive_thres)
         dive_thres (1,:) double {mustBePositive}
     end
     % MAKE_DIVES Identifies dives across multiple tag records and saves dive metadata.
-    %    
+    %
     %   This function processes pressure (depth) data from a list of tagged animals to detect
     %   dive events based on a specified depth threshold. For each tag in the list, it loads
     %   the associated data, identifies individual dives, and saves dive-related metrics to
@@ -143,69 +143,70 @@ function make_dives(taglist, dataPath, dive_thres)
             % Add back start index if needed to time variables
             if metadata.tag_on ~=0
                 T(:, [1:2, 4]) = T(:, [1:2, 4]) + metadata.tag_on;
-                
-                nDives = size(T, 1);  % Number of dives
-                
-                % Preallocate with appropriate data types
-                tag = repmat({metadata.tag}, nDives, 1);    % Cell array of strings
-                depth_thres = repmat(dive_thres, nDives, 1);  % All same threshold
-                dive_num = (1:nDives)';                      % Dive numbers
-                
-                dive_start = zeros(nDives, 1);
-                dive_end = zeros(nDives, 1);
-                max_depth = zeros(nDives, 1);
-                time_maxdepth = zeros(nDives, 1);
-                dive_dur = zeros(nDives, 1);
-                
-                % Extract dive information from T
-                for i = 1:nDives
-                    
-                    tag{i} = metadata.tag;
-                    depth_thres(i) = dive_thres;
-                    dive_num(i) = i;
-                    dive_start(i) = T(i, 1);
-                    dive_end(i) = T(i, 2);
-                    max_depth(i) = T(i, 3);
-                    time_maxdepth(i) = T(i, 4);
-                    dive_dur(i) = dive_end(i) - dive_start(i);
-                    
-                    % Get dive start and end in indices
-                    % start_idx_dive = find(abs(time_sec-dive_start(i))==min(abs(time_sec-dive_start(i))));
-                    % end_idx_dive = find(abs(time_sec-dive_end(i))==min(abs(time_sec-dive_end(i))));
-                    
-                end
-                
-                surf_num = zeros(nDives, 1);
-                surf_start = zeros(nDives, 1);
-                surf_end = zeros(nDives, 1);
-                surf_dur = zeros(nDives, 1);
-                
-                % Extract surface information from dive information
-                for i = 1:size(T, 1)-1
-                    surf_num(i) = i';
-                    surf_start(i) = dive_end(i)';
-                    surf_end(i) = dive_start(i+1)';
-                    surf_dur(i) = surf_end(i)-surf_start(i);
-                end
-                
-                surf_num(size(T, 1)) = NaN;
-                surf_start(size(T, 1)) = NaN';
-                surf_end(size(T, 1)) = NaN';
-                surf_dur(size(T, 1)) = NaN';
-                
-                % Save dive variables to mat file
-                save(dive_fname, 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
-                
-                % Save dive variables as a table (analog to typical T
-                % variable)
-                Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
-                Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
-                save(diveTable_fname, 'Tab')
-                
-                disp('Dive detection complete!');
             end
             
-            save_fig(dataPath, speciesCode, metadata, 'dives')
+            nDives = size(T, 1);  % Number of dives
+            
+            % Preallocate with appropriate data types
+            tag = repmat({metadata.tag}, nDives, 1);    % Cell array of strings
+            depth_thres = repmat(dive_thres, nDives, 1);  % All same threshold
+            dive_num = (1:nDives)';                      % Dive numbers
+            
+            dive_start = zeros(nDives, 1);
+            dive_end = zeros(nDives, 1);
+            max_depth = zeros(nDives, 1);
+            time_maxdepth = zeros(nDives, 1);
+            dive_dur = zeros(nDives, 1);
+            
+            % Extract dive information from T
+            for i = 1:nDives
+                
+                tag{i} = metadata.tag;
+                depth_thres(i) = dive_thres;
+                dive_num(i) = i;
+                dive_start(i) = T(i, 1);
+                dive_end(i) = T(i, 2);
+                max_depth(i) = T(i, 3);
+                time_maxdepth(i) = T(i, 4);
+                dive_dur(i) = dive_end(i) - dive_start(i);
+                
+                % Get dive start and end in indices
+                % start_idx_dive = find(abs(time_sec-dive_start(i))==min(abs(time_sec-dive_start(i))));
+                % end_idx_dive = find(abs(time_sec-dive_end(i))==min(abs(time_sec-dive_end(i))));
+                
+            end
+            
+            surf_num = zeros(nDives, 1);
+            surf_start = zeros(nDives, 1);
+            surf_end = zeros(nDives, 1);
+            surf_dur = zeros(nDives, 1);
+            
+            % Extract surface information from dive information
+            for i = 1:size(T, 1)-1
+                surf_num(i) = i';
+                surf_start(i) = dive_end(i)';
+                surf_end(i) = dive_start(i+1)';
+                surf_dur(i) = surf_end(i)-surf_start(i);
+            end
+            
+            surf_num(size(T, 1)) = NaN;
+            surf_start(size(T, 1)) = NaN';
+            surf_end(size(T, 1)) = NaN';
+            surf_dur(size(T, 1)) = NaN';
+            
+            % Save dive variables to mat file
+            save(dive_fname, 'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur');
+            
+            % Save dive variables as a table (analog to typical T
+            % variable)
+            Tab = table(tag', depth_thres', dive_num', dive_start', dive_end', max_depth', time_maxdepth', dive_dur', surf_num', surf_start', surf_end', surf_dur');
+            Tab.Properties.VariableNames = {'tag', 'depth_thres', 'dive_num', 'dive_start', 'dive_end', 'max_depth', 'time_maxdepth', 'dive_dur', 'surf_num', 'surf_start', 'surf_end', 'surf_dur'};
+            save(diveTable_fname, 'Tab')
+            
+            disp('Dive detection complete!');
         end
+        
+        save_fig(dataPath, speciesCode, metadata, 'dives')
     end
-    
+end
+
