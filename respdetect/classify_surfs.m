@@ -6,7 +6,7 @@ function [single_breath_surf_rows, logging_surf_rows, ...
     arguments
         p_shallow_ints (:,3) double {mustBeNonempty, mustBeFinite}   % [Nx3] matrix of shallow intervals
         p_shallow_idx (:,1) double {mustBeNonnegative, mustBeInteger} % Indices into depth array
-        p_shallow (:,1) logical {mustBeNonempty}                     % Logical vector for shallow positions
+        p_shallow (:,1) double                                       % Logical vector for shallow positions
         time_sec (:,1) double {mustBeNonempty, mustBeFinite}         % Time in seconds
         start_idx (1,1) double {mustBeNonnegative, mustBeInteger}    % Offset index (e.g., tag-on index)
         n_sec (1,1) double {mustBePositive, mustBeFinite}            % Threshold duration for logging
