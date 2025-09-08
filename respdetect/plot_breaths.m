@@ -60,22 +60,22 @@ function [fR] = plot_breaths(dataPath, taglist, k)
     tag = taglist{k};
     speciesCode = tag(1:2);
     
-    metadata = load(fullfile(dataPath, speciesCode, 'metadata', [tag, 'md']));
+    metadata = load(fullfile(dataPath, '\', speciesCode, 'metadata', [tag, 'md']));
     metadata = metadata.metadata; % if stored in struct
     
-    settagpath('prh', fullfile(dataPath, speciesCode, 'prh'));
+    settagpath('prh', fullfile(dataPath, '\', speciesCode, 'prh'));
     loadprh(metadata.tag);
     
     % Load movement data
-    move_file = fullfile(dataPath, speciesCode, 'movement', [metadata.tag, 'movement.mat']);
+    move_file = fullfile(dataPath, '\', speciesCode, 'movement', [metadata.tag, 'movement.mat']);
     load(move_file, 'p', 'jerk_smooth', 'surge_smooth', 'pitch_smooth');
     
     % Load breath detection data
-    breath_file = fullfile(dataPath, speciesCode, 'breaths', [metadata.tag, 'breaths.mat']);
+    breath_file = fullfile(dataPath, '\', speciesCode, 'breaths', [metadata.tag, 'breaths.mat']);
     load(breath_file, 'all_breath_locs');
     
     % Recalculate time
-    [time_sec, time_min, ~] = calc_time(metadata.fs, pitch);
+    [time_sec, time_min, ~] = calc_time(metadata.fs, p);
     
     breath_idx = all_breath_locs.breath_idx;
     
