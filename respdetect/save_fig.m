@@ -41,7 +41,7 @@ function save_fig(dataPath, speciesCode, metadata, fig_suffix)
     % Stanford University
     
     % Construct full figure file path
-    figDir = fullfile(dataPath, speciesCode, 'figs');
+    figDir = fullfile(dataPath, '\', speciesCode, 'figs');
     if ~exist(figDir, 'dir')
         mkdir(figDir);
     end

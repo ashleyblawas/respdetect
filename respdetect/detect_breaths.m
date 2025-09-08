@@ -58,10 +58,10 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         tag = taglist{k}; speciesCode = tag(1:2);
         
         % Load in metadata, movement, and diving data
-        load(strcat(dataPath, speciesCode, "\metadata\", tag, "md")); clear tag;
+        load(strcat(dataPath, '\', speciesCode, "\metadata\", tag, "md")); clear tag;
         
-        breath_fname = strcat(dataPath, speciesCode, "\breaths\", metadata.tag, "breaths.mat");
-        breath_txt_fname = strcat(dataPath, speciesCode, '/breaths/', metadata.tag, 'breaths.txt');
+        breath_fname = strcat(dataPath,'\', speciesCode, "\breaths\", metadata.tag, "breaths.mat");
+        breath_txt_fname = strcat(dataPath, '\',speciesCode, '/breaths/', metadata.tag, 'breaths.txt');
         
         if isfile(breath_fname)
             fprintf("A breaths file already exists for %s.\n", metadata.tag);
@@ -81,8 +81,8 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
                 case 'a'
                     % Append suffix to filename
                     suffix = input("Enter a suffix to append (e.g., _v2): ", 's');
-                    breath_fname = strcat(dataPath, speciesCode, "\breaths\", metadata.tag, suffix, "breaths.mat");
-                    breath_txt_fname = strcat(dataPath, speciesCode, '\breaths\', metadata.tag, suffix, 'breaths.txt');
+                    breath_fname = strcat(dataPath,'\', speciesCode, "\breaths\", metadata.tag, suffix, "breaths.mat");
+                    breath_txt_fname = strcat(dataPath, '\',speciesCode, '\breaths\', metadata.tag, suffix, 'breaths.txt');
                 case 'o'
                     % Overwrite: continue without changes
                 otherwise
@@ -98,12 +98,12 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         end
         
         % Load other data
-        load(strcat(dataPath, speciesCode, "\movement\", metadata.tag, "movement.mat"));
-        load(strcat(dataPath, speciesCode, "\diving\", metadata.tag, "dives.mat"));
-        load(strcat(dataPath, speciesCode, "\diving\", metadata.tag, "divetable.mat"));
+        load(strcat(dataPath,'\', speciesCode, "\movement\", metadata.tag, "movement.mat"));
+        load(strcat(dataPath,'\', speciesCode, "\diving\", metadata.tag, "dives.mat"));
+        load(strcat(dataPath,'\', speciesCode, "\diving\", metadata.tag, "divetable.mat"));
         
         %Set path for prh files
-        settagpath('prh',strcat(dataPath, speciesCode, '\prh'));
+        settagpath('prh',strcat(dataPath,'\', speciesCode, '\prh'));
         
         % Load the existing prh file
         loadprh(metadata.tag);
@@ -240,7 +240,7 @@ function detect_breaths(taglist, dataPath, n_sec, min_sec_apart, win_sec)
         if strcmp(metadata.tag_ver, "CATS") == 1
             date = datetime(DN, 'ConvertFrom', 'datenum', 'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
             breath_datetime = date(all_breath_locs.breath_idx);
-            writematrix(breath_datetime, strcat(dataPath, speciesCode, '/breaths/', INFO.whaleName, 'breaths.txt'),'Delimiter',',')
+            writematrix(breath_datetime, strcat(dataPath,'\', speciesCode, '/breaths/', INFO.whaleName, 'breaths.txt'),'Delimiter',',')
         else
             breaths = all_breath_locs.breath_idx;
             writematrix(breaths, breath_txt_fname ,'Delimiter',',')
