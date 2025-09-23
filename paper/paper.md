@@ -13,7 +13,7 @@ authors:
 affiliations:
  - name: Nicholas School of the Environment, Duke University Marine Laboratory
    index: 1
- - name: Oceans Department, Stanford University
+ - name: Oceans Department, Hopkins Marine Station of Stanford University
    index: 2
 date: 19 September 2024
 bibliography: paper.bib
