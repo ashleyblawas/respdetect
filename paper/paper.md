@@ -34,11 +34,11 @@ Here, I present `respdetect`, a set of Matlab tools to detect breathing events f
 
 Following detection, the tools allow the user to visualize the respiratory rate time series before exporting the timing of each breath, in addition to several other relevant dive parameters, in a .mat file. 
 
-![Continuous respiratory rate from breath detections by `respdetect` for a short-finned pilot whale before and after deep dives.](../images/gm08_143b_resprate_ex.jpg)
-
 These tools were intially developed to detect breaths from DTAGs deployed on short-finned pilot whales, but should be useful for any DTAG or CATS tag record. The best use cases for `respdetect` are for tags that were deployed close to the blowhole. 
 
 There are two test datasets avaiable for users to validate nominal function of `respdetect.` The short-finned pilot whale record (*gm08_143b*) was collected in May of 2008 in Cape Hatteras, North Carolina, USA using a DTAG 2 (D2) and has been previously included in published studies including [@Shearer:2022]. The humpback whale record (*mn17_310a*) was collected in November of 2017 of the coast of Brazil using a D2.
+
+![Continuous respiratory rate from breath detections by `respdetect` for a short-finned pilot whale before and after deep dives.](../images/gm08_143b_resprate_ex.jpg)
 
 # Acknowledgements
 
