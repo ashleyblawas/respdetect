@@ -13,7 +13,7 @@ authors:
 affiliations:
  - name: Nicholas School of the Environment, Duke University, Durham, NC, USA
    index: 1
- - name: Oceans Department, Hopkins Marine Station of Stanford University, Pacific Grove, CA, USA
+ - name: Hopkins Marine Station, Stanford University, Pacific Grove, CA, USA
    index: 2
 date: 19 September 2024
 bibliography: paper.bib
